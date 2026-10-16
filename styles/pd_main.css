@@ -810,16 +810,31 @@ button {
     gap: 10px;
 }
 
+.section-float-wrap {
+    display: flow-root;
+}
+
+.section-float-wrap > p + p {
+    margin-top: 10px;
+}
+
+.section-float-image {
+    background-image: url(../images/about/paddyv.png);
+    background-size: contain;
+
+    width: 128px; aspect-ratio: 1 / 1;
+    margin: 0 var(--section-paragraph-padding) calc(var(--section-paragraph-padding) * 2) calc(var(--section-paragraph-padding) * 2);
+    border-radius: var(--custom-border-radius);
+
+    float: right;
+}
+
 .lore-button,
 .changelog-more {
-    background: linear-gradient(
-        -90deg,
-        rgba(var(--custom-color), 0.25),
-        rgba(var(--custom-color), 0)
-    );
-
     padding: 2px 4px !important;
-    border-radius: calc(var(--custom-border-radius) / 2);
+
+    border-top: 1px solid rgb(var(--custom-color));
+    border-image: linear-gradient(-90deg, rgb(var(--custom-color)), transparent) 1;
 }
 
 .lore-left {
@@ -832,17 +847,13 @@ button {
 
 .section-header,
 .changelog-entry-header {
-    background: linear-gradient(
-        90deg,
-        rgba(var(--custom-color), 0.25),
-        rgba(var(--custom-color), 0)
-    );
-
+    color: rgb(var(--custom-color));
     font-family: "Lato";
     font-weight: 900;
-    font-size: 22px;
-    border-radius: var(--custom-border-radius);
-    padding: 0 10px;
+    font-size: 20px;
+
+    border-bottom: 1px solid rgb(var(--custom-color));
+    border-image: linear-gradient(90deg, rgb(var(--custom-color)), transparent) 1;
 }
 
 .section-paragraph,
@@ -1738,9 +1749,8 @@ li > a {
     );
 
     width: calc(100% - var(--section-paragraph-padding) * 2);
-    height: 4px;
+    height: 1px;
     margin: 0 var(--section-paragraph-padding);
-    border-radius: 4px;
 }
 
 .custom-break {
