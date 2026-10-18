@@ -1,0 +1,101 @@
+<?php
+declare(strict_types=1);
+
+// php/pd_blocks.php  —  validation for the content blocks news posts and About Us blocks are
+// built from (rendered by renderBlocks() in scripts/pd_post_manager.js).
+// Included by pd_posts_admin.php and pd_about_admin.php; does nothing on its own.
+
+/**
+ * A relative path to a file on this site with one of the given extensions (regex alternation).
+ * No scheme, host, "..", or "//", so it can't point off-site or climb out of the web root.
+ */
+function pd_blocks_valid_path(string $src, string $extensions): bool {
+    return (bool) preg_match('#^/?[A-Za-z0-9_\-./%]+\.(?:' . $extensions . ')$#i', $src)
+        && strpos($src, '..') === false
+        && strpos($src, '//') === false;
+}
+
+/**
+ * Whether a (valid) site path points at a real file. Content must never reference missing
+ * files: each one is a 404 on every page view, and php/pd_log.php bans any IP that hits
+ * 4 of those in 4 seconds, which would ban visitors just for opening the page.
+ */
+function pd_blocks_file_exists(string $src): bool {
+    $decoded = rawurldecode($src);
+    return strpos($decoded, '..') === false
+        && is_file(dirname(__DIR__) . '/' . ltrim($decoded, '/'));
+}
+
+/** Validate an editor's block list and return it JSON-encoded for the DB, or respond 422 and exit. */
+function pd_blocks_clean($blocksIn): string {
+    if (!is_array($blocksIn) || count($blocksIn) === 0 || count($blocksIn) > 50) {
+        pd_json_error(422, 'invalid', 'Add between 1 and 50 blocks.');
+    }
+    $blocks = [];
+    foreach (array_values($blocksIn) as $i => $block) {
+        $n    = $i + 1;
+        $type = is_array($block) ? ($block['type'] ?? '') : '';
+
+        if ($type === 'paragraph') {
+            $content = pd_sanitize_html((string) ($block['content'] ?? ''));
+            if ($content === '') {
+                pd_json_error(422, 'invalid', "Block {$n}: paragraph is empty.");
+            }
+            $blocks[] = ['type' => 'paragraph', 'content' => $content];
+        } elseif ($type === 'heading') {
+            // Rendered with textContent, so plain text is stored as-is.
+            $content = trim((string) ($block['content'] ?? ''));
+            if ($content === '' || strlen($content) > 255) {
+                pd_json_error(422, 'invalid', "Block {$n}: heading is required (max 255 characters).");
+            }
+            $blocks[] = ['type' => 'heading', 'content' => $content];
+        } elseif ($type === 'bulletList') {
+            $items = [];
+            foreach ((array) ($block['content'] ?? []) as $item) {
+                $item = pd_sanitize_html((string) $item);
+                if ($item !== '') {
+                    $items[] = $item;
+                }
+            }
+            if (!$items) {
+                pd_json_error(422, 'invalid', "Block {$n}: bullet list is empty.");
+            }
+            $blocks[] = ['type' => 'bulletList', 'content' => $items];
+        } elseif ($type === 'audio') {
+            // Only MP3s hosted on this site (the renderer hard-codes audio/mpeg).
+            $src = trim((string) ($block['src'] ?? ''));
+            if (!pd_blocks_valid_path($src, 'mp3')) {
+                pd_json_error(422, 'invalid', "Block {$n}: audio must be an .mp3 path on this site.");
+            }
+            if (!pd_blocks_file_exists($src)) {
+                pd_json_error(422, 'invalid', "Block {$n}: \"{$src}\" does not exist on the site.");
+            }
+            $blocks[] = ['type' => 'audio', 'src' => $src];
+        } elseif ($type === 'gallery') {
+            // Images hosted on this site; captions are rendered as plain text (textContent/alt).
+            $images = [];
+            foreach ((array) ($block['images'] ?? []) as $image) {
+                $src     = trim((string) (is_array($image) ? ($image['src'] ?? '') : ''));
+                $caption = trim((string) (is_array($image) ? ($image['caption'] ?? '') : ''));
+                if (!pd_blocks_valid_path($src, 'png|jpe?g|gif|webp')) {
+                    pd_json_error(422, 'invalid', "Block {$n}: gallery images must be .png, .jpg, .gif or .webp paths on this site.");
+                }
+                if (!pd_blocks_file_exists($src)) {
+                    pd_json_error(422, 'invalid', "Block {$n}: \"{$src}\" does not exist on the site.");
+                }
+                if (strlen($caption) > 255) {
+                    pd_json_error(422, 'invalid', "Block {$n}: captions are limited to 255 characters.");
+                }
+                $images[] = $caption === '' ? ['src' => $src] : ['src' => $src, 'caption' => $caption];
+            }
+            if (!$images || count($images) > 50) {
+                pd_json_error(422, 'invalid', "Block {$n}: a gallery needs between 1 and 50 images.");
+            }
+            $blocks[] = ['type' => 'gallery', 'images' => $images];
+        } else {
+            pd_json_error(422, 'invalid', "Block {$n}: unknown block type.");
+        }
+    }
+
+    return json_encode($blocks, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+}

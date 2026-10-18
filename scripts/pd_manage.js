@@ -2,6 +2,7 @@
 
 // Everything in here is cosmetic: it only decides what to show. The server
 // re-checks the user's Discord roles on every request (see php/pd_posts_admin.php).
+// The block editor, uploads and status helpers are shared with pd_about_manage.js.
 
 // Extensionless on purpose: .htaccess 301s "*.php", and a redirected POST arrives as a GET.
 const PM_API = "/php/pd_posts_admin";
@@ -10,6 +11,7 @@ const PM_UPLOAD_MAX_BYTES = 8 * 1024 * 1024; // keep in sync with PD_UPLOAD_MAX_
 
 const PM_BLOCK_LABELS = {
     paragraph: "Paragraph",
+    heading: "Heading",
     bulletList: "Bullet List (one item per line)",
     audio: "Audio (.mp3 path on this site)",
     gallery: "Gallery (one image per line: path | optional caption)"
@@ -23,7 +25,13 @@ const pm = {
     isNew: false,
     keyTouched: false, // stop auto-generating the key once it's been typed in
     previewTimer: 0,
-    missingPaths: new Set() // media paths that 404'd once; never requested again (see pmPreviewDraft)
+    missingPaths: new Set() // media paths that 404'd once; never requested again (see pmPreviewBody)
+};
+
+// How the post editor's block list reports edits (see pmRenderBlocks).
+const PM_EDITOR = {
+    statusId: "pm-status",
+    onChange: soon => soon ? pmRenderPreviewSoon() : pmRenderPreview()
 };
 
 function pmCan(permission) {
@@ -43,23 +51,29 @@ function pmOnAuth(data) {
     pm.permissions = (data && data.authenticated && data.permissions) || [];
     pm.displayName = (data && data.user && data.user.displayName) || "";
 
-    const canManage = pmCan("news.manage");
-    document.getElementById("manage-holder").style.display = canManage ? "" : "none";
+    const canNews = pmCan("news.manage");
+    const canAbout = pmCan("about.edit");
+    const access = {
+        "manage-section": canNews || canAbout,
+        "newsmanager-section": canNews,
+        "aboutmanager-section": canAbout
+    };
 
-    if (!canManage) {
-        // Don't leave someone parked on an empty tool (e.g. restored from lastVisitedSection).
-        const onManagePage = ["manage-section", "newsmanager-section"]
-            .some(id => document.getElementById(id).style.display === "block");
-        if (onManagePage) openSection("home");
-        return;
-    }
+    document.getElementById("manage-holder").style.display = access["manage-section"] ? "" : "none";
+    document.getElementById("newsmanager-button").style.display = canNews ? "" : "none";
+    document.getElementById("aboutmanager-button").style.display = canAbout ? "" : "none";
 
-    pmLoadPosts();
+    // Don't leave someone parked on a tool they can't use (e.g. restored from lastVisitedSection).
+    const onLockedPage = Object.keys(access)
+        .some(id => !access[id] && document.getElementById(id).style.display === "block");
+    if (onLockedPage) openSection("home");
+
+    if (canNews) pmLoadPosts();
 }
 
 /* API */
 
-async function pmApi(body) {
+async function pmApi(url, body) {
     const options = body === undefined
         ? { headers: { "Accept": "application/json" } }
         : {
@@ -68,7 +82,7 @@ async function pmApi(body) {
             body: JSON.stringify(body)
         };
 
-    return pmParse(await fetch(PM_API, options));
+    return pmParse(await fetch(url, options));
 }
 
 // Upload one image; resolves to its site path, e.g. "images/uploads/<id>/<random>.png".
@@ -105,8 +119,8 @@ async function pmParse(res) {
 
 /* Status */
 
-function pmStatus(message, kind) {
-    const status = document.getElementById("pm-status");
+function pmStatus(message, kind, statusId = "pm-status") {
+    const status = document.getElementById(statusId);
     status.replaceChildren();
 
     if (!message) {
@@ -119,22 +133,207 @@ function pmStatus(message, kind) {
     status.style.display = "";
 }
 
-function pmError(err) {
-    pmStatus(err.message, "error");
+function pmError(err, statusId = "pm-status") {
+    pmStatus(err.message, "error", statusId);
 
     if (err.code === "reauth_required") {
         // Logging in again re-reads their roles; prompt=none makes it a quick bounce.
         const button = pmEl("button", "setting-button pm-status-action", "Re-verify");
         button.addEventListener("click", () => { window.location.href = "/auth/login.php"; });
-        document.getElementById("pm-status").append(button);
+        document.getElementById(statusId).append(button);
     }
+}
+
+/* Block Editor */
+
+// Draw an editable block list into holder. editor.onChange(soon) runs after every edit
+// (soon: a media path is being typed, so wait for the typing to stop before redrawing);
+// editor.statusId is where upload progress and errors go.
+function pmRenderBlocks(holder, blocks, editor) {
+    holder.replaceChildren();
+
+    const redraw = () => {
+        pmRenderBlocks(holder, blocks, editor);
+        editor.onChange();
+    };
+
+    blocks.forEach((block, index) => {
+        const wrapper = pmEl("div", "pm-block");
+
+        const head = pmEl("div", "spaced-out");
+        head.append(pmEl("div", "setting-label-small", PM_BLOCK_LABELS[block.type] || block.type));
+
+        const actions = pmEl("div", "row-4");
+        [["▲", -1, "Move up"], ["▼", 1, "Move down"]].forEach(([label, offset, title]) => {
+            const button = pmEl("button", "setting-button pm-block-button", label);
+            button.title = title;
+            button.disabled = !blocks[index + offset];
+            button.addEventListener("click", () => {
+                [blocks[index], blocks[index + offset]] = [blocks[index + offset], blocks[index]];
+                redraw();
+            });
+            actions.append(button);
+        });
+
+        const remove = pmEl("button", "setting-button-danger pm-block-button", "✕");
+        remove.title = "Remove block";
+        remove.addEventListener("click", () => {
+            blocks.splice(index, 1);
+            redraw();
+        });
+        actions.append(remove);
+        head.append(actions);
+        wrapper.append(head);
+
+        let input;
+        let extra = null;
+        if (block.type === "audio") {
+            input = pmEl("input", "input-field pm-input");
+            input.type = "text";
+            input.placeholder = "sounds/news/example.mp3";
+            input.value = block.src || "";
+            input.addEventListener("input", () => {
+                block.src = input.value.trim();
+                editor.onChange(true);
+            });
+        } else if (block.type === "gallery") {
+            input = pmEl("textarea", "input-field pm-input pm-textarea");
+            input.placeholder = "images/news/example1.png | A caption\nimages/news/example2.png";
+            input.value = (block.images || [])
+                .map(image => image.caption ? `${image.src} | ${image.caption}` : image.src)
+                .join("\n");
+            input.addEventListener("input", () => {
+                block.images = input.value.split("\n")
+                    .filter(line => line.trim() !== "")
+                    .map(line => {
+                        const bar = line.indexOf("|");
+                        return bar === -1
+                            ? { src: line.trim() }
+                            : { src: line.slice(0, bar).trim(), caption: line.slice(bar + 1).trim() };
+                    });
+                editor.onChange(true);
+            });
+
+            extra = pmGalleryUploader(block, redraw, editor.statusId);
+        } else if (block.type === "heading") {
+            input = pmEl("input", "input-field pm-input");
+            input.type = "text";
+            input.maxLength = 255;
+            input.placeholder = "What I Do:";
+            input.value = block.content || "";
+            input.addEventListener("input", () => {
+                block.content = input.value;
+                editor.onChange();
+            });
+        } else if (block.type === "bulletList") {
+            input = pmEl("textarea", "input-field pm-input pm-textarea");
+            input.value = (block.content || []).join("\n");
+            input.addEventListener("input", () => {
+                block.content = input.value.split("\n").filter(item => item.trim() !== "");
+                editor.onChange();
+            });
+        } else {
+            input = pmEl("textarea", "input-field pm-input pm-textarea");
+            input.value = block.content || "";
+            input.addEventListener("input", () => {
+                block.content = input.value;
+                editor.onChange();
+            });
+        }
+        wrapper.append(input);
+        if (extra) wrapper.append(extra);
+
+        holder.append(wrapper);
+    });
+}
+
+// "Upload Images" button for a gallery block: uploads each picked file, then appends it.
+function pmGalleryUploader(block, redraw, statusId) {
+    const holder = pmEl("div", "setting-input-holder pm-add-row");
+
+    const picker = pmEl("input");
+    picker.type = "file";
+    picker.accept = "image/png,image/jpeg,image/gif,image/webp";
+    picker.multiple = true;
+    picker.style.display = "none";
+
+    const button = pmEl("button", "setting-button", "Upload Images");
+    button.addEventListener("click", () => picker.click());
+
+    picker.addEventListener("change", async () => {
+        const files = [...picker.files];
+        picker.value = "";
+        if (files.length === 0) return;
+
+        button.disabled = true;
+        let uploaded = 0;
+        try {
+            for (const file of files) {
+                pmStatus(`Uploading ${uploaded + 1} of ${files.length}…`, "", statusId);
+                const src = await pmUploadImage(file);
+                block.images = [...(block.images || []), { src }];
+                uploaded++;
+            }
+            pmStatus(`Uploaded ${uploaded} image${uploaded === 1 ? "" : "s"}. Remember to save.`, "", statusId);
+        } catch (err) {
+            pmError(err, statusId);
+        } finally {
+            button.disabled = false;
+            // Rebuild the blocks so the textarea lists whatever made it up.
+            redraw();
+        }
+    });
+
+    holder.append(button, picker);
+    return holder;
+}
+
+function pmNewBlock(type) {
+    return type === "audio" ? { type, src: "" }
+        : type === "gallery" ? { type, images: [] }
+        : type === "bulletList" ? { type, content: [] }
+        : { type, content: "" };
+}
+
+/* Previews */
+
+// Same rule as pd_blocks_valid_path() in pd_blocks.php, minus paths already known to 404.
+function pmValidPath(src, extensions) {
+    return new RegExp(`^/?[A-Za-z0-9_\\-./%]+\\.(?:${extensions})$`, "i").test(src || "")
+        && !src.includes("..") && !src.includes("//")
+        && !pm.missingPaths.has(src);
+}
+
+// A block list as previews draw it: media only for paths the server would accept.
+// Every half-typed path would be a 404, and the site guard (php/pd_log.php) bans an
+// IP for 7 days after 4 of those in 4 seconds, so they must never be requested.
+function pmPreviewBody(blocks) {
+    return blocks
+        .map(block => block.type === "gallery"
+            ? { ...block, images: (block.images || []).filter(image => pmValidPath(image.src, "png|jpe?g|gif|webp")) }
+            : block)
+        .filter(block => !(block.type === "audio" && !pmValidPath(block.src, "mp3")))
+        .filter(block => !(block.type === "gallery" && block.images.length === 0));
+}
+
+// Remember anything in a freshly drawn preview that 404s, so later redraws don't request it again.
+function pmWatchMissing(holder, statusId, redrawSoon) {
+    holder.querySelectorAll("img, source").forEach(el => {
+        el.addEventListener("error", () => {
+            const src = el.getAttribute("src");
+            if (pm.missingPaths.has(src)) return;
+            pm.missingPaths.add(src);
+            pmStatus(`Couldn't find "${src}" on the site. Check the path, or upload it.`, "error", statusId);
+            redrawSoon();
+        }, { once: true });
+    });
 }
 
 /* Post List */
 
 async function pmLoadPosts() {
     try {
-        const data = await pmApi();
+        const data = await pmApi(PM_API);
         pm.posts = data.posts;
         pmRenderList();
     } catch (err) {
@@ -167,7 +366,7 @@ function pmRenderList() {
     });
 }
 
-/* Editor */
+/* Post Editor */
 
 function pmToday() {
     const d = new Date();
@@ -215,7 +414,7 @@ function pmOpenEditor(post) {
     document.getElementById("pm-irrelevant").checked = pm.draft.irrelevant;
     document.getElementById("pm-delete").style.display = (!pm.isNew && pmCan("news.delete")) ? "" : "none";
 
-    pmRenderBlocks();
+    pmRenderBlocks(document.getElementById("pm-blocks"), pm.draft.postBody, PM_EDITOR);
     pmRenderPreview();
     pmStatus("");
 
@@ -236,143 +435,9 @@ function pmSyncKey() {
     }
 }
 
-function pmRenderBlocks() {
-    const holder = document.getElementById("pm-blocks");
-    holder.replaceChildren();
-
-    pm.draft.postBody.forEach((block, index) => {
-        const wrapper = pmEl("div", "pm-block");
-
-        const head = pmEl("div", "spaced-out");
-        head.append(pmEl("div", "setting-label-small", PM_BLOCK_LABELS[block.type] || block.type));
-
-        const actions = pmEl("div", "row-4");
-        [["▲", -1, "Move up"], ["▼", 1, "Move down"]].forEach(([label, offset, title]) => {
-            const button = pmEl("button", "setting-button pm-block-button", label);
-            button.title = title;
-            button.disabled = !pm.draft.postBody[index + offset];
-            button.addEventListener("click", () => {
-                const body = pm.draft.postBody;
-                [body[index], body[index + offset]] = [body[index + offset], body[index]];
-                pmRenderBlocks();
-                pmRenderPreview();
-            });
-            actions.append(button);
-        });
-
-        const remove = pmEl("button", "setting-button-danger pm-block-button", "✕");
-        remove.title = "Remove block";
-        remove.addEventListener("click", () => {
-            pm.draft.postBody.splice(index, 1);
-            pmRenderBlocks();
-            pmRenderPreview();
-        });
-        actions.append(remove);
-        head.append(actions);
-        wrapper.append(head);
-
-        let input;
-        let extra = null;
-        if (block.type === "audio") {
-            input = pmEl("input", "input-field pm-input");
-            input.type = "text";
-            input.placeholder = "sounds/news/example.mp3";
-            input.value = block.src || "";
-            input.addEventListener("input", () => {
-                block.src = input.value.trim();
-                pmRenderPreviewSoon();
-            });
-        } else if (block.type === "gallery") {
-            input = pmEl("textarea", "input-field pm-input pm-textarea");
-            input.placeholder = "images/news/example1.png | A caption\nimages/news/example2.png";
-            input.value = (block.images || [])
-                .map(image => image.caption ? `${image.src} | ${image.caption}` : image.src)
-                .join("\n");
-            input.addEventListener("input", () => {
-                block.images = input.value.split("\n")
-                    .filter(line => line.trim() !== "")
-                    .map(line => {
-                        const bar = line.indexOf("|");
-                        return bar === -1
-                            ? { src: line.trim() }
-                            : { src: line.slice(0, bar).trim(), caption: line.slice(bar + 1).trim() };
-                    });
-                pmRenderPreviewSoon();
-            });
-
-            extra = pmGalleryUploader(block);
-        } else if (block.type === "bulletList") {
-            input = pmEl("textarea", "input-field pm-input pm-textarea");
-            input.value = (block.content || []).join("\n");
-            input.addEventListener("input", () => {
-                block.content = input.value.split("\n").filter(item => item.trim() !== "");
-                pmRenderPreview();
-            });
-        } else {
-            input = pmEl("textarea", "input-field pm-input pm-textarea");
-            input.value = block.content || "";
-            input.addEventListener("input", () => {
-                block.content = input.value;
-                pmRenderPreview();
-            });
-        }
-        wrapper.append(input);
-        if (extra) wrapper.append(extra);
-
-        holder.append(wrapper);
-    });
-}
-
-// "Upload Images" button for a gallery block: uploads each picked file, then appends it.
-function pmGalleryUploader(block) {
-    const holder = pmEl("div", "setting-input-holder pm-add-row");
-
-    const picker = pmEl("input");
-    picker.type = "file";
-    picker.accept = "image/png,image/jpeg,image/gif,image/webp";
-    picker.multiple = true;
-    picker.style.display = "none";
-
-    const button = pmEl("button", "setting-button", "Upload Images");
-    button.addEventListener("click", () => picker.click());
-
-    picker.addEventListener("change", async () => {
-        const files = [...picker.files];
-        picker.value = "";
-        if (files.length === 0) return;
-
-        button.disabled = true;
-        let uploaded = 0;
-        try {
-            for (const file of files) {
-                pmStatus(`Uploading ${uploaded + 1} of ${files.length}…`);
-                const src = await pmUploadImage(file);
-                block.images = [...(block.images || []), { src }];
-                uploaded++;
-            }
-            pmStatus(`Uploaded ${uploaded} image${uploaded === 1 ? "" : "s"}. Remember to save the post.`);
-        } catch (err) {
-            pmError(err);
-        } finally {
-            button.disabled = false;
-            // Rebuild the blocks so the textarea lists whatever made it up.
-            pmRenderBlocks();
-            pmRenderPreview();
-        }
-    });
-
-    holder.append(button, picker);
-    return holder;
-}
-
 function pmAddBlock(type) {
-    pm.draft.postBody.push(
-        type === "audio" ? { type, src: "" }
-            : type === "gallery" ? { type, images: [] }
-            : type === "bulletList" ? { type, content: [] }
-            : { type, content: "" }
-    );
-    pmRenderBlocks();
+    pm.draft.postBody.push(pmNewBlock(type));
+    pmRenderBlocks(document.getElementById("pm-blocks"), pm.draft.postBody, PM_EDITOR);
     pmRenderPreview();
 }
 
@@ -385,18 +450,12 @@ function pmRenderPreview() {
     // Same renderer as the public News page (pd_post_manager.js). Unsaved text is only
     // rendered in your own browser; the server sanitizes it on save, and the editor
     // reloads the stored version so you see exactly what visitors will.
-    holder.append(renderPost(pmPreviewDraft()));
-
-    // Remember anything that 404s so later redraws don't request it again.
-    holder.querySelectorAll("img, source").forEach(el => {
-        el.addEventListener("error", () => {
-            const src = el.getAttribute("src");
-            if (pm.missingPaths.has(src)) return;
-            pm.missingPaths.add(src);
-            pmStatus(`Couldn't find "${src}" on the site. Check the path, or upload it.`, "error");
-            pmRenderPreviewSoon();
-        }, { once: true });
-    });
+    holder.append(renderPost({
+        ...pm.draft,
+        postDate: pmFormatDate(pm.draft.postDate),
+        postBody: pmPreviewBody(pm.draft.postBody)
+    }));
+    pmWatchMissing(holder, "pm-status", pmRenderPreviewSoon);
 }
 
 // For typing in media paths: wait until the typing stops before redrawing.
@@ -405,33 +464,12 @@ function pmRenderPreviewSoon() {
     pm.previewTimer = setTimeout(pmRenderPreview, 600);
 }
 
-// Same rule as pd_news_valid_path() in pd_posts_admin.php, minus paths already known to 404.
-function pmValidPath(src, extensions) {
-    return new RegExp(`^/?[A-Za-z0-9_\\-./%]+\\.(?:${extensions})$`, "i").test(src || "")
-        && !src.includes("..") && !src.includes("//")
-        && !pm.missingPaths.has(src);
-}
-
-// The draft as the preview draws it: media only for paths the server would accept.
-// Every half-typed path would be a 404, and the site guard (php/pd_log.php) bans an
-// IP for 7 days after 4 of those in 4 seconds, so they must never be requested.
-function pmPreviewDraft() {
-    const body = pm.draft.postBody
-        .map(block => block.type === "gallery"
-            ? { ...block, images: (block.images || []).filter(image => pmValidPath(image.src, "png|jpe?g|gif|webp")) }
-            : block)
-        .filter(block => !(block.type === "audio" && !pmValidPath(block.src, "mp3")))
-        .filter(block => !(block.type === "gallery" && block.images.length === 0));
-
-    return { ...pm.draft, postDate: pmFormatDate(pm.draft.postDate), postBody: body };
-}
-
 async function pmSave() {
     const save = document.getElementById("pm-save");
     save.disabled = true;
 
     try {
-        const data = await pmApi({ action: pm.isNew ? "create" : "update", post: pm.draft });
+        const data = await pmApi(PM_API, { action: pm.isNew ? "create" : "update", post: pm.draft });
         await pmLoadPosts();
         pmOpenEditor(data.post);
         pmStatus("Saved. Reload the page to see it on the News page.");
@@ -448,7 +486,7 @@ async function pmDelete() {
     }
 
     try {
-        await pmApi({ action: "delete", postKey: pm.draft.postKey });
+        await pmApi(PM_API, { action: "delete", postKey: pm.draft.postKey });
         pmCloseEditor();
         await pmLoadPosts();
         pmStatus("Post deleted.");
@@ -465,7 +503,7 @@ document.addEventListener("DOMContentLoaded", function () {
     document.getElementById("pm-save").addEventListener("click", pmSave);
     document.getElementById("pm-delete").addEventListener("click", pmDelete);
 
-    ["paragraph", "bulletList", "audio", "gallery"].forEach(type => {
+    Object.keys(PM_BLOCK_LABELS).forEach(type => {
         document.getElementById(`pm-add-${type}`).addEventListener("click", () => pmAddBlock(type));
     });
 

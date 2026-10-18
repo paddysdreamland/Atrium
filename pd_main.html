@@ -21,7 +21,9 @@
         <script src="scripts/pd_music_playlist.js" defer></script>
 
         <script src="scripts/pd_post_manager.js" defer></script>
+        <script src="scripts/pd_about.js" defer></script>
         <script src="scripts/pd_manage.js" defer></script>
+        <script src="scripts/pd_about_manage.js" defer></script>
         <script src="scripts/pd_imageviewer.js" defer></script>
 
         <script src="scripts/pd_customization.js" defer></script>
@@ -361,73 +363,7 @@
                         <div class="section-wrapper">
                             <h3 class="main-header">About Us</h3>
 
-                            <div class="section-container">
-                                <h4 class="section-header">
-                                    Paddy-V
-                                </h4>
-
-                                <div class="section-float-wrap">
-                                    <div class="section-float-image" src="images/about/paddyv.png" alt="Paddy"></div>
-        
-                                    <p class="section-paragraph">
-                                        Hi, you can call me Paddy. The V stands for "VTuber", though you're welcome to call me V too, which happens to be a pretty coincidental reference to Cyberpunk 2077.
-                                    </p>
-
-                                    <p class="section-paragraph"><b style="color: rgb(var(--custom-color));">What I Do:</b></p>
-
-                                    <p class="section-paragraph">
-                                        As the founder of the Dreamland and because it is currently driven solo, my work in the community varies a lot. Primarily, I frequently do web and game development, most notably working on this website, building the United Planet, and managing the community. Secondarily, I do occasional content creation such as making videos and streaming on YouTube and Twitch.
-                                    </p>
-
-                                    <p class="section-paragraph"><b style="color: rgb(var(--custom-color));">Where I Come From:</b></p>
-
-                                    <p class="section-paragraph">
-                                        I've spent more than a decade around Source engine games, specifically mapping and making mods for Garry's Mod, followed by years building Source-inspired projects elsewhere before moving to s&box. Design is my thing, especially shaders and CSS. I also have a soft spot for decompiling games, and potentially learn how they are made.
-                                    </p>
-
-                                    <p class="section-paragraph"><b style="color: rgb(var(--custom-color));">How I Work:</b></p>
-
-                                    <p class="section-paragraph">
-                                        While my code is AI-generated, my projects are fully directed, designed, and tested by me. This allows me to spend more time on what I actually care about: modelling, texturing, and hand-crafting everything non-code related.
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div class="section-container">
-                                <h4 class="section-header">
-                                    Ashley Ashes
-                                </h4>
-
-                                <div class="section-float-wrap">
-                                    <p class="section-paragraph">
-                                        N/A
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div class="section-container">
-                                <h4 class="section-header">
-                                    Cylash
-                                </h4>
-
-                                <div class="section-float-wrap">
-                                    <p class="section-paragraph">
-                                        N/A
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div class="section-container">
-                                <h4 class="section-header">
-                                    Sovvy
-                                </h4>
-
-                                <div class="section-float-wrap">
-                                    <p class="section-paragraph">
-                                        N/A
-                                    </p>
-                                </div>
-                            </div>
+                            <!-- Filled from the database by pd_about.js; edited in Management > About Us Editor. -->
                         </div>
                     </section>
     
@@ -835,7 +771,7 @@
                         </div>
                     </section>
 
-                    <!-- Management: only revealed by pd_manage.js for Founders & Managers; the server enforces it regardless. -->
+                    <!-- Management: only revealed by pd_manage.js for Moderators and up; the server enforces it regardless. -->
                     <section id="manage-section" style="display: none;">
                         <div class="section-wrapper">
                             <h3 class="main-header">Management</h3>
@@ -843,13 +779,13 @@
                             <div class="section-container">
                                 <h4 class="section-header">Information</h4>
 
-                                <p class="section-paragraph">Tools for the Founder and Managers of Paddy's Dreamland. Access comes from your roles on the Discord server, which are re-checked whenever you log in.</p>
+                                <p class="section-paragraph">Tools for the staff of Paddy's Dreamland. Access comes from your roles on the Discord server, which are re-checked whenever you log in.</p>
 
                                 <h4 class="section-header">Tools</h4>
                             </div>
 
                             <div class="app-buttons-wrapper">
-                                <button id="newsmanager-button" class="app-button-wrapper" title="Post Manager: Write, edit, and hide news posts without touching the database.">
+                                <button id="newsmanager-button" class="app-button-wrapper" style="display: none;" title="Post Manager: Write, edit, and hide news posts without touching the database.">
                                     <div class="app-icon-wrapper">
                                         <div class="app-icon-image" style="background-image: url(images/header/dreamland1.png);"></div>
                                     </div>
@@ -865,6 +801,117 @@
                                         </div>
                                     </div>
                                 </button>
+
+                                <button id="aboutmanager-button" class="app-button-wrapper" style="display: none;" title="About Us Editor: Write and update your own block on the About Us page.">
+                                    <div class="app-icon-wrapper">
+                                        <div class="app-icon-image" style="background-image: url(images/silk/vcard_edit.png);"></div>
+                                    </div>
+
+                                    <div class="app-text-wrapper column-4">
+                                        <div class="app-title-wrapper">
+                                            <div class="app-title-text">About Us Editor</div>
+                                            <div class="app-title-tag">MODERATOR+</div>
+                                        </div>
+
+                                        <div class="app-desc-wrapper">
+                                            <div class="app-desc-text">Write and update your own block on the About Us page.</div>
+                                        </div>
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section id="aboutmanager-section" style="display: none;">
+                        <div class="section-wrapper">
+                            <h3 class="main-header">About Us Editor</h3>
+
+                            <div class="section-container">
+                                <div id="am-status" class="pm-status" style="display: none;"></div>
+
+                                <div class="setting-container">
+                                    <div class="spaced-out">
+                                        <div class="setting-label">Blocks</div>
+                                        <button id="am-new" class="setting-button" style="display: none;">New Block</button>
+                                    </div>
+                                    <div class="setting-label-small">Your block on the About Us page. Hidden blocks are only visible here.</div>
+                                    <div class="horizontal-break"></div>
+
+                                    <div id="am-list" class="pm-list"></div>
+                                </div>
+                            </div>
+
+                            <div id="am-editor" class="section-wrapper" style="display: none;">
+                                <h3 id="am-editor-title" class="main-header">Editor</h3>
+
+                                <div class="section-container">
+                                    <div class="setting-container">
+                                        <div class="setting-label">Name</div>
+                                        <input id="am-name" class="input-field pm-input" type="text" maxlength="255" placeholder="Paddy-V">
+                                    </div>
+
+                                    <div class="setting-container">
+                                        <div class="setting-label">Image</div>
+                                        <div class="setting-label-small">Optional. Shown beside your text; square images look best.</div>
+                                        <input id="am-image" class="input-field pm-input" type="text" placeholder="images/about/example.png">
+                                        <div class="setting-input-holder pm-add-row">
+                                            <button id="am-image-upload" class="setting-button">Upload Image</button>
+                                            <input id="am-image-file" type="file" accept="image/png,image/jpeg,image/gif,image/webp" style="display: none;">
+                                        </div>
+                                    </div>
+
+                                    <div id="am-manager-fields" class="pm-field-row" style="display: none;">
+                                        <div class="setting-container">
+                                            <div class="setting-label">Discord ID</div>
+                                            <input id="am-discord-id" class="input-field pm-input" type="text" inputmode="numeric" maxlength="20">
+                                        </div>
+
+                                        <div class="setting-container">
+                                            <div class="setting-label">Order</div>
+                                            <input id="am-order" class="input-field pm-input" type="number" step="1" min="-9999" max="9999">
+                                        </div>
+                                    </div>
+
+                                    <div class="setting-container">
+                                        <div class="setting-label">Flags</div>
+                                        <div class="music-label-list">
+                                            <label class="music-label"><input id="am-hidden" type="checkbox"> Hidden (draft)</label>
+                                        </div>
+                                    </div>
+
+                                    <div class="setting-container">
+                                        <div class="setting-label">Body</div>
+                                        <div class="setting-label-small">Text supports &lt;b&gt;, &lt;i&gt;, &lt;u&gt;, &lt;s&gt;, &lt;code&gt;, &lt;br&gt; and &lt;a href="…"&gt;. Anything else is stripped when saving.</div>
+                                        <div class="horizontal-break"></div>
+
+                                        <div id="am-blocks" class="column-5"></div>
+
+                                        <div class="setting-input-holder pm-add-row">
+                                            <button id="am-add-paragraph" class="setting-button">+ Paragraph</button>
+                                            <button id="am-add-heading" class="setting-button">+ Heading</button>
+                                            <button id="am-add-bulletList" class="setting-button">+ Bullet List</button>
+                                            <button id="am-add-audio" class="setting-button">+ Audio</button>
+                                            <button id="am-add-gallery" class="setting-button">+ Gallery</button>
+                                        </div>
+                                    </div>
+
+                                    <div class="horizontal-break"></div>
+
+                                    <div class="spaced-out">
+                                        <div>
+                                            <button id="am-delete" class="setting-button-danger">Delete</button>
+                                        </div>
+
+                                        <div>
+                                            <button id="am-cancel" class="setting-button">Cancel</button>
+                                            <button id="am-save" class="setting-button">Save</button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <h3 class="main-header">Preview</h3>
+
+                                <div id="am-preview"></div>
                             </div>
                         </div>
                     </section>
@@ -931,6 +978,7 @@
 
                                         <div class="setting-input-holder pm-add-row">
                                             <button id="pm-add-paragraph" class="setting-button">+ Paragraph</button>
+                                            <button id="pm-add-heading" class="setting-button">+ Heading</button>
                                             <button id="pm-add-bulletList" class="setting-button">+ Bullet List</button>
                                             <button id="pm-add-audio" class="setting-button">+ Audio</button>
                                             <button id="pm-add-gallery" class="setting-button">+ Gallery</button>

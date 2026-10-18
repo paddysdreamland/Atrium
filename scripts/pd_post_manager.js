@@ -1,24 +1,22 @@
-// Top-level so the management post editor can preview posts with the exact same renderer.
-function renderPost(post) {
-    const container = document.createElement("div");
-    container.className = "section-container";
-
-    const header = document.createElement("h4");
-    header.className = "section-header";
-    header.textContent = `${post.postDate} — ${post.postHeader}`;
-    container.appendChild(header);
-
-    // Every gallery image in the post, in order, so the viewer can page through all of them.
-    const viewerImages = post.postBody
+// Top-level so About Us blocks (pd_about.js) and the management editors' previews
+// draw content blocks with the exact same code. Validated by php/pd_blocks.php.
+function renderBlocks(container, blocks) {
+    // Every gallery image in the blocks, in order, so the viewer can page through all of them.
+    const viewerImages = blocks
         .filter(block => block.type === "gallery")
         .flatMap(block => block.images || []);
     let viewerIndex = 0;
 
-    post.postBody.forEach(block => {
+    blocks.forEach(block => {
         if (block.type === "paragraph") {
             const p = document.createElement("p");
             p.className = "section-paragraph";
             p.innerHTML = block.content;
+            container.appendChild(p);
+        } else if (block.type === "heading") {
+            const p = document.createElement("p");
+            p.className = "section-paragraph section-subheading";
+            p.textContent = block.content;
             container.appendChild(p);
         } else if (block.type === "bulletList") {
             const ul = document.createElement("ul");
@@ -55,6 +53,19 @@ function renderPost(post) {
             container.appendChild(gallery);
         }
     });
+}
+
+// Top-level so the management post editor can preview posts with the exact same renderer.
+function renderPost(post) {
+    const container = document.createElement("div");
+    container.className = "section-container";
+
+    const header = document.createElement("h4");
+    header.className = "section-header";
+    header.textContent = `${post.postDate} — ${post.postHeader}`;
+    container.appendChild(header);
+
+    renderBlocks(container, post.postBody);
 
     const signature = document.createElement("p");
     signature.className = "section-signature";

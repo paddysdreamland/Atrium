@@ -814,19 +814,25 @@ button {
     display: flow-root;
 }
 
-.section-float-wrap > p + p {
+.section-float-wrap > * + * {
     margin-top: 10px;
+} .section-float-wrap > .section-float-image + * {
+    margin-top: 0;
 }
 
 .section-float-image {
-    background-image: url(../images/about/paddyv.png);
-    background-size: contain;
+    object-fit: cover;
 
-    width: 128px; aspect-ratio: 1 / 1;
+    width: 128px; height: 128px;
     margin: 0 var(--section-paragraph-padding) calc(var(--section-paragraph-padding) * 2) calc(var(--section-paragraph-padding) * 2);
     border-radius: var(--custom-border-radius);
 
     float: right;
+}
+
+.section-paragraph.section-subheading {
+    color: rgb(var(--custom-color));
+    font-weight: 700;
 }
 
 .lore-button,

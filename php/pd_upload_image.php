@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-// php/pd_upload_image.php  —  image uploads for the post editor (Founder & Managers).
+// php/pd_upload_image.php  —  image uploads for the post and About Us editors (Moderators and up).
 //
 // POST multipart/form-data with one file field, "image".
 // -> {"ok": true, "src": "images/uploads/<discord id>/<random>.png", "width": ..., "height": ...}
@@ -34,7 +34,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
 
 pd_require_same_origin();
 $pdo  = pd_db($config);
-$user = pd_require_permission($pdo, 'news.manage');
+$user = pd_require_permission($pdo, 'media.upload');
 
 $file = $_FILES['image'] ?? null;
 if (!is_array($file) || is_array($file['error'])) {
