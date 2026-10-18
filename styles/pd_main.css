@@ -12,7 +12,7 @@
     --holder-border-thickness: 2px;
 
     --main-scrollable-padding: 10px;
-    --section-paragraph-padding: 10px;
+    --section-paragraph-padding: 0px;
 
     --custom-width: 1024px;
     --custom-color: 0, 255, 192;
@@ -1173,16 +1173,17 @@ li > a {
 .app-buttons-wrapper {
     padding: 0 10px;
     display: flex; gap: 10px;
+    flex-direction: column;
 }
 
 .app-button-wrapper {
     background-color: rgba(255, 255, 255, 0.25);
     background-image: var(--holder-background-image);
 
-    width: 192px; height: 288px;
+    width: auto; min-height: 96px;
     border-radius: var(--custom-border-radius);
     display: flex;
-    flex-direction: column;
+    
     overflow: hidden;
 
     filter: drop-shadow(0px 0px 8px rgba(255, 255, 255, 0.0));
@@ -1231,7 +1232,7 @@ li > a {
 }
 
 .app-text-wrapper {
-    padding: 8px;
+    padding: 8px 8px 8px 0;
 }
 
 .app-title-text,
@@ -1242,6 +1243,8 @@ li > a {
 
 .app-icon-wrapper {
     background-color: rgba(0, 0, 0, 0.0);
+    background-size: cover;
+    height: 96px;
     aspect-ratio: 1 / 1;
     mix-blend-mode: overlay;
     opacity: 1;
@@ -1249,20 +1252,28 @@ li > a {
 
 .app-icon-image {
     background-repeat: no-repeat;
-    background-position: 8px 8px;
-    background-size: 16px;
-    image-rendering: pixelated;
-    width: 100%; aspect-ratio: 1 / 1;
+    background-size: cover;
+    position: relative; left: 8px; top: 8px;
+    width: calc(96px - 16px); aspect-ratio: 1 / 1;
+    border-radius: var(--custom-border-radius);
     filter: drop-shadow(0px 0px 4px rgba(0, 0, 0, 0.5));
 }
 
 .app-title-wrapper {
     width: 100%; height: auto;   
+    display: flex; gap: 5px;
 }
 
 .app-title-text {
     font-weight: 900;
     font-size: 16px;
+}
+
+.app-title-tag {
+    background-color: rgba(192, 64, 64, 0.75);
+    font-family: Consolas; font-weight: 900;
+    height: 16px; padding: 0 4px; top: 2px;
+    border-radius: 4px;
 }
 
 .app-desc-wrapper {
