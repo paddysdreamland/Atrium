@@ -1,6 +1,7 @@
 document.addEventListener("DOMContentLoaded", function () {
     const subtitles = [
-        // Most of these are just lyrics that I deeply relate to.
+        // Paddy-V
+        `Some people like to call this place an atrium, which makes sense considering its nature.`,
 
         // ChatGPT
         `You can be discoverable and miserable, or obscure and authentic.`,

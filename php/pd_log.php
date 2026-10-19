@@ -152,40 +152,6 @@ function pd_guard(): void {
         http_response_code(403); exit;
     }
 
-    // Burst and scan only count page loads. A browser fetching a page's images/audio sends
-    // Sec-Fetch-Mode no-cors/cors; a missing file there is a broken page, not a scan.
-    // Bots send no Sec-Fetch-* headers at all (NULL), so they still count.
-    $burst = $pdo->prepare(
-        "SELECT COUNT(*) FROM pd_access_log
-         WHERE ip = ? AND created_at > (NOW() - INTERVAL 20 SECOND)
-           AND (fetch_site IS NULL OR fetch_site NOT IN ('cross-site','same-site'))
-           AND (fetch_mode IS NULL OR fetch_mode = 'navigate')");
-    $burst->execute([$ip]);
-    if ((int)$burst->fetchColumn() > 8) {
-        $pdo->prepare(
-            "INSERT IGNORE INTO pd_blocklist (ip, reason, expires_at)
-             VALUES (?, 'burst', NOW() + INTERVAL 24 HOUR)")
-            ->execute([$ip]);
-        pd_notify("🚨 Banned `$ip` — Burst");
-        http_response_code(403); exit;
-    }
-
-    $miss = $pdo->prepare(
-        "SELECT COUNT(*) FROM pd_access_log
-         WHERE ip = ? AND status = 404
-           AND created_at > (NOW() - INTERVAL 4 SECOND)
-           AND (fetch_site IS NULL OR fetch_site NOT IN ('cross-site','same-site'))
-           AND (fetch_mode IS NULL OR fetch_mode = 'navigate')");
-    $miss->execute([$ip]);
-    if ((int)$miss->fetchColumn() >= 4) {
-        $pdo->prepare(
-            "INSERT IGNORE INTO pd_blocklist (ip, reason, expires_at)
-             VALUES (?, 'scan', NOW() + INTERVAL 7 DAY)")
-            ->execute([$ip]);
-        pd_notify("🚨 Banned `$ip` — Scraping");
-        http_response_code(403); exit;
-    }
-
   } catch (Throwable $e) {
     pd_guard_degraded($e);
     return;
