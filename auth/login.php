@@ -8,24 +8,20 @@ $config = require dirname(__DIR__, 2) . '/private/pd_config.php';
 require dirname(__DIR__, 2) . '/private/pd_lib.php';
 
 // CSRF protection: a random value we'll check when Discord sends the user back.
+// Shared cookie, because Discord always returns to the MAIN site's callback,
+// even when the login was started on staging.
 $state = bin2hex(random_bytes(16));
-setcookie('pd_oauth_state', $state, [
-    'expires'  => time() + 600,
-    'path'     => '/',
-    'secure'   => true,
-    'httponly' => true,
-    'samesite' => 'Lax',
-]);
+pd_set_cookie('pd_oauth_state', $state, 600);
 
-// Remember where in the SPA they started, so we can return them there.
+// Remember where they started, so we can return them there.
+// A plain path ("/news") means "this same address", so turn it into a full URL
+// for whichever address (main site or staging) the login was started on.
 $return = isset($_GET['return']) ? (string) $_GET['return'] : '/';
-setcookie('pd_oauth_return', $return, [
-    'expires'  => time() + 600,
-    'path'     => '/',
-    'secure'   => true,
-    'httponly' => true,
-    'samesite' => 'Lax',
-]);
+$host   = strtolower((string) ($_SERVER['HTTP_HOST'] ?? ''));
+if (in_array($host, PD_SITE_HOSTS, true)) {
+    $return = pd_safe_return_url($return, 'https://' . $host) ?? ('https://' . $host . '/');
+}
+pd_set_cookie('pd_oauth_return', $return, 600);
 
 $params = http_build_query([
     'client_id'     => $config['discord']['client_id'],

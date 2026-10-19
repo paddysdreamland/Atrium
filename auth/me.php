@@ -28,5 +28,6 @@ echo json_encode([
     ],
     // For showing/hiding UI only — every privileged endpoint re-checks on the server.
     'permissions' => pd_user_permissions($user),
+    'isMember'    => $user['is_member'],   // in the PD Discord server (unlocks staging)
     'rolesStale'  => !$user['roles_fresh'],
 ]);

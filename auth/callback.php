@@ -48,21 +48,24 @@ if (empty($me['id'])) {
     exit('Could not read your Discord profile.');
 }
 
-// 4b) While we still hold the token, snapshot which PD server roles they have.
-//     This is the only chance: the token is discarded after this request.
-//     null = Discord couldn't be asked; store no roles and leave them marked stale.
-$siteRoles = pd_fetch_site_roles($token['access_token']);
+// 4b) While we still hold the token, snapshot whether they're in the PD server and
+//     which PD roles they have. This is the only chance: the token is discarded after
+//     this request. null = Discord couldn't be asked; store nothing and leave them stale.
+$membership = pd_fetch_membership($token['access_token']);
+$siteRoles  = $membership['roles']  ?? null;
+$isMember   = $membership['member'] ?? false;
 
 // 5) Insert or update the user record (keyed on the stable Discord ID).
 $pdo = pd_db($config);
 $stmt = $pdo->prepare(
-    'INSERT INTO pd_users (discord_id, username, global_name, avatar_hash, site_roles, roles_checked_at, last_login_at)
-          VALUES (:id, :username, :global_name, :avatar, :roles, IF(:checked, NOW(), NULL), NOW())
+    'INSERT INTO pd_users (discord_id, username, global_name, avatar_hash, site_roles, is_member, roles_checked_at, last_login_at)
+          VALUES (:id, :username, :global_name, :avatar, :roles, :member, IF(:checked, NOW(), NULL), NOW())
      ON DUPLICATE KEY UPDATE
           username         = VALUES(username),
           global_name      = VALUES(global_name),
           avatar_hash      = VALUES(avatar_hash),
           site_roles       = VALUES(site_roles),
+          is_member        = VALUES(is_member),
           roles_checked_at = VALUES(roles_checked_at),
           last_login_at    = NOW()'
 );
@@ -72,6 +75,7 @@ $stmt->execute([
     ':global_name' => $me['global_name'] ?? null,
     ':avatar'      => $me['avatar'] ?? null,
     ':roles'       => $siteRoles ?? '',
+    ':member'      => $isMember ? 1 : 0,
     ':checked'     => $siteRoles === null ? 0 : 1,
 ]);
 
@@ -86,14 +90,12 @@ $ins = $pdo->prepare(
 $ins->execute([$tokenHash, $me['id'], $days]);
 pd_set_session_cookie($sessionToken, $days);
 
-// 7) Clean up and bounce back into the SPA at where they started.
+// 7) Clean up and bounce back to where they started (main site or staging).
 pd_clear_cookie('pd_oauth_state');
-$return = $_COOKIE['pd_oauth_return'] ?? '/';
+$return = (string) ($_COOKIE['pd_oauth_return'] ?? '/');
 pd_clear_cookie('pd_oauth_return');
 
-// Only allow internal relative paths — never an off-site open redirect.
-if ($return !== '/' && !preg_match('#^/[^/]#', $return)) {
-    $return = '/';
-}
-header('Location: ' . $appUrl . $return);
+// Only our own addresses (PD_SITE_HOSTS) — never an off-site open redirect.
+$target = pd_safe_return_url($return, $appUrl) ?? ($appUrl . '/');
+header('Location: ' . $target);
 exit;
