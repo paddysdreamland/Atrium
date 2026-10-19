@@ -104,6 +104,14 @@ jobs:
           print(f"Changelog entries written: {len(changelog)}")
           EOF
 
+      - name: Block crawlers on staging
+        if: github.ref_name == 'staging'
+        run: |
+          # Only the staging copy gets this file. The live site keeps its own robots.txt (or none).
+          printf 'User-agent: *\nDisallow: /\n' > robots.txt
+          echo "Wrote staging robots.txt:"
+          cat robots.txt
+
       - name: Deploy via FTP
         if: github.ref_name == 'Release' || github.ref_name == 'staging'
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
