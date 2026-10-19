@@ -96,7 +96,8 @@ var socialLinks = {
     "twitch-button": "https://www.twitch.tv/paddysdreamland/about",
     "youtube-button": "https://www.youtube.com/@paddysdreamland",
     "github-button": "https://github.com/paddysdreamland/Website",
-    "glg-button": "/glassguessr.html"
+    "glg-button": "/glassguessr.html",
+    "staging-button": "https://staging.paddysdreamland.com"
 };
 
 Object.keys(socialLinks).forEach(function (id) {
