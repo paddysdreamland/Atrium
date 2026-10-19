@@ -3,16 +3,38 @@ on:
   push:
     branches: ['**']
 
+# One deploy per branch at a time. If several pushes pile up, only the newest waits;
+# the in-between ones are skipped instead of uploading outdated files.
+concurrency:
+  group: deploy-${{ github.ref_name }}
+  cancel-in-progress: false
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 15   # a stuck run gives up after 15 minutes instead of 6 hours
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Compute version + changelog
+      # Re-running an old run (or a slow run finishing late) would upload OLD files and an
+      # old changelog over newer ones. Only deploy if this commit is still the newest one.
+      - name: Check this is the newest commit
+        id: newest
         if: github.ref_name == 'Release' || github.ref_name == 'staging'
+        run: |
+          latest=$(git ls-remote origin "refs/heads/${{ github.ref_name }}" | cut -f1)
+          if [ "$latest" = "${{ github.sha }}" ]; then
+            echo "deploy=true" >> "$GITHUB_OUTPUT"
+            echo "This is the newest commit on ${{ github.ref_name }}, deploying."
+          else
+            echo "deploy=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Skipping deploy: ${{ github.ref_name }} has a newer commit ($latest), which gets its own deploy."
+          fi
+
+      - name: Compute version + changelog
+        if: steps.newest.outputs.deploy == 'true'
         env:
           BRANCH: ${{ github.ref_name }}
         run: |
@@ -105,7 +127,7 @@ jobs:
           EOF
 
       - name: Block crawlers on staging
-        if: github.ref_name == 'staging'
+        if: github.ref_name == 'staging' && steps.newest.outputs.deploy == 'true'
         run: |
           # Only the staging copy gets this file. The live site keeps its own robots.txt (or none).
           printf 'User-agent: *\nDisallow: /\n' > robots.txt
@@ -113,7 +135,7 @@ jobs:
           cat robots.txt
 
       - name: Deploy via FTP
-        if: github.ref_name == 'Release' || github.ref_name == 'staging'
+        if: steps.newest.outputs.deploy == 'true'
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_HOST }}
@@ -124,6 +146,7 @@ jobs:
       - name: Notify Discord
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           python3 << 'EOF'
           import os, json, urllib.request
@@ -138,17 +161,24 @@ jobs:
           parts = message.split("\n", 1)
           body = parts[1].strip() if len(parts) > 1 else parts[0].strip()
 
-          # Fetch GitHub display name
-          req = urllib.request.Request(
-            f"https://api.github.com/users/{actor}",
-            headers={
-              "User-Agent": "DiscordBot (https://github.com, 1.0)",
-              "Accept": "application/vnd.github+json"
-            }
-          )
-          with urllib.request.urlopen(req) as res:
-            user_data = json.loads(res.read())
-          display_name = user_data.get("name") or actor
+          # Fetch GitHub display name. Signed in with the workflow's own token, because
+          # anonymous requests share a small hourly limit with everyone on GitHub's servers.
+          # If it still fails, fall back to the username instead of skipping the message.
+          display_name = actor
+          try:
+            req = urllib.request.Request(
+              f"https://api.github.com/users/{actor}",
+              headers={
+                "User-Agent": "DiscordBot (https://github.com, 1.0)",
+                "Accept": "application/vnd.github+json",
+                "Authorization": f"Bearer {os.environ['GITHUB_TOKEN']}"
+              }
+            )
+            with urllib.request.urlopen(req, timeout=15) as res:
+              user_data = json.loads(res.read())
+            display_name = user_data.get("name") or actor
+          except Exception as e:
+            print(f"Could not fetch display name ({e}), using '{actor}' instead.")
 
           payload = {
             "username": display_name,
