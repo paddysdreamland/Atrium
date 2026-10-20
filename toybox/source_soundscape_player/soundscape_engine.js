@@ -702,13 +702,12 @@ class SoundscapeSystem {
             // Only waves with a loop point loop (from it to the end); others play once, as in Source.
             if (sound.loopStart !== null && sound.loopStart < sound.buffer.duration) {
                 source.loop = true;
-                // A loop point at the very start (every HL2 loop) just loops the whole buffer, which
-                // needs no loop points. Setting loopEnd to the buffer's own length instead takes the
-                // browser's loop-point path, which got stuck buzzing at the seam in Vivaldi.
-                if (sound.loopStart > 0) {
-                    source.loopStart = sound.loopStart;
-                    source.loopEnd = sound.buffer.duration;
-                }
+                source.loopStart = sound.loopStart;
+                // End the loop one frame short of the buffer's end. Chromium 152 (Vivaldi 8.2) gets
+                // stuck repeating a sliver at the seam when a loop runs to the very end of buffers of
+                // certain lengths (~7% of them); stopping a frame early never does. One frame per loop
+                // (~0.02ms) is inaudible.
+                source.loopEnd = (sound.buffer.length - 1) / sound.buffer.sampleRate;
             } else {
                 source.onended = () => { if (slot.voice === source) { slot.voice = null; slot.ended = true; this.emit("rows"); } };
             }
