@@ -116,6 +116,11 @@
     opacity: 0;
     font-size: 16px; /* 16px+ stops iOS zooming in when the list opens */
     cursor: pointer;
+    /* Invisible here, but the list the browser opens takes these, so it stays dark like the other selectors. */
+    background-color: rgb(16, 16, 16);
+    color: var(--white);
+    font-family: "Lato";
+    color-scheme: dark;
 }
 
 .mixer-title {
