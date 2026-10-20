@@ -702,8 +702,13 @@ class SoundscapeSystem {
             // Only waves with a loop point loop (from it to the end); others play once, as in Source.
             if (sound.loopStart !== null && sound.loopStart < sound.buffer.duration) {
                 source.loop = true;
-                source.loopStart = sound.loopStart;
-                source.loopEnd = sound.buffer.duration;
+                // A loop point at the very start (every HL2 loop) just loops the whole buffer, which
+                // needs no loop points. Setting loopEnd to the buffer's own length instead takes the
+                // browser's loop-point path, which got stuck buzzing at the seam in Vivaldi.
+                if (sound.loopStart > 0) {
+                    source.loopStart = sound.loopStart;
+                    source.loopEnd = sound.buffer.duration;
+                }
             } else {
                 source.onended = () => { if (slot.voice === source) { slot.voice = null; slot.ended = true; this.emit("rows"); } };
             }
