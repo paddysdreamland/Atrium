@@ -1,0 +1,678 @@
+/* Soundscape Player - toybox app styles, on top of the site's pd_main.css.
+   Follows the look of the Catalyst soundtrack mixer: dark panels, hairline edges, the accent colour. */
+
+.ssp {
+    --ssp-panel: rgb(16, 16, 16);
+    --ssp-well: rgb(8, 8, 8);
+    --ssp-edge: rgba(255, 255, 255, 0.1);
+    --ssp-dim: rgba(255, 255, 255, 0.55);
+    --ssp-warm: 255, 200, 64;
+
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    font-family: "Lato";
+}
+
+.ssp-back {
+    font-family: "Lato";
+    font-size: 13px;
+    font-weight: 700;
+    align-self: flex-start;
+}
+
+.ssp-back:hover {
+    text-decoration: underline;
+}
+
+/* Deck */
+.ssp-deck {
+    background:
+        radial-gradient(ellipse at 50% 0%, rgba(var(--custom-color), 0.14), transparent 70%),
+        url(../../images/patterns/grid1110_25.png),
+        var(--ssp-well);
+    border-radius: 8px;
+    border-top: 1px solid var(--ssp-edge);
+    border-bottom: 1px solid var(--ssp-edge);
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    overflow: hidden;
+}
+
+.ssp-deck-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+}
+
+.ssp-deck-info {
+    min-width: 0;
+}
+
+.ssp-status {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ssp-dim);
+}
+
+.ssp-status::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    margin-right: 6px;
+    border-radius: 50%;
+    background-color: currentColor;
+    display: inline-block;
+    vertical-align: 1px;
+}
+
+.ssp-status[data-state="playing"] {
+    color: rgb(var(--custom-color));
+}
+
+.ssp-status[data-state="busy"] {
+    color: rgb(var(--ssp-warm));
+}
+
+.ssp-status[data-state="busy"]::before {
+    animation: ssp-blink 0.8s ease-in-out infinite alternate;
+}
+
+/* The title is also the soundscape picker: the real <select> is stretched invisibly over it. */
+.ssp-title-picker {
+    max-width: calc(100% + 12px); /* make up for the negative margins */
+    margin: 0 -6px;
+    padding: 0 6px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: background-color 0.15s;
+}
+
+.ssp-title-picker:hover {
+    background-color: rgba(255, 255, 255, 0.07);
+}
+
+.ssp-title-picker:has(select:focus-visible) {
+    outline: 2px solid rgb(var(--custom-color));
+}
+
+.ssp-title-picker select {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+    font-size: 16px; /* 16px+ stops iOS zooming in when the list opens */
+    /* Invisible here, but the list the browser opens takes these. */
+    background-color: rgb(16, 16, 16);
+    color: var(--white);
+    font-family: "Lato";
+    color-scheme: dark;
+}
+
+.ssp-title {
+    min-width: 0;
+    font-size: 24px;
+    font-weight: 900;
+    line-height: 1.2;
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ssp-title.is-empty {
+    color: rgb(var(--custom-color));
+}
+
+.ssp-title-chevron {
+    width: 14px;
+    height: 9px;
+    flex-shrink: 0;
+    fill: none;
+    stroke: rgb(var(--custom-color));
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.ssp-subtitle {
+    font-size: 12px;
+    color: var(--ssp-dim);
+}
+
+.ssp-stats {
+    display: flex;
+    gap: 16px;
+    flex-shrink: 0;
+}
+
+.ssp-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+.ssp-stat span {
+    font-size: 20px;
+    font-weight: 900;
+    line-height: 1.1;
+    color: rgb(var(--custom-color));
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.ssp-stat small {
+    font-size: 11px;
+    color: var(--ssp-dim);
+}
+
+.ssp-deck-body {
+    display: grid;
+    grid-template-columns: minmax(0, 440px) minmax(0, 1fr);
+    gap: 14px;
+}
+
+.ssp-radar-wrap {
+    border-radius: 6px;
+    background-color: rgba(0, 0, 0, 0.55);
+    box-shadow: inset 0 0 0 1px var(--ssp-edge);
+}
+
+.ssp-radar {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    display: block;
+    touch-action: none;
+}
+
+.ssp-radar-scale {
+    position: absolute;
+    right: 8px;
+    bottom: 6px;
+    font-size: 10px;
+    color: var(--ssp-dim);
+    pointer-events: none;
+}
+
+.ssp-log {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.ssp-panel-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ssp-dim);
+}
+
+.ssp-log-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.ssp-log-list li {
+    padding: 5px 8px;
+    border-radius: 4px;
+    background-color: rgba(255, 255, 255, 0.04);
+    animation: ssp-arrive 0.6s ease-out;
+}
+
+.ssp-log-list li:first-child {
+    background-color: rgba(var(--ssp-warm), 0.1);
+}
+
+.ssp-log-list b {
+    display: block;
+    font-size: 13px;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ssp-log-list small,
+.ssp-log-list .ssp-log-empty {
+    font-size: 11px;
+    color: var(--ssp-dim);
+}
+
+.ssp-log-list .ssp-log-empty {
+    background: none;
+    padding: 0;
+    animation: none;
+}
+
+.ssp-loading {
+    position: absolute;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.ssp-loading[hidden] {
+    display: none;
+}
+
+.ssp-loading-bar {
+    width: 160px;
+    height: 24px;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    border-radius: 6px;
+    background-color: black;
+    overflow: hidden;
+}
+
+#ssp-loading-fill {
+    width: 0%;
+    height: 100%;
+    background-color: rgb(var(--custom-color));
+    background-image: url(../../images/patterns/hazard_dark.png);
+    background-size: 12px;
+    transition: width 0.2s;
+}
+
+#ssp-loading-text {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    font-family: "Lato";
+    font-weight: 900;
+}
+
+/* Transport */
+.ssp-transport {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.ssp-transport-group {
+    display: flex;
+    gap: 6px;
+}
+
+.ssp-button {
+    padding: 7px 18px;
+    border-radius: 4px;
+    border-top: 1px solid var(--ssp-edge);
+    border-bottom: 1px solid var(--ssp-edge);
+    background-color: var(--ssp-panel);
+    color: var(--white);
+    font-family: "Lato";
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color 0.15s, box-shadow 0.15s;
+}
+
+.ssp-button[hidden] {
+    display: none;
+}
+
+.ssp-button:hover {
+    background-color: rgb(32, 32, 32);
+    box-shadow: inset 0 0 0 1px rgba(var(--custom-color), 0.5);
+}
+
+.ssp-button:focus-visible {
+    outline: 2px solid rgb(var(--custom-color));
+}
+
+.ssp-button-primary {
+    background-color: rgba(var(--custom-color), 0.2);
+    color: rgb(var(--custom-color));
+    box-shadow: inset 0 0 0 1px rgba(var(--custom-color), 0.6);
+}
+
+#ssp-stop {
+    color: rgb(255, 128, 128);
+}
+
+.ssp-master {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.ssp-master-value {
+    min-width: 3em;
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--ssp-dim);
+    font-variant-numeric: tabular-nums;
+}
+
+.ssp-slider {
+    --fill: 80%;
+
+    width: 180px;
+    height: 20px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+    cursor: pointer;
+}
+
+.ssp-slider::-webkit-slider-runnable-track {
+    height: 4px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, rgba(var(--custom-color), 0.7) var(--fill), rgba(255, 255, 255, 0.12) var(--fill));
+}
+
+.ssp-slider::-moz-range-track {
+    height: 4px;
+    border-radius: 2px;
+    background-color: rgba(255, 255, 255, 0.12);
+}
+
+.ssp-slider::-moz-range-progress {
+    height: 4px;
+    border-radius: 2px;
+    background-color: rgba(var(--custom-color), 0.7);
+}
+
+.ssp-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 12px;
+    height: 18px;
+    margin-top: -7px;
+    border-radius: 3px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    background: linear-gradient(90deg, transparent 5px, rgb(var(--custom-color)) 5px, rgb(var(--custom-color)) 7px, transparent 7px), linear-gradient(90deg, rgb(64, 64, 64), rgb(28, 28, 28));
+}
+
+.ssp-slider::-moz-range-thumb {
+    width: 10px;
+    height: 16px;
+    border-radius: 3px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    background: linear-gradient(90deg, rgb(64, 64, 64), rgb(28, 28, 28));
+}
+
+.ssp-slider:focus-visible::-webkit-slider-thumb {
+    outline: 2px solid rgb(var(--custom-color));
+}
+
+/* Sound rows */
+.ssp-rows {
+    margin-top: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.ssp-rows-empty {
+    padding: 14px;
+    border-radius: 6px;
+    background-color: var(--ssp-panel);
+    font-size: 13px;
+    color: var(--ssp-dim);
+    text-align: center;
+}
+
+.ssp-row {
+    padding: 8px 10px;
+    border-radius: 6px;
+    border-top: 1px solid var(--ssp-edge);
+    border-bottom: 1px solid var(--ssp-edge);
+    background-color: var(--ssp-panel);
+    display: grid;
+    grid-template-columns: 62px minmax(0, 1fr) 140px 150px auto;
+    align-items: center;
+    gap: 10px;
+    transition: opacity 0.3s;
+}
+
+.ssp-row.is-fading-out {
+    opacity: 0.45;
+}
+
+.ssp-badge {
+    padding: 2px 0;
+    border-radius: 3px;
+    border: 1px solid currentColor;
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 0.06em;
+    text-align: center;
+    text-transform: uppercase;
+    color: rgb(var(--custom-color));
+}
+
+.ssp-row[data-kind="random"] .ssp-badge {
+    color: rgb(var(--ssp-warm));
+}
+
+.ssp-row-name {
+    font-size: 14px;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ssp-row-details {
+    font-size: 11px;
+    color: var(--ssp-dim);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ssp-row-meter {
+    height: 8px;
+    border-radius: 2px;
+    background-color: black;
+    overflow: hidden;
+}
+
+.ssp-row-meter-fill {
+    width: 0%;
+    height: 100%;
+    background-color: rgba(var(--custom-color), 0.8);
+    background-image: url(../../images/patterns/hazard_dark.png);
+    background-size: 6px;
+    box-shadow: 0 0 6px rgb(var(--custom-color));
+}
+
+.ssp-row[data-kind="random"] .ssp-row-meter-fill {
+    background-color: rgba(var(--ssp-warm), 0.85);
+    box-shadow: 0 0 6px rgb(var(--ssp-warm));
+}
+
+.ssp-row-state {
+    font-size: 11px;
+    color: var(--ssp-dim);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.ssp-row-buttons {
+    display: flex;
+    gap: 4px;
+}
+
+.ssp-toggle {
+    padding: 4px 10px;
+    border-radius: 4px;
+    border-top: 1px solid var(--ssp-edge);
+    border-bottom: 1px solid var(--ssp-edge);
+    background-color: rgb(28, 28, 28);
+    color: var(--ssp-dim);
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.15s, color 0.15s, box-shadow 0.15s;
+}
+
+.ssp-toggle input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.ssp-toggle:hover {
+    color: var(--white);
+}
+
+.ssp-toggle:has(input:focus-visible) {
+    outline: 2px solid rgb(var(--custom-color));
+}
+
+.ssp-toggle-mute:has(input:checked) {
+    background-color: rgba(255, 128, 128, 0.18);
+    color: rgb(255, 128, 128);
+    box-shadow: inset 0 0 0 1px rgba(255, 128, 128, 0.6);
+}
+
+.ssp-toggle-solo:has(input:checked) {
+    background-color: rgba(var(--ssp-warm), 0.18);
+    color: rgb(var(--ssp-warm));
+    box-shadow: inset 0 0 0 1px rgba(var(--ssp-warm), 0.6);
+}
+
+/* Options */
+.ssp-options {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+}
+
+.ssp-option {
+    padding: 8px 10px;
+    border-radius: 6px;
+    border-top: 1px solid var(--ssp-edge);
+    border-bottom: 1px solid var(--ssp-edge);
+    background-color: var(--ssp-panel);
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    cursor: pointer;
+}
+
+.ssp-option input {
+    margin: 2px 0 0;
+    accent-color: rgb(var(--custom-color));
+    flex-shrink: 0;
+}
+
+.ssp-option b {
+    display: block;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.ssp-option small {
+    display: block;
+    font-size: 12px;
+    color: var(--ssp-dim);
+}
+
+.ssp-option-select {
+    flex-direction: column;
+    gap: 6px;
+    cursor: default;
+}
+
+.ssp-option-select select {
+    width: 100%;
+    margin: 0;
+    font-size: 14px;
+    color-scheme: dark;
+}
+
+@keyframes ssp-blink {
+    from { opacity: 1; }
+    to { opacity: 0.3; }
+}
+
+@keyframes ssp-arrive {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ssp-status[data-state="busy"]::before,
+    .ssp-log-list li {
+        animation: none;
+    }
+}
+
+@media screen and (max-width: 1040px) {
+    #website-holder {
+        width: calc(100% - 10px);
+    }
+}
+
+@media screen and (max-width: 760px) {
+    .ssp-deck-body {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .ssp-row {
+        grid-template-columns: 62px minmax(0, 1fr) auto;
+    }
+
+    .ssp-row-meter {
+        grid-column: 1 / -1;
+        grid-row: 2;
+    }
+
+    .ssp-row-state {
+        grid-column: 2;
+        grid-row: 3;
+    }
+
+    .ssp-row-buttons {
+        grid-column: 3;
+        grid-row: 1;
+    }
+
+    .ssp-options {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .ssp-deck-top {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .ssp-stats {
+        justify-content: space-between;
+    }
+
+    .ssp-stat {
+        align-items: flex-start;
+    }
+
+    .ssp-slider {
+        width: 120px;
+    }
+}

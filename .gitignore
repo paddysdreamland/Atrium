@@ -1,3 +1,8 @@
 twitch_tokens.json
 /__pycache__
 /.claude
+
+# Soundscape Player: only the waves HL2's soundscapes actually use are committed. They were added
+# with "git add -f" and stay tracked; the rest of the extracted HL2 sound folder stays local.
+# To ship another sound, force-add it: git add -f toybox/source_soundscape_player/hl2/sound/<path>
+/toybox/source_soundscape_player/hl2/sound/

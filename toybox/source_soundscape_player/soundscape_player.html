@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>Soundscape Player</title>
+
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <meta name="description" content="Half-Life 2's soundscapes, played in the browser by a port of the Source engine's soundscape system.">
+        <meta name="author" content="Drawing Pad">
+        <meta name="theme-color" content="#FF4040">
+        <meta name="robots" content="index, follow">
+
+        <meta property="og:title" content="Soundscape Player">
+        <meta property="og:description" content="Half-Life 2's soundscapes, played in the browser by a port of the Source engine's soundscape system.">
+        <meta property="og:site_name" content="Paddy's Dreamland™">
+        <meta property="og:type" content="website">
+
+        <link rel="icon" type="image/x-icon" href="../../images/app_icon_16.png">
+
+        <link rel="stylesheet" href="../../styles/pd_main.css">
+        <link rel="stylesheet" href="soundscape_player.css">
+
+        <!-- The visitor's accent colour and corner radius from the main site's Customization settings. -->
+        <script>
+            try {
+                const savedColor = localStorage.getItem("customColor");
+                const savedBorderRadius = localStorage.getItem("customBorderRadius");
+                if (savedColor) document.documentElement.style.setProperty("--custom-color", savedColor);
+                if (savedBorderRadius) document.documentElement.style.setProperty("--custom-border-radius", savedBorderRadius);
+            } catch (error) { /* storage blocked: keep the defaults */ }
+        </script>
+
+        <script src="soundscape_engine.js" defer></script>
+        <script src="soundscape_player.js" defer></script>
+    </head>
+
+    <body>
+        <div id="website-holder">
+            <div id="main-holder">
+                <div class="main-scrollable">
+                    <div class="section-wrapper">
+                        <a class="ssp-back" href="/">&larr; Back to Paddy's Dreamland&trade;</a>
+
+                        <h3 class="main-header">Soundscape Player</h3>
+
+                        <div class="section-container">
+                            <h4 class="section-header">Information</h4>
+
+                            <p class="section-paragraph">
+                                Half-Life 2's soundscapes, played back in the browser by a port of the Source engine's own soundscape system. These are the ambient beds, loops and one-off sounds the game layers around you in every area. Here's how it works:
+                            </p>
+
+                            <ul class="section-list-unspaced">
+                                <li>Click the title in the display to pick a soundscape and hit Play. Picking another one while playing crossfades to it, the same way the game does when you walk into a new area.</li>
+                                <li>The radar shows the sounds around you: loops glow at their positions, random sounds ripple where they play, and ambient sounds surround you. Drag the numbered positions around to move their sounds.</li>
+                                <li>Every loop and random sound gets its own row below, with a live meter, Mute and Solo.</li>
+                            </ul>
+
+                            <p class="section-paragraph">
+                                The soundscape logic follows the Source SDK 2013 code closely. The engine's own mixing isn't part of the SDK, so distance falloff, panning and the room effects are close approximations rather than exact copies.
+                            </p>
+
+                            <h4 class="section-header">Credits</h4>
+
+                            <p class="section-paragraph">Half-Life 2, its soundscapes and its sounds are made by Valve. The soundscape system is ported from Valve's Source SDK 2013.</p>
+                        </div>
+
+                        <h3 class="main-header">Player</h3>
+
+                        <div class="section-container">
+                            <div class="ssp">
+                                <div class="ssp-deck">
+                                    <div class="ssp-deck-top">
+                                        <div class="ssp-deck-info">
+                                            <div id="ssp-status" class="ssp-status" data-state="busy">Loading soundscapes</div>
+                                            <!-- The soundscape picker: the native select sits invisibly over the title, so clicking the title opens it. -->
+                                            <div class="ssp-title-picker">
+                                                <span id="ssp-title" class="ssp-title is-empty">Choose a soundscape</span>
+                                                <svg class="ssp-title-chevron" viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4"/></svg>
+                                                <select id="ssp-select" aria-label="Soundscape" title="Choose a soundscape">
+                                                    <option value="">Choose a soundscape...</option>
+                                                </select>
+                                            </div>
+                                            <div id="ssp-subtitle" class="ssp-subtitle">Click the title to pick one and begin</div>
+                                        </div>
+
+                                        <div class="ssp-stats">
+                                            <div class="ssp-stat"><span id="ssp-room">Off</span><small>Room effect</small></div>
+                                            <div class="ssp-stat"><span id="ssp-loop-count">0</span><small>Loops</small></div>
+                                            <div class="ssp-stat"><span id="ssp-random-count">0</span><small>Random</small></div>
+                                        </div>
+                                    </div>
+
+                                    <div class="ssp-deck-body">
+                                        <div class="ssp-radar-wrap">
+                                            <canvas id="ssp-radar" class="ssp-radar" title="Drag the numbered positions to move their sounds (double-click to reset them)"></canvas>
+                                            <div id="ssp-radar-scale" class="ssp-radar-scale">128 units</div>
+                                        </div>
+
+                                        <div class="ssp-log">
+                                            <div class="ssp-panel-title">Recent Sounds</div>
+                                            <ol id="ssp-log" class="ssp-log-list">
+                                                <li class="ssp-log-empty">Random sounds show up here as they play.</li>
+                                            </ol>
+                                        </div>
+                                    </div>
+
+                                    <div id="ssp-loading" class="ssp-loading" hidden>
+                                        <div class="ssp-loading-bar">
+                                            <div id="ssp-loading-fill"></div>
+                                            <span id="ssp-loading-text">0%</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="ssp-transport">
+                                    <div class="ssp-transport-group">
+                                        <button id="ssp-play" class="ssp-button ssp-button-primary">Play</button>
+                                        <button id="ssp-stop" class="ssp-button" hidden>Stop</button>
+                                    </div>
+
+                                    <label class="ssp-master" title="Master volume (double-click to reset)">
+                                        <span>Master</span>
+                                        <input id="ssp-volume" class="ssp-slider" type="range" min="0" max="100" value="80">
+                                        <span id="ssp-volume-value" class="ssp-master-value">80%</span>
+                                    </label>
+                                </div>
+
+                                <div class="ssp-sounds">
+                                    <div class="setting-label">Sounds</div>
+                                    <div class="setting-label-small">Every loop and random sound the soundscape runs, sub-soundscapes included.</div>
+                                    <div id="ssp-rows" class="ssp-rows">
+                                        <div class="ssp-rows-empty">Nothing playing yet.</div>
+                                    </div>
+                                </div>
+
+                                <div class="ssp-options">
+                                    <label class="ssp-option">
+                                        <input id="ssp-dsp" type="checkbox" checked>
+                                        <span><b>Room Effect</b><small>The soundscape's DSP room type, like the reverb of a tunnel or cavern.</small></span>
+                                    </label>
+
+                                    <label class="ssp-option ssp-option-select">
+                                        <span><b>Fade Time</b><small>How long soundscapes take to crossfade (soundscape_fadetime).</small></span>
+                                        <select id="ssp-fade" class="dropdown-menu">
+                                            <option class="dropdown-option" value="0">Instant</option>
+                                            <option class="dropdown-option" value="1">1 second</option>
+                                            <option class="dropdown-option" value="3" selected>3 seconds (default)</option>
+                                            <option class="dropdown-option" value="6">6 seconds</option>
+                                            <option class="dropdown-option" value="10">10 seconds</option>
+                                        </select>
+                                    </label>
+
+                                    <label class="ssp-option ssp-option-select">
+                                        <span><b>Radar Range</b><small>How far the radar reaches. Zoom out to drag positions far enough away to fade.</small></span>
+                                        <select id="ssp-range" class="dropdown-menu">
+                                            <option class="dropdown-option" value="128" selected>128 units</option>
+                                            <option class="dropdown-option" value="512">512 units</option>
+                                            <option class="dropdown-option" value="2048">2048 units</option>
+                                        </select>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>
