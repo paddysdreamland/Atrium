@@ -271,7 +271,7 @@ function stereoGains(x, y) {
 // so each family gets a reverb with a similar size and colour instead.
 const roomTypes = [
     { name: "Off" },
-    { name: "Generic", decay: 0.9, predelay: 0.01, cutoff: 6000, wet: 0.16 },
+    { name: "Generic", decay: 0.9, predelay: 0.01, cutoff: 6000, wet: 0.2 },
     { name: "Metal Small", decay: 0.7, predelay: 0.005, cutoff: 9000, wet: 0.32 },
     { name: "Metal Medium", decay: 1.1, predelay: 0.01, cutoff: 8000, wet: 0.34 },
     { name: "Metal Large", decay: 1.7, predelay: 0.015, cutoff: 7000, wet: 0.36 },
@@ -301,11 +301,14 @@ const roomTypes = [
     { name: "Weirdo 3", decay: 4.0, predelay: 0.12, cutoff: 2000, wet: 0.5 }
 ];
 
+const maxImpulseSeconds = 3.5; // longer tails cost a lot of processing for little audible difference
+
 // A stereo impulse response: decaying noise that darkens as it fades, after a short pre-delay and a
-// few early reflections.
+// few early reflections. Scaled to unit energy, so a room's wet level is its level next to the dry
+// sound (the browser's own normalization leaves long noisy impulses ~30 dB too quiet).
 function createRoomImpulse(context, room) {
     const rate = context.sampleRate;
-    const length = Math.ceil((room.predelay + room.decay * 1.2) * rate);
+    const length = Math.ceil(Math.min(maxImpulseSeconds, room.predelay + room.decay * 1.2) * rate);
     const impulse = context.createBuffer(2, length, rate);
     for (let channel = 0; channel < 2; channel++) {
         const data = impulse.getChannelData(channel);
@@ -322,6 +325,16 @@ function createRoomImpulse(context, room) {
             const index = start + Math.floor(rate * (0.007 + Math.random() * 0.03) * reflection);
             if (index < length) data[index] += (Math.random() < 0.5 ? -1 : 1) * 0.5 / reflection;
         }
+        // Fade the last 50ms so a capped tail doesn't end in a click.
+        const fade = Math.min(length - start, Math.floor(rate * 0.05));
+        for (let i = 0; i < fade; i++) data[length - 1 - i] *= i / fade;
+    }
+    for (let channel = 0; channel < 2; channel++) {
+        const data = impulse.getChannelData(channel);
+        let energy = 0;
+        for (let i = 0; i < data.length; i++) energy += data[i] * data[i];
+        const scale = energy > 0 ? 1 / Math.sqrt(energy) : 0;
+        for (let i = 0; i < data.length; i++) data[i] *= scale;
     }
     return impulse;
 }
@@ -362,8 +375,9 @@ class SoundscapeSystem {
         this.buffers = new Map();       // path -> Promise<{ buffer, loopStart } | null>
         this.listeners = { rows: [], play: [], status: [] };
 
-        // Output graph: rows feed a dry bus and a DSP send; the send runs through two convolvers so a
-        // room type change can crossfade rather than click.
+        // Output graph: rows feed a dry bus and a DSP send. The send feeds a convolver only while a
+        // room effect is on; a room change briefly runs a second one to crossfade into, then drops
+        // the old one, so at most one reverb is processing once things settle.
         this.master = context.createGain();
         this.master.connect(context.destination);
         this.dryBus = context.createGain();
@@ -374,12 +388,14 @@ class SoundscapeSystem {
         this.dspSend = context.createGain();
         this.reverbs = [0, 1].map(() => {
             const convolver = context.createConvolver();
+            convolver.normalize = false; // the impulses come pre-scaled
             const wet = context.createGain();
             wet.gain.value = 0;
-            this.dspSend.connect(convolver).connect(wet).connect(this.master);
-            return { convolver, wet };
+            convolver.connect(wet).connect(this.master);
+            return { convolver, wet, room: null, connected: false };
         });
         this.activeReverb = 0;
+        this.reverbReleaseTimer = null;
         this.impulses = new Map();
 
         this.tickTimer = setInterval(() => this.update(), 50);
@@ -948,27 +964,47 @@ class SoundscapeSystem {
     }
 
     // Applies the room type and dsp_volume: crossfades to a convolver holding the new room's
-    // impulse, and muffles the dry signal for the water rooms.
+    // impulse (or out of the effect entirely), and muffles the dry signal for the water rooms.
     applyRoom() {
         const room = roomTypes[this.roomType] || roomTypes[0];
         const now = this.context.currentTime;
-        const active = this.reverbs[this.activeReverb];
-        const wetLevel = this.dspEnabled && room.wet ? room.wet * this.dspVolume : 0;
+        const wanted = this.dspEnabled && !!room.decay;
+        const wetLevel = wanted ? room.wet * this.dspVolume : 0;
+        let active = this.reverbs[this.activeReverb];
 
-        if (room.decay && active.room !== this.roomType) {
+        if (wanted && active.room !== this.roomType) {
+            // Load the new room into the idle convolver (cheap while it's disconnected), then swap.
             if (!this.impulses.has(this.roomType)) this.impulses.set(this.roomType, createRoomImpulse(this.context, room));
             this.activeReverb = 1 - this.activeReverb;
             const next = this.reverbs[this.activeReverb];
+            if (next.connected) this.setReverbConnected(next, false);
             next.convolver.buffer = this.impulses.get(this.roomType);
             next.room = this.roomType;
             active.wet.gain.setTargetAtTime(0, now, 0.3);
-            next.wet.gain.setTargetAtTime(wetLevel, now, 0.3);
-        } else {
-            this.reverbs[this.activeReverb].wet.gain.setTargetAtTime(room.decay ? wetLevel : 0, now, 0.3);
-            this.reverbs[1 - this.activeReverb].wet.gain.setTargetAtTime(0, now, 0.3);
+            active = next;
         }
+        if (wanted) this.setReverbConnected(active, true);
+        active.wet.gain.setTargetAtTime(wetLevel, now, 0.3);
+        this.reverbs.forEach(reverb => { if (reverb !== active || !wanted) reverb.wet.gain.setTargetAtTime(0, now, 0.3); });
+
+        // Once the fade is done, stop feeding whatever isn't in use, so it stops costing anything.
+        clearTimeout(this.reverbReleaseTimer);
+        this.reverbReleaseTimer = setTimeout(() => {
+            const inUse = this.dspEnabled && !!(roomTypes[this.roomType] || roomTypes[0]).decay;
+            this.reverbs.forEach((reverb, index) => {
+                if (!inUse || index !== this.activeReverb) this.setReverbConnected(reverb, false);
+            });
+        }, 1500);
+
         const muffle = this.dspEnabled && room.muffle ? room.muffle : this.context.sampleRate / 2;
         this.muffle.frequency.setTargetAtTime(muffle, now, 0.3);
+    }
+
+    setReverbConnected(reverb, connected) {
+        if (reverb.connected === connected) return;
+        if (connected) this.dspSend.connect(reverb.convolver);
+        else this.dspSend.disconnect(reverb.convolver);
+        reverb.connected = connected;
     }
 
     roomName() {

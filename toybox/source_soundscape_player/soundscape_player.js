@@ -1,7 +1,9 @@
 // Source Soundscape Player - interface. Drives the SoundscapeSystem in soundscape_engine.js and
 // draws what it's doing: the deck with its radar, a row per sound, and the recent sounds log.
 
-const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+// "playback" asks for bigger audio buffers: latency doesn't matter for ambience, and small buffers
+// are what underrun into a stuck, buzzing tone when the system gets busy.
+const audioContext = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: "playback" });
 const engine = new SoundscapeSystem(audioContext, { scriptsRoot: "hl2/scripts", soundRoot: "hl2/sound" });
 
 const soundscapeSelect = document.getElementById("ssp-select");
