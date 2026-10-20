@@ -1,0 +1,873 @@
+/* Soundtrack Mixer - experimental version of the Music Box (scripts/pd_music_mixer.js).
+   Rules are scoped under #ost-section where they need to beat the original id-based Music Box styles. */
+
+.mixer {
+    --mixer-panel: rgb(16, 16, 16);
+    --mixer-well: rgb(8, 8, 8);
+    --mixer-edge: rgba(255, 255, 255, 0.1);
+    --mixer-dim: rgba(255, 255, 255, 0.55);
+    --mixer-solo: 255, 200, 64;
+    --mixer-lock: 150, 170, 255;
+    --mixer-body-height: 160px;
+
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    font-family: "Lato";
+    color: var(--white);
+}
+
+.mixer-deck,
+.mixer-strip,
+.mixer-option {
+    border-top: 1px solid var(--mixer-edge);
+    border-bottom: 1px solid var(--mixer-edge);
+}
+
+/* Deck: the display at the top */
+.mixer-deck {
+    background:
+        radial-gradient(ellipse at 50% 0%, rgba(var(--custom-color), 0.14), transparent 70%),
+        url(../images/patterns/grid1110_25.png),
+        var(--mixer-well);
+    border-radius: 8px;
+    padding: 12px 14px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    position: relative;
+    overflow: hidden;
+}
+
+.mixer-deck-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+}
+
+.mixer-deck-info {
+    min-width: 0;
+}
+
+.mixer-status {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--mixer-dim);
+}
+
+.mixer-status::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    margin-right: 6px;
+    border-radius: 50%;
+    background-color: currentColor;
+    display: inline-block;
+    vertical-align: 1px;
+}
+
+.mixer-status[data-state="playing"] {
+    color: rgb(var(--custom-color));
+}
+
+.mixer-status[data-state="playing"]::before {
+    box-shadow: 0 0 6px rgb(var(--custom-color));
+}
+
+.mixer-status[data-state="busy"] {
+    color: rgb(var(--mixer-solo));
+}
+
+.mixer-status[data-state="busy"]::before {
+    animation: mixer-blink 0.8s ease-in-out infinite alternate;
+}
+
+/* The title is also the main soundtrack picker: the real <select> is stretched invisibly over it,
+   so clicking anywhere on the title opens the browser's own list. */
+.mixer-title-picker {
+    max-width: calc(100% + 12px); /* make up for the negative margins, or the title is cut 12px short */
+    margin: 0 -6px;
+    padding: 0 6px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+    transition: background-color 0.15s;
+}
+
+.mixer-title-picker:hover {
+    background-color: rgba(255, 255, 255, 0.07);
+}
+
+.mixer-title-picker:has(select:focus-visible) {
+    outline: 2px solid rgb(var(--custom-color));
+}
+
+#ost-section .mixer-title-picker select {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    font-size: 16px; /* 16px+ stops iOS zooming in when the list opens */
+    cursor: pointer;
+    /* Invisible here, but the list the browser opens takes these, so it stays dark like the other selectors. */
+    background-color: rgb(16, 16, 16);
+    color: var(--white);
+    font-family: "Lato";
+    color-scheme: dark;
+}
+
+.mixer-title {
+    min-width: 0;
+    font-size: 24px;
+    font-weight: 900;
+    line-height: 1.2;
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.mixer-title.is-empty {
+    color: rgb(var(--custom-color));
+}
+
+.mixer-title-chevron {
+    width: 14px;
+    height: 9px;
+    flex-shrink: 0;
+    fill: none;
+    stroke: rgb(var(--custom-color));
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.mixer-next {
+    margin-top: 4px;
+    font-size: 12px;
+    font-weight: 700;
+    color: rgb(var(--mixer-solo));
+}
+
+.mixer-next[hidden] {
+    display: none;
+}
+
+.mixer-subtitle {
+    font-size: 12px;
+    color: var(--mixer-dim);
+}
+
+.mixer-deck-tempo {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+#ost-section #current-bpm {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--mixer-dim);
+    white-space: nowrap;
+}
+
+.mixer-bpm-value {
+    font-size: 34px;
+    font-weight: 900;
+    line-height: 1;
+    color: rgb(var(--custom-color));
+    text-shadow: 0 0 12px rgba(var(--custom-color), 0.5);
+    font-variant-numeric: tabular-nums;
+}
+
+.mixer-beat {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.mixer-beat-leds {
+    display: flex;
+    gap: 4px;
+}
+
+.mixer-led {
+    --pulse: 1;
+
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    background-color: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.mixer-led:first-child {
+    border-color: rgba(var(--custom-color), 0.35);
+}
+
+.mixer-led.is-on {
+    background-color: rgba(var(--custom-color), calc(0.35 + var(--pulse) * 0.65));
+    box-shadow: 0 0 calc(var(--pulse) * 10px) rgb(var(--custom-color));
+}
+
+.mixer-position {
+    min-width: 3.5em;
+    font-size: 14px;
+    font-weight: 700;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.mixer-spectrum {
+    width: 100%;
+    height: 96px;
+    display: block;
+}
+
+.mixer-loop {
+    height: 3px;
+    border-radius: 2px;
+    background-color: rgba(255, 255, 255, 0.08);
+    overflow: hidden;
+}
+
+#mixer-loop-bar {
+    width: 0%;
+    height: 100%;
+    background-color: rgb(var(--custom-color));
+    box-shadow: 0 0 6px rgb(var(--custom-color));
+}
+
+/* Channel strips */
+.mixer-strips {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.mixer-strip {
+    background-color: var(--mixer-panel);
+    border-radius: 8px;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    position: relative;
+    transition: opacity 0.3s;
+}
+
+.mixer-strip::before {
+    content: "";
+    height: 2px;
+    border-radius: 2px;
+    position: absolute;
+    left: 8px;
+    right: 8px;
+    top: -1px;
+    background-color: rgb(var(--custom-color));
+    box-shadow: 0 0 8px rgb(var(--custom-color));
+    transition: opacity 0.3s;
+}
+
+.mixer-strip.is-silent::before {
+    opacity: 0.15;
+}
+
+.mixer-strip.is-soloed-out {
+    opacity: 0.45;
+}
+
+.mixer-strip-master {
+    background:
+        linear-gradient(180deg, rgba(var(--custom-color), 0.08), transparent 60%),
+        var(--mixer-panel);
+}
+
+.mixer-strip-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 4px;
+}
+
+.mixer-strip.is-menu-open {
+    z-index: 5; /* so the role menu sits above the neighbouring strips */
+}
+
+.mixer-strip-head {
+    position: relative;
+}
+
+.mixer-strip-name {
+    font-size: 14px;
+    font-weight: 900;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* The channel name doubles as the button that opens its role menu. */
+.mixer-strip-role {
+    min-width: 0;
+    margin: -2px -4px;
+    padding: 2px 4px;
+    border: none;
+    border-radius: 4px;
+    background: none;
+    color: inherit;
+    font-family: "Lato";
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+}
+
+.mixer-strip-role:hover,
+.mixer-strip-role[aria-expanded="true"] {
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+.mixer-strip-role:focus-visible {
+    outline: 2px solid rgb(var(--custom-color));
+}
+
+.mixer-strip-chevron {
+    width: 10px;
+    height: 6px;
+    flex-shrink: 0;
+    fill: none;
+    stroke: rgb(var(--custom-color));
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: transform 0.15s;
+}
+
+.mixer-strip-role[aria-expanded="true"] .mixer-strip-chevron {
+    transform: rotate(180deg);
+}
+
+.mixer-role-menu {
+    position: absolute;
+    left: -4px;
+    right: -4px;
+    top: calc(100% + 6px);
+    z-index: 10; /* above the strip's own positioned meters and toggles */
+    padding: 4px;
+    border-radius: 6px;
+    border: 1px solid var(--mixer-edge);
+    background-color: rgb(22, 22, 22);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.mixer-role-menu[hidden] {
+    display: none;
+}
+
+.mixer-role-option {
+    padding: 6px 8px 6px 22px;
+    border: none;
+    border-radius: 4px;
+    background: none;
+    color: var(--white);
+    font-family: "Lato";
+    text-align: left;
+    position: relative;
+    cursor: pointer;
+}
+
+.mixer-role-option:hover,
+.mixer-role-option:focus-visible {
+    background-color: rgba(var(--custom-color), 0.12);
+    outline: none;
+}
+
+.mixer-role-option[aria-checked="true"]::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    position: absolute;
+    left: 8px;
+    top: 11px;
+    background-color: rgb(var(--custom-color));
+    box-shadow: 0 0 6px rgb(var(--custom-color));
+}
+
+.mixer-role-option b {
+    display: block;
+    font-size: 13px;
+    font-weight: 900;
+}
+
+.mixer-role-option small {
+    display: block;
+    font-size: 11px;
+    line-height: 1.3;
+    color: var(--mixer-dim);
+}
+
+.mixer-strip-badge {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 3px;
+    white-space: nowrap;
+    border: 1px solid currentColor;
+    color: var(--mixer-dim);
+}
+
+.mixer-strip-badge:empty {
+    display: none;
+}
+
+.mixer-strip-badge[data-match="exact"] {
+    color: rgb(128, 255, 128);
+}
+
+.mixer-strip-badge[data-match="octave"] {
+    color: rgb(255, 255, 128);
+}
+
+.mixer-strip-badge[data-match="off"] {
+    color: rgb(255, 128, 128);
+}
+
+.mixer-strip-layers {
+    font-size: 11px;
+    color: var(--mixer-dim);
+    margin-top: -4px;
+}
+
+#ost-section .mixer-strip-select {
+    font-size: 13px;
+    margin-top: 0;
+    height: 30px;
+}
+
+.mixer-strip-body {
+    height: var(--mixer-body-height);
+    padding: 6px 0;
+    border-radius: 6px;
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+    /* dB scale ticks behind the meters */
+    background:
+        repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.05) 0 1px, transparent 1px 12.5%),
+        var(--mixer-well);
+    background-origin: content-box;
+}
+
+.mixer-meter {
+    width: 10px;
+    height: 100%;
+    border-radius: 2px;
+    background-color: rgba(255, 255, 255, 0.05);
+    position: relative;
+    overflow: hidden;
+}
+
+.mixer-meter-fill {
+    position: absolute;
+    inset: 0;
+    clip-path: inset(100% 0 0 0);
+    background-image:
+        url(../images/patterns/hazard_dark.png),
+        linear-gradient(0deg,
+            rgb(var(--custom-color)) 0%,
+            rgb(var(--custom-color)) 70%,
+            rgb(255, 220, 64) 85%,
+            rgb(255, 80, 80) 100%);
+    background-size: 6px, 100% 100%;
+}
+
+.mixer-meter-peak {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 2px;
+    margin-bottom: -2px;
+    background-color: var(--white);
+    opacity: 0;
+}
+
+/* Vertical faders: a horizontal range input rotated into a fixed-size slot, which styles the same
+   in every browser (unlike writing-mode ranges). */
+.mixer-fader-slot {
+    width: 26px;
+    height: 100%;
+    margin-left: 6px;
+    position: relative;
+}
+
+#ost-section .mixer-fader {
+    width: calc(var(--mixer-body-height) - 12px);
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%) rotate(-90deg);
+}
+
+#ost-section .mixer-fader,
+#ost-section .mixer-filter-knob {
+    --fill: 100%;
+
+    -webkit-appearance: none;
+    appearance: none;
+    height: 26px;
+    margin: 0;
+    background: transparent;
+    cursor: pointer;
+}
+
+.mixer-fader::-webkit-slider-runnable-track,
+.mixer-filter-knob::-webkit-slider-runnable-track {
+    height: 4px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, rgba(var(--custom-color), 0.7) var(--fill), rgba(255, 255, 255, 0.12) var(--fill));
+}
+
+.mixer-fader::-moz-range-track,
+.mixer-filter-knob::-moz-range-track {
+    height: 4px;
+    border-radius: 2px;
+    background-color: rgba(255, 255, 255, 0.12);
+}
+
+.mixer-fader::-moz-range-progress {
+    height: 4px;
+    border-radius: 2px;
+    background-color: rgba(var(--custom-color), 0.7);
+}
+
+.mixer-fader::-webkit-slider-thumb,
+.mixer-filter-knob::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 24px;
+    margin-top: -10px;
+    border-radius: 3px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    background:
+        linear-gradient(90deg, transparent 6px, rgb(var(--custom-color)) 6px, rgb(var(--custom-color)) 8px, transparent 8px),
+        linear-gradient(90deg, rgb(64, 64, 64), rgb(28, 28, 28));
+    box-shadow: 0 2px 4px black;
+}
+
+.mixer-fader::-moz-range-thumb,
+.mixer-filter-knob::-moz-range-thumb {
+    width: 12px;
+    height: 22px;
+    border-radius: 3px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    background:
+        linear-gradient(90deg, transparent 5px, rgb(var(--custom-color)) 5px, rgb(var(--custom-color)) 7px, transparent 7px),
+        linear-gradient(90deg, rgb(64, 64, 64), rgb(28, 28, 28));
+    box-shadow: 0 2px 4px black;
+}
+
+.mixer-fader:focus-visible::-webkit-slider-thumb,
+.mixer-filter-knob:focus-visible::-webkit-slider-thumb {
+    outline: 2px solid rgb(var(--custom-color));
+}
+
+/* The filter is bipolar, so it shows a centre mark instead of a fill. */
+.mixer-filter-knob::-webkit-slider-runnable-track {
+    background:
+        linear-gradient(90deg, transparent calc(50% - 1px), rgba(255, 255, 255, 0.5) calc(50% - 1px), rgba(255, 255, 255, 0.5) calc(50% + 1px), transparent calc(50% + 1px)),
+        rgba(255, 255, 255, 0.12);
+}
+
+/* Shorter than the faders so knob and scale fit the 30px a channel's track selector takes. */
+#ost-section .mixer-filter-knob {
+    width: 100%;
+    height: 18px;
+    display: block;
+}
+
+.mixer-filter-knob::-webkit-slider-thumb {
+    height: 16px;
+    margin-top: -6px;
+}
+
+.mixer-filter-knob::-moz-range-thumb {
+    height: 14px;
+}
+
+.mixer-filter {
+    height: 30px;
+}
+
+.mixer-filter-scale {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    line-height: 12px;
+    color: var(--mixer-dim);
+}
+
+#mixer-filter-value {
+    color: var(--white);
+    font-weight: 700;
+}
+
+.mixer-fader-value {
+    font-size: 11px;
+    text-align: center;
+    color: var(--mixer-dim);
+    font-variant-numeric: tabular-nums;
+}
+
+/* Fade automation bars, the original player's volume bars, slimmed down */
+.mixer-fade {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 2px;
+    border-radius: 3px;
+    background-color: black;
+}
+
+#ost-section .mixer-fade > div {
+    width: 0%;
+    height: 3px;
+    background-size: 4px;
+    filter: drop-shadow(0 0 3px rgb(var(--custom-color)));
+    transition: none;
+}
+
+.mixer-strip-buttons {
+    display: flex;
+    gap: 4px;
+}
+
+.mixer-toggle {
+    flex: 1;
+    padding: 5px 0;
+    border-radius: 4px;
+    border-top: 1px solid var(--mixer-edge);
+    border-bottom: 1px solid var(--mixer-edge);
+    background-color: rgb(28, 28, 28);
+    color: var(--mixer-dim);
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 0.04em;
+    text-align: center;
+    text-transform: uppercase;
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+    transition: background-color 0.15s, color 0.15s, box-shadow 0.15s;
+}
+
+.mixer-toggle input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.mixer-toggle:hover {
+    color: var(--white);
+}
+
+.mixer-toggle:has(input:focus-visible) {
+    outline: 2px solid rgb(var(--custom-color));
+}
+
+.mixer-toggle-on:has(input:checked) {
+    background-color: rgba(var(--custom-color), 0.18);
+    color: rgb(var(--custom-color));
+    box-shadow: inset 0 0 0 1px rgba(var(--custom-color), 0.6), 0 0 10px rgba(var(--custom-color), 0.2);
+}
+
+.mixer-toggle-solo:has(input:checked) {
+    background-color: rgba(var(--mixer-solo), 0.18);
+    color: rgb(var(--mixer-solo));
+    box-shadow: inset 0 0 0 1px rgba(var(--mixer-solo), 0.6), 0 0 10px rgba(var(--mixer-solo), 0.2);
+}
+
+.mixer-toggle-lock:has(input:checked) {
+    background-color: rgba(var(--mixer-lock), 0.18);
+    color: rgb(var(--mixer-lock));
+    box-shadow: inset 0 0 0 1px rgba(var(--mixer-lock), 0.6), 0 0 10px rgba(var(--mixer-lock), 0.2);
+}
+
+/* A quantized toggle waiting for the next bar */
+.mixer-strip.is-queued .mixer-toggle-on {
+    animation: mixer-blink 0.25s steps(2, jump-none) infinite alternate;
+}
+
+/* Transport */
+.mixer-transport {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.mixer-transport-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+#ost-section .mixer-button {
+    margin: 0;
+    padding: 7px 16px;
+    border-radius: 4px;
+    border: none;
+    border-top: 1px solid var(--mixer-edge);
+    border-bottom: 1px solid var(--mixer-edge);
+    background-color: var(--mixer-panel);
+    color: var(--white);
+    font-family: "Lato";
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color 0.15s, box-shadow 0.15s;
+}
+
+#ost-section .mixer-button:hover {
+    background-color: rgb(32, 32, 32);
+    box-shadow: inset 0 0 0 1px rgba(var(--custom-color), 0.5);
+}
+
+#ost-section .mixer-button:focus-visible {
+    outline: 2px solid rgb(var(--custom-color));
+}
+
+#ost-section .mixer-button-primary {
+    background-color: rgba(var(--custom-color), 0.2);
+    color: rgb(var(--custom-color));
+    box-shadow: inset 0 0 0 1px rgba(var(--custom-color), 0.6);
+}
+
+#ost-section #music-reset {
+    color: rgb(255, 128, 128);
+}
+
+#ost-section #music-transition.is-pending {
+    color: rgb(var(--mixer-solo));
+    animation: mixer-pending 1.2s ease-in-out infinite;
+}
+
+/* Options */
+.mixer-options {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+}
+
+.mixer-option {
+    padding: 8px 10px;
+    border-radius: 6px;
+    background-color: var(--mixer-panel);
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    cursor: pointer;
+}
+
+.mixer-option input {
+    margin: 2px 0 0;
+    accent-color: rgb(var(--custom-color));
+    flex-shrink: 0;
+}
+
+.mixer-option b {
+    display: block;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.mixer-option small {
+    display: block;
+    font-size: 12px;
+    color: var(--mixer-dim);
+}
+
+.mixer-option-select {
+    grid-column: 1 / -1;
+    justify-content: space-between;
+    align-items: center;
+    cursor: default;
+}
+
+#ost-section .mixer-option-select select {
+    width: auto;
+    margin: 0;
+    font-size: 14px;
+}
+
+@keyframes mixer-blink {
+    from { opacity: 1; }
+    to { opacity: 0.3; }
+}
+
+@keyframes mixer-pending {
+    0%, 100% { box-shadow: inset 0 0 0 1px rgba(var(--mixer-solo), 0.3); }
+    50% { box-shadow: inset 0 0 0 1px rgba(var(--mixer-solo), 0.9), 0 0 10px rgba(var(--mixer-solo), 0.35); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .mixer-status[data-state="busy"]::before,
+    .mixer-strip.is-queued .mixer-toggle-on,
+    #ost-section #music-transition.is-pending {
+        animation: none;
+    }
+}
+
+@media screen and (max-width: 760px) {
+    .mixer-strips {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .mixer-strip-master {
+        grid-column: 1 / -1;
+    }
+
+    /* Narrow strips: keep the channel name readable by dropping the badge's unit. */
+    .mixer-badge-unit {
+        display: none;
+    }
+
+    .mixer-strip-name {
+        letter-spacing: 0.02em;
+    }
+
+    .mixer-options {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .mixer-deck-top {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .mixer-deck-tempo {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+    }
+}

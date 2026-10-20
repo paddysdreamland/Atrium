@@ -5,10 +5,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         // ChatGPT
         `You can be discoverable and miserable, or obscure and authentic.`,
-
-        // Dzharakhov
-        `Я катаю снежный шар: неудача за неудачей.`,
-
+        
         // Low Roar
         `The dream controls my attitude, tells me what to say and to do.`,
         `You're a part of me, and I'm a part of you.`,
