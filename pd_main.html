@@ -717,7 +717,7 @@
                                 </p>
 
                                 <ul class="section-list-unspaced">
-                                    <li>Pick a main soundtrack to fill in every channel, then swap individual channels to other tracks for more variety, or hit Shuffle Layers to have it done for you.</li>
+                                    <li>Click the title in the display to pick a main soundtrack, which fills in every channel, then swap individual channels to other tracks for more variety, or hit Shuffle Layers to have it done for you.</li>
                                     <li>Hit Start and enjoy listening. Each channel has its own fader and On, Solo and Lock buttons, Lock keeping Dynamic Layer Handling away from it, and the meters show what every layer is actually playing.</li>
                                     <li>Use the arrow next to a channel's name to pick which layers it plays, so two channels can both be percussion from different tracks, for example.</li>
                                     <li>No refreshing needed, change the soundtrack or any channel while playing and hit Transition to crossfade to it on the beat.</li>
@@ -733,25 +733,20 @@
 
                             <div class="section-container">
                                 <div class="mixer">
-                                    <div class="mixer-source">
-                                        <div class="mixer-source-select">
-                                            <div class="setting-label">Main Soundtrack</div>
-                                            <div class="setting-label-small">Fills every channel below and sets the tempo of the mix. Begin here.</div>
-
-                                            <select class="dropdown-menu" id="track-selector">
-                                                <option class="dropdown-option" value="">Select soundtrack...</option>
-                                            </select>
-                                        </div>
-
-                                        <button id="mixer-shuffle" class="music-button mixer-button" title="Swap every channel to a random track with a matching tempo (R)">Shuffle Layers</button>
-                                    </div>
-
                                     <div class="mixer-deck">
                                         <div class="mixer-deck-top">
                                             <div class="mixer-deck-info">
                                                 <div id="mixer-status" class="mixer-status">Stopped</div>
-                                                <div id="mixer-title" class="mixer-title">No soundtrack selected</div>
-                                                <div id="mixer-subtitle" class="mixer-subtitle">Pick a main soundtrack to begin</div>
+                                                <!-- The main soundtrack picker: the native select sits invisibly over the title, so clicking the title opens it. -->
+                                                <div class="mixer-title-picker">
+                                                    <span id="mixer-title" class="mixer-title">Choose a soundtrack</span>
+                                                    <svg class="mixer-title-chevron" viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4"/></svg>
+                                                    <select id="track-selector" aria-label="Main soundtrack" title="Choose the main soundtrack, which fills every channel and sets the tempo">
+                                                        <option class="dropdown-option" value="">Choose a soundtrack...</option>
+                                                    </select>
+                                                </div>
+                                                <div id="mixer-subtitle" class="mixer-subtitle">Click the title to pick one and begin</div>
+                                                <div id="mixer-next" class="mixer-next" hidden></div>
                                             </div>
 
                                             <div class="mixer-deck-tempo">
@@ -941,6 +936,7 @@
                                             <button id="music-start" class="music-button mixer-button mixer-button-primary" title="Start (Space)">Start</button>
                                             <button id="music-transition" class="music-button mixer-button" style="display: none;" title="Crossfade to the current selection (T)">Transition</button>
                                             <button id="music-reset" class="music-button mixer-button" style="display: none;" title="Stop (Space)">Stop</button>
+                                        <button id="mixer-shuffle" class="music-button mixer-button" title="Swap every channel to a random track with a matching tempo (R)">Shuffle Layers</button>
                                         </div>
 
                                         <div class="mixer-transport-group">

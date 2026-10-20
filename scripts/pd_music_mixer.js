@@ -473,15 +473,23 @@ function currentSelection() {
     return [trackSelector.value, ...layerSelectors.map(selector => selector.value), ...channelRoleIndices.map(String)];
 }
 
-// The deck's title area: what's playing (or what Start would play), and where it's from.
+// The deck's title area, which doubles as the main soundtrack picker: what's playing (or what Start
+// would play) and where it's from, plus an "Up next" line while a newly picked soundtrack waits for
+// Transition, so the title never claims a track that isn't playing yet.
 function updateNowPlaying() {
     const selection = (alreadyPlaying && playingSelection) ? playingSelection : currentSelection();
     const title = document.getElementById("mixer-title");
     const subtitle = document.getElementById("mixer-subtitle");
+    const next = document.getElementById("mixer-next");
 
+    const upNext = alreadyPlaying && playingSelection && trackSelector.value && trackSelector.value !== playingSelection[0];
+    next.hidden = !upNext;
+    if (upNext) next.textContent = `Up next: ${prettyTrackName(trackSelector.value)} · press Transition`;
+
+    title.classList.toggle("is-empty", !selection[0]);
     if (!selection[0]) {
-        title.textContent = "No soundtrack selected";
-        subtitle.textContent = "Pick a main soundtrack to begin";
+        title.textContent = "Choose a soundtrack";
+        subtitle.textContent = "Click the title to pick one and begin";
         return;
     }
 

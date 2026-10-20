@@ -24,18 +24,6 @@
     border-bottom: 1px solid var(--mixer-edge);
 }
 
-/* Main soundtrack row */
-.mixer-source {
-    display: flex;
-    align-items: flex-end;
-    gap: 10px;
-}
-
-.mixer-source-select {
-    flex: 1;
-    min-width: 0;
-}
-
 /* Deck: the display at the top */
 .mixer-deck {
     background:
@@ -97,7 +85,41 @@
     animation: mixer-blink 0.8s ease-in-out infinite alternate;
 }
 
+/* The title is also the main soundtrack picker: the real <select> is stretched invisibly over it,
+   so clicking anywhere on the title opens the browser's own list. */
+.mixer-title-picker {
+    max-width: calc(100% + 12px); /* make up for the negative margins, or the title is cut 12px short */
+    margin: 0 -6px;
+    padding: 0 6px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+    transition: background-color 0.15s;
+}
+
+.mixer-title-picker:hover {
+    background-color: rgba(255, 255, 255, 0.07);
+}
+
+.mixer-title-picker:has(select:focus-visible) {
+    outline: 2px solid rgb(var(--custom-color));
+}
+
+#ost-section .mixer-title-picker select {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    font-size: 16px; /* 16px+ stops iOS zooming in when the list opens */
+    cursor: pointer;
+}
+
 .mixer-title {
+    min-width: 0;
     font-size: 24px;
     font-weight: 900;
     line-height: 1.2;
@@ -105,6 +127,32 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+.mixer-title.is-empty {
+    color: rgb(var(--custom-color));
+}
+
+.mixer-title-chevron {
+    width: 14px;
+    height: 9px;
+    flex-shrink: 0;
+    fill: none;
+    stroke: rgb(var(--custom-color));
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.mixer-next {
+    margin-top: 4px;
+    font-size: 12px;
+    font-weight: 700;
+    color: rgb(var(--mixer-solo));
+}
+
+.mixer-next[hidden] {
+    display: none;
 }
 
 .mixer-subtitle {
@@ -717,12 +765,6 @@
     animation: mixer-pending 1.2s ease-in-out infinite;
 }
 
-#ost-section .mixer-source .mixer-button {
-    height: 30px;
-    padding: 0 14px;
-    white-space: nowrap;
-}
-
 /* Options */
 .mixer-options {
     display: grid;
@@ -842,10 +884,5 @@
         flex-direction: row;
         justify-content: space-between;
         align-items: center;
-    }
-
-    .mixer-source {
-        flex-direction: column;
-        align-items: stretch;
     }
 }
