@@ -62,18 +62,6 @@ window.onload = function() {
 };
 
 // Event listeners for buttons
-document.getElementById('website-width-1024').addEventListener('click', () => {
-    document.documentElement.style.setProperty('--custom-width', '1024px');
-});
-
-document.getElementById('website-width-1280').addEventListener('click', () => {
-    document.documentElement.style.setProperty('--custom-width', '1280px');
-});
-
-document.getElementById('website-width-1536').addEventListener('click', () => {
-    document.documentElement.style.setProperty('--custom-width', '1536px');
-});
-
 document.getElementById('website-color-apply').addEventListener('click', () => {
     applyColor();
     loadSettings(); // Ensure values reflect in the page after applying
