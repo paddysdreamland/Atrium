@@ -125,6 +125,25 @@ masterGain.connect(spectrumAnalyser);
 const channelFaderGains = [1, 1, 1, 1];
 const channelSoloed = [false, false, false, false];
 const channelQueuedUntil = [0, 0, 0, 0]; // audioContext time a quantized toggle actually starts
+const channelLocked = [false, false, false, false]; // locked channels are left alone by Dynamic Layer Handling
+
+// The layer pairs every soundtrack is split into. Each channel plays one of them from its own
+// track, by default the pair matching its position, but any channel can be set to any pair (two
+// percussion channels from different tracks, say). The channel's position still decides its bus,
+// toggles and download channels; its role only decides which layer files it loads.
+const channelRoles = [
+    { name: "Percussion", layers: "Layers 1 & 2", description: "Typically drums and snares" },
+    { name: "Drones", layers: "Layers 3 & 4", description: "Commonly background drones and humming tones" },
+    { name: "Variety", layers: "Layers 5 & 6", description: "Varied sound elements" },
+    { name: "Ambience", layers: "Layers 7 & 8", description: "Generally ambient sounds" }
+];
+const channelRoleIndices = [0, 1, 2, 3];
+
+// The layer file keys a channel loads from a track, e.g. ["layer1", "layer2"] for percussion.
+function channelLayerKeys(groupIndex) {
+    const role = channelRoleIndices[groupIndex];
+    return [`layer${(role * 2) + 1}`, `layer${(role * 2) + 2}`];
+}
 var masterFaderGain = 1;
 var filterPosition = 0;                  // -100 (full low-pass) .. 0 (off) .. 100 (full high-pass)
 
@@ -195,6 +214,7 @@ mixerStrips.forEach(strip => {
     const fader = strip.querySelector(".mixer-fader");
     const faderValue = strip.querySelector(".mixer-fader-value");
     const solo = strip.querySelector(".mixer-solo");
+    const lock = strip.querySelector(".mixer-lock");
 
     const updateFader = () => {
         channelFaderGains[groupIndex] = faderToGain(fader.value);
@@ -210,9 +230,82 @@ mixerStrips.forEach(strip => {
         applyChannelGains();
     });
 
+    lock.addEventListener("change", () => channelLocked[groupIndex] = lock.checked);
+
     // Browsers can restore form values on reload, so sync the graph to whatever the inputs show.
     channelSoloed[groupIndex] = solo.checked;
+    channelLocked[groupIndex] = lock.checked;
     updateFader();
+});
+
+/* Channel Roles */
+
+// Shows a channel's role on its strip: name, layer numbers, selector tooltip and the menu's tick.
+function applyChannelRole(groupIndex) {
+    const strip = mixerStrips[groupIndex];
+    const role = channelRoles[channelRoleIndices[groupIndex]];
+    strip.querySelector(".mixer-strip-name").textContent = role.name;
+    strip.querySelector(".mixer-strip-layers").textContent = role.layers;
+    layerSelectors[groupIndex].title = `Track used for ${role.layers.toLowerCase()}, ${role.description.toLowerCase()}`;
+    strip.querySelectorAll(".mixer-role-option").forEach(item => {
+        item.setAttribute("aria-checked", String(Number(item.dataset.role) === channelRoleIndices[groupIndex]));
+    });
+}
+
+// Opens one strip's role menu (closing any other), or closes them all when strip is null.
+function setRoleMenuOpen(strip, open) {
+    mixerStrips.forEach(other => {
+        const isOpen = open && other === strip;
+        other.querySelector(".mixer-role-menu").hidden = !isOpen;
+        other.querySelector(".mixer-strip-role").setAttribute("aria-expanded", String(isOpen));
+        other.classList.toggle("is-menu-open", isOpen);
+    });
+    if (open && strip) strip.querySelector('.mixer-role-option[aria-checked="true"]').focus();
+}
+
+mixerStrips.forEach((strip, groupIndex) => {
+    const head = strip.querySelector(".mixer-strip-head");
+    const toggle = head.querySelector(".mixer-strip-role");
+    const menu = document.createElement("div");
+    menu.className = "mixer-role-menu";
+    menu.setAttribute("role", "menu");
+    menu.hidden = true;
+
+    channelRoles.forEach((role, roleIndex) => {
+        const item = document.createElement("button");
+        item.type = "button";
+        item.className = "mixer-role-option";
+        item.setAttribute("role", "menuitemradio");
+        item.dataset.role = roleIndex;
+        item.innerHTML = `<b>${role.name}</b><small>${role.layers} · ${role.description}</small>`;
+        item.addEventListener("click", () => {
+            channelRoleIndices[groupIndex] = roleIndex;
+            applyChannelRole(groupIndex);
+            updateNowPlaying();
+            setRoleMenuOpen(null, false);
+            toggle.focus();
+        });
+        menu.appendChild(item);
+    });
+
+    // Arrow keys move through the options, Escape closes back to the arrow button.
+    menu.addEventListener("keydown", event => {
+        const items = Array.from(menu.querySelectorAll(".mixer-role-option"));
+        const index = items.indexOf(document.activeElement);
+        if (event.key === "ArrowDown") items[(index + 1) % items.length].focus();
+        else if (event.key === "ArrowUp") items[(index - 1 + items.length) % items.length].focus();
+        else if (event.key === "Escape") { setRoleMenuOpen(null, false); toggle.focus(); }
+        else return;
+        event.preventDefault();
+    });
+
+    head.appendChild(menu);
+    toggle.addEventListener("click", () => setRoleMenuOpen(strip, menu.hidden));
+    applyChannelRole(groupIndex);
+});
+
+document.addEventListener("click", event => {
+    if (!event.target.closest(".mixer-strip-head")) setRoleMenuOpen(null, false);
 });
 
 (() => {
@@ -370,13 +463,14 @@ function updateChannelBadges() {
     mixerStrips.forEach((strip, groupIndex) => {
         const badge = strip.querySelector(".mixer-strip-badge");
         const bpm = getBPMFromTrackName(layerSelectors[groupIndex].value || trackSelector.value);
-        badge.textContent = bpm ? `${bpm} BPM` : "";
+        badge.innerHTML = bpm ? `${bpm}<span class="mixer-badge-unit"> BPM</span>` : "";
         badge.dataset.match = bpmRelation(bpm, mainBPM);
     });
 }
 
+// [main, track1..4, role1..4]: everything that decides what a Start or Transition loads.
 function currentSelection() {
-    return [trackSelector.value, ...layerSelectors.map(selector => selector.value)];
+    return [trackSelector.value, ...layerSelectors.map(selector => selector.value), ...channelRoleIndices.map(String)];
 }
 
 // The deck's title area: what's playing (or what Start would play), and where it's from.
@@ -392,10 +486,12 @@ function updateNowPlaying() {
     }
 
     const [category, district] = selection[0].split(".");
-    const borrowed = selection.slice(1).filter(layerKey => layerKey && layerKey !== selection[0]).length;
+    const borrowed = selection.slice(1, 5).filter(layerKey => layerKey && layerKey !== selection[0]).length;
+    const rearranged = selection.slice(5).some((role, groupIndex) => Number(role) !== groupIndex);
     title.textContent = prettyTrackName(selection[0]);
     subtitle.textContent = `${groupLabelForCategory(category)}: ${district}` +
-        (borrowed ? ` · ${borrowed} channel${borrowed > 1 ? "s" : ""} from other tracks` : "");
+        (borrowed ? ` · ${borrowed} channel${borrowed > 1 ? "s" : ""} from other tracks` : "") +
+        (rearranged ? " · Custom channel layout" : "");
 }
 
 trackSelector.addEventListener("change", () => {
@@ -472,10 +568,11 @@ async function loadTrackSources(trackKey, { targetTempo = null, sync = false } =
     const layers = await Promise.all(groupKeys.map(async (groupKey, groupIndex) => {
         const selectedLayerKeys = groupKey.split('.');
         const selectedLayerTrack = music[selectedLayerKeys[0]][selectedLayerKeys[1]][selectedLayerKeys[2]];
+        const [firstLayer, secondLayer] = channelLayerKeys(groupIndex); // the pair this channel's role plays
 
         return [
-            await loadAudio(selectedLayerTrack[`layer${(groupIndex * 2) + 1}`]),
-            await loadAudio(selectedLayerTrack[`layer${(groupIndex * 2) + 2}`])
+            await loadAudio(selectedLayerTrack[firstLayer]),
+            await loadAudio(selectedLayerTrack[secondLayer])
         ];
     }));
 
@@ -592,9 +689,12 @@ async function playSelectedTrack(trackKey, sessionToken) {
     }
 }
 
+const instantFadeDuration = 0.02; // an "instant" cut still ramps for 20ms, so it doesn't click
+
 // How long a crossfade takes, from the Transition Length option.
 function transitionFadeDuration(loopDuration) {
     const choice = transitionLengthSelector.value;
+    if (choice === "instant") return instantFadeDuration;
     if (choice === "short" && masterTempo) return 8 * 60 / masterTempo; // two bars on the mix clock
     if (choice === "long") return loopDuration / 4;
     return loopDuration / 8;
@@ -679,16 +779,22 @@ async function transitionToTrack() {
     } else {
         // Adapt: after the crossfade, glide the mix from the current tempo to the incoming track's
         // tempo (each group to its nearest-octave rate for the new tempo), then re-anchor the clock.
+        // An Instant transition jumps straight to the new tempo instead of gliding into it.
+        const glideDuration = transitionLengthSelector.value === "instant" ? 0 : tempoGlideDuration;
         const now = audioContext.currentTime;
         const startGlide = now + fadeDelay + fadeDuration;
-        const endGlide = startGlide + tempoGlideDuration;
+        const endGlide = startGlide + glideDuration;
 
         const endRates = groupBPMs.map(bpm => bpm ? nearestOctaveTempo(incomingBPM, bpm) / bpm : 1);
 
         sources.forEach((source, i) => {
             const group = Math.floor(i / 2);
-            source.playbackRate.setValueAtTime(groupRates[group], startGlide);
-            source.playbackRate.linearRampToValueAtTime(endRates[group], endGlide);
+            if (glideDuration > 0) {
+                source.playbackRate.setValueAtTime(groupRates[group], startGlide);
+                source.playbackRate.linearRampToValueAtTime(endRates[group], endGlide);
+            } else {
+                source.playbackRate.setValueAtTime(endRates[group], startGlide);
+            }
         });
 
         setMixLoop(duration, groupBPMs[0], groupRates[0]);
@@ -697,7 +803,7 @@ async function transitionToTrack() {
         // master beats — group 0 ends running at endRate0 = octave x the new grid beat rate.
         const startRate0 = groupRates[0];
         const endRate0 = endRates[0];
-        const posAtEnd = (startOffset + startRate0 * (startGlide - startTime) + ((startRate0 + endRate0) / 2) * tempoGlideDuration) % duration;
+        const posAtEnd = (startOffset + startRate0 * (startGlide - startTime) + ((startRate0 + endRate0) / 2) * glideDuration) % duration;
         setTimeout(() => {
             if (token !== tempoGlideToken) return; // superseded by a newer transition
             masterTempo = incomingBPM;
@@ -813,8 +919,13 @@ function startDynamicHandling() {
         }
 
         function selectRandomLayerGroup() {
-            let availableLayerGroups = [0, 1, 2, 3];
-            availableLayerGroups = availableLayerGroups.filter(group => !previousSelectedLayerGroups.includes(group));
+            // Locked channels are never picked. If the recently picked ones are all that's left
+            // unlocked, allow them again; with every channel locked there's nothing to pick.
+            const unlockedLayerGroups = [0, 1, 2, 3].filter(group => !channelLocked[group]);
+            let availableLayerGroups = unlockedLayerGroups.filter(group => !previousSelectedLayerGroups.includes(group));
+            if (!availableLayerGroups.length) availableLayerGroups = unlockedLayerGroups;
+            if (!availableLayerGroups.length) return undefined;
+
             let selectedLayerGroup = availableLayerGroups[Math.floor(Math.random() * availableLayerGroups.length)];
             if (previousSelectedLayerGroups.length >= 2) {
                 previousSelectedLayerGroups.shift();
@@ -1049,6 +1160,7 @@ document.addEventListener("keydown", event => {
     const tag = target.tagName;
     if (target.isContentEditable || tag === "TEXTAREA" || tag === "SELECT") return;
     if (tag === "BUTTON" && !mixerElement.contains(target)) return;
+    if (target.closest(".mixer-strip-head")) return; // the role menus handle their own keys
     if (tag === "INPUT" && target.type !== "range") return;
 
     const key = event.key.toLowerCase();
@@ -1255,7 +1367,8 @@ function renderMixer(now) {
 // Download Feature
 
 // Bakes the current selection. "multichannel" is the 8-channel WAV for replacing the game's music
-// (raw layers, one per channel); "stereo" is a mixdown of what you hear, with the channel faders,
+// (raw layers, one per channel, in channel-strip order, so a rearranged channel layout is baked as
+// arranged); "stereo" is a mixdown of what you hear, with the channel faders,
 // solo, panning, master filter and master fader applied.
 async function renderAndDownloadMix(mode) {
     if (renderingMix || loadingTrack) return;
@@ -1283,9 +1396,10 @@ async function renderAndDownloadMix(mode) {
         const groupBuffers = await Promise.all(groupKeys.map(async (groupKey, index) => {
             const keys = groupKey.split('.');
             const track = music[keys[0]][keys[1]][keys[2]];
+            const [firstLayer, secondLayer] = channelLayerKeys(index);
             return [
-                await loadAudio(track[`layer${(index * 2) + 1}`]),
-                await loadAudio(track[`layer${(index * 2) + 2}`])
+                await loadAudio(track[firstLayer]),
+                await loadAudio(track[secondLayer])
             ];
         }));
 

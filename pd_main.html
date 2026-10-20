@@ -718,7 +718,8 @@
 
                                 <ul class="section-list-unspaced">
                                     <li>Pick a main soundtrack to fill in every channel, then swap individual channels to other tracks for more variety, or hit Shuffle Layers to have it done for you.</li>
-                                    <li>Hit Start and enjoy listening. Each channel has its own fader, an On toggle and a Solo button, and the meters show what every layer is actually playing.</li>
+                                    <li>Hit Start and enjoy listening. Each channel has its own fader and On, Solo and Lock buttons, Lock keeping Dynamic Layer Handling away from it, and the meters show what every layer is actually playing.</li>
+                                    <li>Use the arrow next to a channel's name to pick which layers it plays, so two channels can both be percussion from different tracks, for example.</li>
                                     <li>No refreshing needed, change the soundtrack or any channel while playing and hit Transition to crossfade to it on the beat.</li>
                                     <li>Download the 8-channel version to replace the soundtracks in Mirror's Edge&trade; Catalyst, or a stereo mixdown of exactly what you hear.</li>
                                 </ul>
@@ -785,7 +786,10 @@
                                     <div class="mixer-strips">
                                         <div class="mixer-strip" data-group="0">
                                             <div class="mixer-strip-head">
-                                                <div class="mixer-strip-name">Percussion</div>
+                                                <button class="mixer-strip-role" type="button" aria-haspopup="menu" aria-expanded="false" title="Choose which layers this channel plays">
+                                                    <span class="mixer-strip-name">Percussion</span>
+                                                    <svg class="mixer-strip-chevron" viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4"/></svg>
+                                                </button>
                                                 <div class="mixer-strip-badge" title="Tempo of this channel's track"></div>
                                             </div>
                                             <div class="mixer-strip-layers">Layers 1 & 2</div>
@@ -809,12 +813,16 @@
                                             <div class="mixer-strip-buttons">
                                                 <label class="mixer-toggle mixer-toggle-on" title="Play this channel (1)"><input id="starter-layer-checkbox1" type="checkbox">On</label>
                                                 <label class="mixer-toggle mixer-toggle-solo" title="Hear only soloed channels"><input class="mixer-solo" type="checkbox">Solo</label>
+                                                <label class="mixer-toggle mixer-toggle-lock" title="Keep Dynamic Layer Handling from switching this channel on or off"><input class="mixer-lock" type="checkbox">Lock</label>
                                             </div>
                                         </div>
 
                                         <div class="mixer-strip" data-group="1">
                                             <div class="mixer-strip-head">
-                                                <div class="mixer-strip-name">Drones</div>
+                                                <button class="mixer-strip-role" type="button" aria-haspopup="menu" aria-expanded="false" title="Choose which layers this channel plays">
+                                                    <span class="mixer-strip-name">Drones</span>
+                                                    <svg class="mixer-strip-chevron" viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4"/></svg>
+                                                </button>
                                                 <div class="mixer-strip-badge" title="Tempo of this channel's track"></div>
                                             </div>
                                             <div class="mixer-strip-layers">Layers 3 & 4</div>
@@ -838,12 +846,16 @@
                                             <div class="mixer-strip-buttons">
                                                 <label class="mixer-toggle mixer-toggle-on" title="Play this channel (2)"><input id="starter-layer-checkbox2" type="checkbox">On</label>
                                                 <label class="mixer-toggle mixer-toggle-solo" title="Hear only soloed channels"><input class="mixer-solo" type="checkbox">Solo</label>
+                                                <label class="mixer-toggle mixer-toggle-lock" title="Keep Dynamic Layer Handling from switching this channel on or off"><input class="mixer-lock" type="checkbox">Lock</label>
                                             </div>
                                         </div>
 
                                         <div class="mixer-strip" data-group="2">
                                             <div class="mixer-strip-head">
-                                                <div class="mixer-strip-name">Variety</div>
+                                                <button class="mixer-strip-role" type="button" aria-haspopup="menu" aria-expanded="false" title="Choose which layers this channel plays">
+                                                    <span class="mixer-strip-name">Variety</span>
+                                                    <svg class="mixer-strip-chevron" viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4"/></svg>
+                                                </button>
                                                 <div class="mixer-strip-badge" title="Tempo of this channel's track"></div>
                                             </div>
                                             <div class="mixer-strip-layers">Layers 5 & 6</div>
@@ -867,12 +879,16 @@
                                             <div class="mixer-strip-buttons">
                                                 <label class="mixer-toggle mixer-toggle-on" title="Play this channel (3)"><input id="starter-layer-checkbox3" type="checkbox" checked>On</label>
                                                 <label class="mixer-toggle mixer-toggle-solo" title="Hear only soloed channels"><input class="mixer-solo" type="checkbox">Solo</label>
+                                                <label class="mixer-toggle mixer-toggle-lock" title="Keep Dynamic Layer Handling from switching this channel on or off"><input class="mixer-lock" type="checkbox">Lock</label>
                                             </div>
                                         </div>
 
                                         <div class="mixer-strip" data-group="3">
                                             <div class="mixer-strip-head">
-                                                <div class="mixer-strip-name">Ambience</div>
+                                                <button class="mixer-strip-role" type="button" aria-haspopup="menu" aria-expanded="false" title="Choose which layers this channel plays">
+                                                    <span class="mixer-strip-name">Ambience</span>
+                                                    <svg class="mixer-strip-chevron" viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4"/></svg>
+                                                </button>
                                                 <div class="mixer-strip-badge" title="Tempo of this channel's track"></div>
                                             </div>
                                             <div class="mixer-strip-layers">Layers 7 & 8</div>
@@ -896,6 +912,7 @@
                                             <div class="mixer-strip-buttons">
                                                 <label class="mixer-toggle mixer-toggle-on" title="Play this channel (4)"><input id="starter-layer-checkbox4" type="checkbox" checked>On</label>
                                                 <label class="mixer-toggle mixer-toggle-solo" title="Hear only soloed channels"><input class="mixer-solo" type="checkbox">Solo</label>
+                                                <label class="mixer-toggle mixer-toggle-lock" title="Keep Dynamic Layer Handling from switching this channel on or off"><input class="mixer-lock" type="checkbox">Lock</label>
                                             </div>
                                         </div>
 
@@ -956,6 +973,7 @@
                                         <label class="mixer-option mixer-option-select">
                                             <span><b>Transition Length</b><small>How long crossfades between tracks take.</small></span>
                                             <select id="mixer-transition-length" class="dropdown-menu">
+                                                <option class="dropdown-option" value="instant">Instant</option>
                                                 <option class="dropdown-option" value="short">Short (2 bars)</option>
                                                 <option class="dropdown-option" value="normal" selected>Normal (1/8 loop)</option>
                                                 <option class="dropdown-option" value="long">Long (1/4 loop)</option>
