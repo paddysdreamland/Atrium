@@ -26,7 +26,7 @@ const currentBPMDisplay = document.getElementById("current-bpm");
 
 const quantizeCheckbox = document.getElementById("mixer-quantize");
 const fadeStopCheckbox = document.getElementById("mixer-fade-stop");
-const transitionLengthSelector = document.getElementById("mixer-transition-length");
+const fadeLengthSelector = document.getElementById("mixer-fade-length");
 
 const volumeBars = [
     document.getElementById("volume-bar1"),
@@ -691,9 +691,10 @@ async function playSelectedTrack(trackKey, sessionToken) {
 
 const instantFadeDuration = 0.02; // an "instant" cut still ramps for 20ms, so it doesn't click
 
-// How long a crossfade takes, from the Transition Length option.
-function transitionFadeDuration(loopDuration) {
-    const choice = transitionLengthSelector.value;
+// How long transitions and channel toggles fade for, from the Fade Length option.
+// (Dynamic Layer Handling keeps its own slow fade, so its automatic changes never hard-cut.)
+function chosenFadeDuration(loopDuration) {
+    const choice = fadeLengthSelector.value;
     if (choice === "instant") return instantFadeDuration;
     if (choice === "short" && masterTempo) return 8 * 60 / masterTempo; // two bars on the mix clock
     if (choice === "long") return loopDuration / 4;
@@ -743,7 +744,7 @@ async function transitionToTrack() {
     loadingTrack = false;
     loadingIndicator.style.display = "none";
 
-    const fadeDuration = transitionFadeDuration(duration);
+    const fadeDuration = chosenFadeDuration(duration);
     const fadeDelay = quantizeDelay(); // with Quantize to Bar, the crossfade starts on the next bar line
 
     // Swap globals to the new nodes, then crossfade old out and new in together.
@@ -780,7 +781,7 @@ async function transitionToTrack() {
         // Adapt: after the crossfade, glide the mix from the current tempo to the incoming track's
         // tempo (each group to its nearest-octave rate for the new tempo), then re-anchor the clock.
         // An Instant transition jumps straight to the new tempo instead of gliding into it.
-        const glideDuration = transitionLengthSelector.value === "instant" ? 0 : tempoGlideDuration;
+        const glideDuration = fadeLengthSelector.value === "instant" ? 0 : tempoGlideDuration;
         const now = audioContext.currentTime;
         const startGlide = now + fadeDelay + fadeDuration;
         const endGlide = startGlide + glideDuration;
@@ -1054,8 +1055,9 @@ function setLayerGroupMuted(groupIndex, muted) {
     const targetVolume = muted ? 0 : 1;
     const delay = quantizeDelay();
     channelQueuedUntil[groupIndex] = audioContext.currentTime + delay;
-    fadeLayerVolume(groupIndex * 2, targetVolume, trackLength / 8, delay);
-    fadeLayerVolume((groupIndex * 2) + 1, targetVolume, trackLength / 8, delay);
+    const fadeDuration = chosenFadeDuration(trackLength);
+    fadeLayerVolume(groupIndex * 2, targetVolume, fadeDuration, delay);
+    fadeLayerVolume((groupIndex * 2) + 1, targetVolume, fadeDuration, delay);
 
     layerGroupsMuted[groupIndex] = muted;
     if (groupIndex === 0) layerGroup1Muted = muted;
