@@ -70,7 +70,7 @@ var masterTempo = null;
 var beatRefTime = 0;           // audioContext time of the beat reference
 var beatRefBeats = 0;          // beats elapsed at beatRefTime (mix runs at constant masterTempo since then)
 var tempoGlideToken = 0;       // invalidates pending tempo-glide re-anchors when superseded
-const tempoGlideDuration = 4;  // seconds to glide the mix to a new track's native tempo (Adapt mode)
+var tempoRamp = null;          // { start, end, from, to } while the mix glides to a new tempo (Maintain BPM off)
 const stopFadeDuration = 1.5;  // seconds Stop takes to ease the mix out when Fade Out on Stop is on
 var mixLoop = null;            // { beats, octave } of the master group's loop, for the loop position bar
 
@@ -518,10 +518,48 @@ layerSelectors.forEach(layerSelector => layerSelector.addEventListener("change",
     updateNowPlaying();
 }));
 
-// Total beats elapsed on the running mix clock (the mix runs at constant masterTempo since beatRefTime).
+// The mix tempo at an audioContext time: masterTempo, or partway along a tempo glide.
+function tempoAt(time) {
+    if (!tempoRamp || time <= tempoRamp.start) return masterTempo;
+    if (time >= tempoRamp.end) return tempoRamp.to;
+    return tempoRamp.from + (tempoRamp.to - tempoRamp.from) * (time - tempoRamp.start) / (tempoRamp.end - tempoRamp.start);
+}
+
+// Total beats elapsed on the running mix clock. The mix runs at masterTempo since beatRefTime, unless
+// a tempo glide is under way: then it's the old tempo up to the glide, the average of the tempos
+// covered so far through it (playback rates ramp linearly, so tempo does too), and the new one after.
 function currentBeats() {
     if (!masterTempo) return 0;
-    return beatRefBeats + (audioContext.currentTime - beatRefTime) * masterTempo / 60;
+    const now = audioContext.currentTime;
+    if (!tempoRamp || now <= tempoRamp.start) return beatRefBeats + (now - beatRefTime) * masterTempo / 60;
+
+    const beatsAtGlideStart = beatRefBeats + (tempoRamp.start - beatRefTime) * masterTempo / 60;
+    const glideEnd = Math.min(now, tempoRamp.end);
+    const glideBeats = (glideEnd - tempoRamp.start) * (tempoRamp.from + tempoAt(glideEnd)) / 2 / 60;
+    const afterBeats = Math.max(0, now - tempoRamp.end) * tempoRamp.to / 60;
+    return beatsAtGlideStart + glideBeats + afterBeats;
+}
+
+// Ends a tempo glide where it stands: every sounding source holds its current rate, and the clock
+// carries on at the tempo reached so far (the full new tempo once the glide has finished).
+function settleTempoGlide() {
+    if (!tempoRamp) return;
+    const now = audioContext.currentTime;
+    const tempo = tempoAt(now);
+    const beats = currentBeats();
+
+    [...sourceNodes, ...retiredNodeSets.flatMap(set => set.sources)].forEach(source => {
+        const rate = source.playbackRate.value;
+        source.playbackRate.cancelScheduledValues(now);
+        source.playbackRate.setValueAtTime(rate, now);
+    });
+
+    masterTempo = tempo;
+    beatRefTime = now;
+    beatRefBeats = beats;
+    tempoRamp = null;
+    tempoGlideToken++;
+    currentTrackBPM = Math.round(tempo * 10) / 10;
 }
 
 // Seconds until the next bar line on the mix clock (bars taken as 4 beats) when Quantize to Bar
@@ -530,7 +568,7 @@ function quantizeDelay() {
     if (!quantizeCheckbox.checked || !alreadyPlaying || !masterTempo) return 0;
     const beats = currentBeats();
     const nextBar = (Math.floor(beats / 4) + 1) * 4;
-    return (nextBar - beats) * 60 / masterTempo;
+    return (nextBar - beats) * 60 / tempoAt(audioContext.currentTime);
 }
 
 // Remembers the master group's loop so the deck can draw its position on the mix clock.
@@ -684,6 +722,7 @@ async function playSelectedTrack(trackKey, sessionToken) {
     beatRefTime = startTime;
     beatRefBeats = 0;
     tempoGlideToken++;
+    tempoRamp = null;
     currentTrackBPM = masterTempo;
     setMixLoop(duration, groupBPMs[0], groupRates[0]);
     updateTrackSelectorColors();
@@ -720,6 +759,9 @@ async function transitionToTrack() {
         return;
     }
 
+    // A transition started mid-glide carries on from the tempo reached so far.
+    settleTempoGlide();
+
     const sessionToken = playbackToken;
     const selection = currentSelection();
 
@@ -734,7 +776,7 @@ async function transitionToTrack() {
 
     // Play the incoming track at the current mix tempo (when we have one) so it beat-locks;
     // its native BPM is resolved from the first layer inside loadTrackSources.
-    const { sources, gains, duration, startTime, startOffset, nativeBPM, groupBPMs, groupRates } =
+    const { sources, gains, duration, startTime, nativeBPM, groupBPMs, groupRates } =
         await loadTrackSources(selectedTrack, { targetTempo: masterTempo, sync: !!masterTempo });
 
     if (sessionToken !== playbackToken || !alreadyPlaying) {
@@ -786,40 +828,37 @@ async function transitionToTrack() {
         }
         setMixLoop(duration, groupBPMs[0], groupRates[0]);
     } else {
-        // Adapt: after the crossfade, glide the mix from the current tempo to the incoming track's
-        // tempo (each group to its nearest-octave rate for the new tempo), then re-anchor the clock.
-        // An Instant transition jumps straight to the new tempo instead of gliding into it.
-        const glideDuration = fadeLengthSelector.value === "instant" ? 0 : tempoGlideDuration;
+        // Adapt: glide the whole mix from the current tempo to the incoming track's over the
+        // crossfade itself, outgoing and incoming tracks together so they stay beat-locked. By the
+        // time the old track is gone the new one is at its own tempo, so nothing changes speed
+        // afterwards. (An Instant transition's 20ms fade makes this a jump.)
         const now = audioContext.currentTime;
-        const startGlide = now + fadeDelay + fadeDuration;
-        const endGlide = startGlide + glideDuration;
+        const startGlide = now + fadeDelay;
+        const endGlide = startGlide + fadeDuration;
 
+        // Each incoming group ends on its nearest-octave rate for the new tempo.
         const endRates = groupBPMs.map(bpm => bpm ? nearestOctaveTempo(incomingBPM, bpm) / bpm : 1);
-
         sources.forEach((source, i) => {
             const group = Math.floor(i / 2);
-            if (glideDuration > 0) {
-                source.playbackRate.setValueAtTime(groupRates[group], startGlide);
-                source.playbackRate.linearRampToValueAtTime(endRates[group], endGlide);
-            } else {
-                source.playbackRate.setValueAtTime(endRates[group], startGlide);
-            }
+            source.playbackRate.setValueAtTime(groupRates[group], startGlide);
+            source.playbackRate.linearRampToValueAtTime(endRates[group], endGlide);
         });
 
-        setMixLoop(duration, groupBPMs[0], groupRates[0]);
+        // Everything fading out (this transition's outgoing track included) follows the same tempo curve.
+        const tempoRatio = incomingBPM / masterTempo;
+        retiredNodeSets.flatMap(set => set.sources).forEach(source => {
+            const rate = source.playbackRate.value;
+            source.playbackRate.setValueAtTime(rate, startGlide);
+            source.playbackRate.linearRampToValueAtTime(rate * tempoRatio, endGlide);
+        });
 
-        // Group 0's buffer position when the glide ends (integral of its rate ramp), converted to
-        // master beats — group 0 ends running at endRate0 = octave x the new grid beat rate.
-        const startRate0 = groupRates[0];
-        const endRate0 = endRates[0];
-        const posAtEnd = (startOffset + startRate0 * (startGlide - startTime) + ((startRate0 + endRate0) / 2) * glideDuration) % duration;
+        // The beat clock follows the glide too (see currentBeats), then settles on the new tempo.
+        tempoRamp = { start: startGlide, end: endGlide, from: masterTempo, to: incomingBPM };
+        setMixLoop(duration, groupBPMs[0], groupRates[0]);
         setTimeout(() => {
-            if (token !== tempoGlideToken) return; // superseded by a newer transition
-            masterTempo = incomingBPM;
-            beatRefTime = audioContext.currentTime;
-            beatRefBeats = posAtEnd * incomingBPM / (60 * endRate0);
-            currentTrackBPM = masterTempo;
-            setMixLoop(duration, groupBPMs[0], endRate0);
+            if (token !== tempoGlideToken) return; // superseded by a newer transition or Stop
+            settleTempoGlide();
+            setMixLoop(duration, groupBPMs[0], endRates[0]);
             updateTrackSelectorColors();
             updateCurrentBPMDisplay();
         }, (endGlide - now) * 1000 + 50);
@@ -1125,6 +1164,7 @@ musicReset.addEventListener("click", function () {
     resetVariables();
 
     masterTempo = null;
+    tempoRamp = null;
     mixLoop = null;
     tempoGlideToken++;
     currentTrackBPM = null;
@@ -1271,6 +1311,15 @@ function renderBeatClock() {
         setText(mixerPosition, "0.0");
         mixerLoopBar.style.width = "0%";
         return;
+    }
+
+    // During a tempo glide the BPM readout counts along with it.
+    if (tempoRamp) {
+        const liveTempo = Math.round(tempoAt(audioContext.currentTime) * 10) / 10;
+        if (liveTempo !== currentTrackBPM) {
+            currentTrackBPM = liveTempo;
+            updateCurrentBPMDisplay();
+        }
     }
 
     const beats = Math.max(0, currentBeats());
