@@ -970,9 +970,19 @@ function startDynamicHandling() {
             }
         }
 
+        syncOnButtons();
+
         console.log("--[Current Muted Layers]----------------\n" + "Layer 1: " + layerGroupsMuted[0] + "\n" + "Layer 2: " + layerGroupsMuted[1] + "\n" + "Layer 3: " + layerGroupsMuted[2] + "\n" + "Layer 4: " + layerGroupsMuted[3] + "\n" + "----------------------------------------");
 
     }, (trackLength * 1000));
+}
+
+// Mirrors each channel's actual on/off state onto its On button, so the switches Dynamic Layer
+// Handling makes show up there too (and in the downloads, which bake the channels that are on).
+function syncOnButtons() {
+    layerGroupsMuted.forEach((muted, groupIndex) => {
+        document.getElementById(`starter-layer-checkbox${groupIndex + 1}`).checked = !muted;
+    });
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -1156,39 +1166,6 @@ function shuffleLayers() {
 }
 
 shuffleButton.addEventListener("click", shuffleLayers);
-
-/* Keyboard Shortcuts */
-
-// Only while the soundtrack section is open, and never while typing or on a focused control that
-// already uses the key (Space on a checkbox, letters in a select). The mixer's own buttons are
-// taken over, so Space after clicking Download stops the music instead of downloading again.
-document.addEventListener("keydown", event => {
-    if (mixerElement.offsetParent === null) return;
-    if (event.ctrlKey || event.metaKey || event.altKey || event.repeat) return;
-
-    const target = event.target;
-    const tag = target.tagName;
-    if (target.isContentEditable || tag === "TEXTAREA" || tag === "SELECT") return;
-    if (tag === "BUTTON" && !mixerElement.contains(target)) return;
-    if (target.closest(".mixer-strip-head")) return; // the role menus handle their own keys
-    if (tag === "INPUT" && target.type !== "range") return;
-
-    const key = event.key.toLowerCase();
-    if (key === " ") {
-        (alreadyPlaying ? musicReset : musicButton).click();
-    } else if (["1", "2", "3", "4"].includes(key)) {
-        const checkbox = document.getElementById(`starter-layer-checkbox${key}`);
-        checkbox.checked = !checkbox.checked;
-        checkbox.dispatchEvent(new Event("change"));
-    } else if (key === "t") {
-        if (alreadyPlaying) transitionSafely();
-    } else if (key === "r") {
-        shuffleLayers();
-    } else {
-        return;
-    }
-    event.preventDefault();
-});
 
 /* Visuals */
 

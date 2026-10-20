@@ -813,26 +813,6 @@
     font-size: 14px;
 }
 
-.mixer-hint {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px 16px;
-    font-size: 12px;
-    color: var(--mixer-dim);
-}
-
-.mixer-hint kbd {
-    font-family: "Lato";
-    font-size: 11px;
-    font-weight: 700;
-    padding: 1px 5px;
-    border-radius: 3px;
-    border: 1px solid var(--mixer-edge);
-    border-bottom-width: 2px;
-    background-color: var(--mixer-panel);
-    color: var(--white);
-}
-
 @keyframes mixer-blink {
     from { opacity: 1; }
     to { opacity: 0.3; }
