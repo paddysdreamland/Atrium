@@ -1,5 +1,5 @@
-/* Soundtrack Mixer - experimental version of the Music Box (scripts/pd_music_mixer.js).
-   Rules are scoped under #ost-section where they need to beat the original id-based Music Box styles. */
+/* Catalyst Soundtrack Player - toybox app styles, on top of the site's pd_main.css.
+   Rules are scoped under #cst where they need to beat pd_main.css's own id-based Music Box styles. */
 
 .mixer {
     --mixer-panel: rgb(16, 16, 16);
@@ -18,8 +18,7 @@
 }
 
 .mixer-deck,
-.mixer-strip,
-.mixer-option {
+.mixer-strip {
     border-top: 1px solid var(--mixer-edge);
     border-bottom: 1px solid var(--mixer-edge);
 }
@@ -28,7 +27,7 @@
 .mixer-deck {
     background:
         radial-gradient(ellipse at 50% 0%, rgba(var(--custom-color), 0.14), transparent 70%),
-        url(../images/patterns/grid1110_25.png),
+        url(../../images/patterns/grid1110_25.png),
         var(--mixer-well);
     border-radius: 8px;
     padding: 12px 14px 10px;
@@ -36,7 +35,8 @@
     flex-direction: column;
     gap: 8px;
     position: relative;
-    overflow: hidden;
+    /* No overflow clipping: the cog's menu hangs out of the deck over the strips. The background
+       already follows the rounded corners on its own. */
 }
 
 .mixer-deck-top {
@@ -107,7 +107,7 @@
     outline: 2px solid rgb(var(--custom-color));
 }
 
-#ost-section .mixer-title-picker select {
+#cst .mixer-title-picker select {
     position: absolute;
     inset: 0;
     width: 100%;
@@ -173,7 +173,7 @@
     flex-shrink: 0;
 }
 
-#ost-section #current-bpm {
+#cst #current-bpm {
     background: none;
     border: none;
     padding: 0;
@@ -230,9 +230,17 @@
     font-variant-numeric: tabular-nums;
 }
 
+/* The screen: the spectrum, with the controls laid over its corners (taller than it used to be, to
+   make room for them). */
+.mixer-screen {
+    border-radius: 6px;
+    background-color: rgba(0, 0, 0, 0.45);
+    box-shadow: 0 0 0 1px var(--mixer-edge);
+}
+
 .mixer-spectrum {
     width: 100%;
-    height: 96px;
+    height: 160px;
     display: block;
 }
 
@@ -456,7 +464,7 @@
     margin-top: -4px;
 }
 
-#ost-section .mixer-strip-select {
+#cst .mixer-strip-select {
     font-size: 13px;
     margin-top: 0;
     height: 30px;
@@ -490,7 +498,7 @@
     inset: 0;
     clip-path: inset(100% 0 0 0);
     background-image:
-        url(../images/patterns/hazard_dark.png),
+        url(../../images/patterns/hazard_dark.png),
         linear-gradient(0deg,
             rgb(var(--custom-color)) 0%,
             rgb(var(--custom-color)) 70%,
@@ -519,7 +527,7 @@
     position: relative;
 }
 
-#ost-section .mixer-fader {
+#cst .mixer-fader {
     width: calc(var(--mixer-body-height) - 12px);
     position: absolute;
     left: 50%;
@@ -527,8 +535,8 @@
     transform: translate(-50%, -50%) rotate(-90deg);
 }
 
-#ost-section .mixer-fader,
-#ost-section .mixer-filter-knob {
+#cst .mixer-fader,
+#cst .mixer-filter-knob {
     --fill: 100%;
 
     -webkit-appearance: none;
@@ -598,7 +606,7 @@
 }
 
 /* Shorter than the faders so knob and scale fit the 30px a channel's track selector takes. */
-#ost-section .mixer-filter-knob {
+#cst .mixer-filter-knob {
     width: 100%;
     height: 18px;
     display: block;
@@ -647,7 +655,7 @@
     background-color: black;
 }
 
-#ost-section .mixer-fade > div {
+#cst .mixer-fade > div {
     width: 0%;
     height: 3px;
     background-size: 4px;
@@ -716,108 +724,6 @@
     animation: mixer-blink 0.25s steps(2, jump-none) infinite alternate;
 }
 
-/* Transport */
-.mixer-transport {
-    display: flex;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 8px;
-}
-
-.mixer-transport-group {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-}
-
-#ost-section .mixer-button {
-    margin: 0;
-    padding: 7px 16px;
-    border-radius: 4px;
-    border: none;
-    border-top: 1px solid var(--mixer-edge);
-    border-bottom: 1px solid var(--mixer-edge);
-    background-color: var(--mixer-panel);
-    color: var(--white);
-    font-family: "Lato";
-    font-size: 14px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: background-color 0.15s, box-shadow 0.15s;
-}
-
-#ost-section .mixer-button:hover {
-    background-color: rgb(32, 32, 32);
-    box-shadow: inset 0 0 0 1px rgba(var(--custom-color), 0.5);
-}
-
-#ost-section .mixer-button:focus-visible {
-    outline: 2px solid rgb(var(--custom-color));
-}
-
-#ost-section .mixer-button-primary {
-    background-color: rgba(var(--custom-color), 0.2);
-    color: rgb(var(--custom-color));
-    box-shadow: inset 0 0 0 1px rgba(var(--custom-color), 0.6);
-}
-
-#ost-section #music-reset {
-    color: rgb(255, 128, 128);
-}
-
-#ost-section #music-transition.is-pending {
-    color: rgb(var(--mixer-solo));
-    animation: mixer-pending 1.2s ease-in-out infinite;
-}
-
-/* Options */
-.mixer-options {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 6px;
-}
-
-.mixer-option {
-    padding: 8px 10px;
-    border-radius: 6px;
-    background-color: var(--mixer-panel);
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    cursor: pointer;
-}
-
-.mixer-option input {
-    margin: 2px 0 0;
-    accent-color: rgb(var(--custom-color));
-    flex-shrink: 0;
-}
-
-.mixer-option b {
-    display: block;
-    font-size: 14px;
-    font-weight: 700;
-}
-
-.mixer-option small {
-    display: block;
-    font-size: 12px;
-    color: var(--mixer-dim);
-}
-
-.mixer-option-select {
-    grid-column: 1 / -1;
-    justify-content: space-between;
-    align-items: center;
-    cursor: default;
-}
-
-#ost-section .mixer-option-select select {
-    width: auto;
-    margin: 0;
-    font-size: 14px;
-}
-
 @keyframes mixer-blink {
     from { opacity: 1; }
     to { opacity: 0.3; }
@@ -831,7 +737,7 @@
 @media (prefers-reduced-motion: reduce) {
     .mixer-status[data-state="busy"]::before,
     .mixer-strip.is-queued .mixer-toggle-on,
-    #ost-section #music-transition.is-pending {
+    #cst #music-transition.is-pending {
         animation: none;
     }
 }
@@ -853,10 +759,6 @@
     .mixer-strip-name {
         letter-spacing: 0.02em;
     }
-
-    .mixer-options {
-        grid-template-columns: minmax(0, 1fr);
-    }
 }
 
 @media screen and (max-width: 480px) {
@@ -870,4 +772,261 @@
         justify-content: space-between;
         align-items: center;
     }
+}
+
+/* Page */
+.cst-back {
+    font-family: "Lato";
+    font-size: 13px;
+    font-weight: 700;
+    align-self: flex-start;
+}
+
+.cst-back:hover {
+    text-decoration: underline;
+}
+
+@media screen and (max-width: 1040px) {
+    #website-holder {
+        width: calc(100% - 10px);
+    }
+}
+
+/* Controls over the screen: tiny Silk icon buttons. #cst beats pd_main.css's #music-start etc. */
+.cst-tools,
+.cst-transport {
+    position: absolute;
+    left: 6px;
+    padding: 2px;
+    border-radius: 4px;
+    background-color: rgba(0, 0, 0, 0.75);
+    box-shadow: 0 0 0 1px var(--mixer-edge);
+    display: flex;
+    gap: 2px;
+}
+
+.cst-tools {
+    top: 6px;
+}
+
+.cst-transport {
+    bottom: 6px;
+}
+
+#cst .cst-tool {
+    width: 22px;
+    height: 22px;
+    margin: 0;
+    padding: 0;
+    border: none;
+    border-radius: 3px;
+    background: none;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    transition: background-color 0.15s;
+}
+
+#cst .cst-tool img {
+    width: 16px;
+    height: 16px;
+    display: block;
+}
+
+#cst .cst-tool:hover {
+    background-color: rgba(255, 255, 255, 0.12);
+}
+
+#cst .cst-tool:focus-visible {
+    outline: 2px solid rgb(var(--custom-color));
+}
+
+.cst-tool-divider {
+    width: 1px;
+    margin: 3px 1px;
+    background-color: var(--mixer-edge);
+}
+
+#cst .cst-play {
+    width: 26px;
+    height: 26px;
+    background-color: rgba(var(--custom-color), 0.18);
+    box-shadow: inset 0 0 0 1px rgba(var(--custom-color), 0.6);
+}
+
+#cst .cst-play:hover {
+    background-color: rgba(var(--custom-color), 0.32);
+}
+
+/* Transition glows while the selection differs from what's playing. */
+#cst #music-transition.is-pending {
+    animation: mixer-pending 1.2s ease-in-out infinite;
+}
+
+/* Help and settings, in the screen's top-right corner */
+.cst-corner {
+    position: absolute;
+    right: 6px;
+    top: 6px;
+    display: flex;
+    gap: 4px;
+    z-index: 5;
+}
+
+#cst .cst-corner > .cst-tool {
+    width: 26px;
+    height: 26px;
+    background-color: rgba(0, 0, 0, 0.75);
+    box-shadow: 0 0 0 1px var(--mixer-edge);
+}
+
+#cst .cst-corner > .cst-tool:hover {
+    background-color: rgb(36, 36, 36);
+}
+
+#cst .cst-corner > .cst-tool[aria-pressed="true"] {
+    background-color: rgba(var(--custom-color), 0.25);
+    box-shadow: inset 0 0 0 1px rgba(var(--custom-color), 0.7);
+}
+
+.cst-settings-menu {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 4px);
+    width: 250px;
+    max-width: calc(100vw - 60px);
+    padding: 6px;
+    border-radius: 6px;
+    border: 1px solid var(--mixer-edge);
+    background-color: rgb(22, 22, 22);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.cst-settings-menu[hidden] {
+    display: none;
+}
+
+.cst-setting {
+    padding: 6px 8px;
+    border-radius: 4px;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.cst-setting:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.cst-setting input {
+    margin: 2px 0 0;
+    accent-color: rgb(var(--custom-color));
+    flex-shrink: 0;
+}
+
+.cst-setting b {
+    display: block;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.cst-setting small {
+    display: block;
+    font-size: 11px;
+    line-height: 1.3;
+    color: var(--mixer-dim);
+}
+
+.cst-setting-select {
+    flex-direction: column;
+    gap: 6px;
+    cursor: default;
+}
+
+#cst .cst-setting-select select {
+    width: 100%;
+    margin: 0;
+    font-size: 13px;
+    color-scheme: dark;
+}
+
+/* The help pop-up */
+.cst-dialog {
+    /* pd_main.css makes everything position: relative, so pin the modal explicitly. */
+    position: fixed;
+    inset: 0;
+    width: min(580px, calc(100vw - 32px));
+    height: fit-content;
+    max-height: calc(100vh - 48px);
+    margin: auto;
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--white);
+    font-family: "Lato";
+    overflow: visible;
+}
+
+.cst-dialog::backdrop {
+    background-color: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(2px);
+}
+
+.cst-dialog-panel {
+    max-height: calc(100vh - 48px);
+    padding: 12px 18px 18px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background:
+        radial-gradient(ellipse at 50% 0%, rgba(var(--custom-color), 0.12), transparent 70%),
+        rgb(14, 14, 14);
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.8);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow-y: auto;
+}
+
+.cst-dialog-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+
+.cst-dialog .cst-tool {
+    width: 22px;
+    height: 22px;
+    border-radius: 3px;
+    background: none;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+}
+
+.cst-dialog .cst-tool:hover {
+    background-color: rgba(255, 255, 255, 0.12);
+}
+
+.cst-dialog .cst-tool img {
+    width: 16px;
+    height: 16px;
+}
+
+.cst-dialog p,
+.cst-dialog li {
+    font-size: 14px;
+    line-height: 1.45;
+    user-select: text;
+}
+
+.cst-dialog ul {
+    padding-left: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
 }

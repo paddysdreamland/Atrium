@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>Catalyst Soundtrack Player</title>
+
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <meta name="description" content="Mirror's Edge Catalyst's layered soundtrack, played and mixed dynamically in the browser.">
+        <meta name="author" content="Drawing Pad">
+        <meta name="theme-color" content="#FF4040">
+        <meta name="robots" content="index, follow">
+
+        <meta property="og:title" content="Catalyst Soundtrack Player">
+        <meta property="og:description" content="Mirror's Edge Catalyst's layered soundtrack, played and mixed dynamically in the browser.">
+        <meta property="og:site_name" content="Paddy's Dreamland™">
+        <meta property="og:type" content="website">
+
+        <link rel="icon" type="image/x-icon" href="../../images/app_icon_16.png">
+
+        <link rel="stylesheet" href="../../styles/pd_main.css">
+        <link rel="stylesheet" href="soundtrack_player.css">
+
+        <!-- The visitor's accent colour and corner radius from the main site's Customization settings. -->
+        <script>
+            try {
+                const savedColor = localStorage.getItem("customColor");
+                const savedBorderRadius = localStorage.getItem("customBorderRadius");
+                if (savedColor) document.documentElement.style.setProperty("--custom-color", savedColor);
+                if (savedBorderRadius) document.documentElement.style.setProperty("--custom-border-radius", savedBorderRadius);
+            } catch (error) { /* storage blocked: keep the defaults */ }
+        </script>
+
+        <script src="soundtrack_player.js" defer></script>
+        <script src="soundtrack_playlist.js" defer></script>
+
+        <script src="/scripts/moduleloader.js"></script>
+    </head>
+
+    <body>
+        <document file="/modules/3d_skybox/main_low.html"></document>
+
+        <div id="website-holder">
+            <div id="main-holder">
+                <div class="main-scrollable">
+                    <div class="section-wrapper">
+                        <a class="cst-back" href="/">&larr; Back to Paddy's Dreamland&trade;</a>
+
+                        <h3 class="main-header">Mirror's Edge™ Catalyst – Soundtrack Player & Mixer</h3>
+
+                        <div class="section-container">
+                            <div id="cst" class="mixer">
+                                <div class="mixer-deck">
+                                    <div class="mixer-deck-top">
+                                        <div class="mixer-deck-info">
+                                            <div id="mixer-status" class="mixer-status">Stopped</div>
+                                            <!-- The main soundtrack picker: the native select sits invisibly over the title, so clicking the title opens it. -->
+                                            <div class="mixer-title-picker">
+                                                <span id="mixer-title" class="mixer-title">Choose a soundtrack</span>
+                                                <svg class="mixer-title-chevron" viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4"/></svg>
+                                                <select id="track-selector" aria-label="Main soundtrack" title="Choose the main soundtrack, which fills every channel and sets the tempo">
+                                                    <option class="dropdown-option" value="">Choose a soundtrack...</option>
+                                                </select>
+                                            </div>
+                                            <div id="mixer-subtitle" class="mixer-subtitle">Click the title to pick one and begin</div>
+                                            <div id="mixer-next" class="mixer-next" hidden></div>
+                                        </div>
+
+                                        <div class="mixer-deck-tempo">
+                                            <div id="current-bpm" class="mixer-bpm">N/A BPM</div>
+
+                                            <div class="mixer-beat">
+                                                <div class="mixer-beat-leds">
+                                                    <span class="mixer-led"></span>
+                                                    <span class="mixer-led"></span>
+                                                    <span class="mixer-led"></span>
+                                                    <span class="mixer-led"></span>
+                                                </div>
+                                                <div id="mixer-position" class="mixer-position">0.0</div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- The screen: the spectrum, with the controls laid over its corners. -->
+                                    <div class="mixer-screen">
+                                        <canvas id="mixer-spectrum" class="mixer-spectrum"></canvas>
+
+                                        <div class="cst-tools" role="toolbar" aria-label="Mix">
+                                            <button id="mixer-shuffle" class="cst-tool" title="Shuffle layers: swap every channel to a random track with a matching tempo" aria-label="Shuffle layers"><img src="../../images/silk/arrow_switch.png" alt=""></button>
+                                            <span class="cst-tool-divider" aria-hidden="true"></span>
+                                            <button id="music-download" class="cst-tool" title="Download 8CH: a WAV of the active channels, for replacing the game's music" aria-label="Download 8-channel WAV"><img src="../../images/silk/disk.png" alt=""></button>
+                                            <button id="mixer-download-stereo" class="cst-tool" title="Download mixdown: a stereo WAV of the mix as you hear it, faders and filter included" aria-label="Download stereo mixdown"><img src="../../images/silk/music.png" alt=""></button>
+                                        </div>
+
+                                        <div class="cst-corner">
+                                            <button id="cst-help" class="cst-tool" title="How it works" aria-label="How it works" aria-haspopup="dialog"><img src="../../images/silk/help.png" alt=""></button>
+                                            <button id="cst-settings" class="cst-tool" title="Settings" aria-label="Settings" aria-haspopup="true" aria-expanded="false" aria-controls="cst-settings-menu"><img src="../../images/silk/cog.png" alt=""></button>
+                                            <div id="cst-settings-menu" class="cst-settings-menu" hidden>
+                                                <label class="cst-setting">
+                                                    <input id="starter-layer-checkbox5" type="checkbox" checked>
+                                                    <span><b>Dynamic Layer Handling</b><small>Randomly brings channels in and out every loop.</small></span>
+                                                </label>
+                                                <label class="cst-setting">
+                                                    <input id="starter-layer-checkbox6" type="checkbox" checked>
+                                                    <span><b>Maintain BPM</b><small>Transitions keep the current tempo instead of gliding to the new track's.</small></span>
+                                                </label>
+                                                <label class="cst-setting">
+                                                    <input id="mixer-quantize" type="checkbox" checked>
+                                                    <span><b>Quantize to Bar</b><small>Toggles and transitions wait for the next bar to start.</small></span>
+                                                </label>
+                                                <label class="cst-setting">
+                                                    <input id="mixer-fade-stop" type="checkbox" checked>
+                                                    <span><b>Fade Out on Stop</b><small>Stop eases the mix out instead of cutting it.</small></span>
+                                                </label>
+                                                <label class="cst-setting cst-setting-select">
+                                                    <span><b>Fade Length</b><small>How long transitions and channel toggles take to fade.</small></span>
+                                                    <select id="mixer-fade-length" class="dropdown-menu">
+                                                        <option class="dropdown-option" value="instant">Instant</option>
+                                                        <option class="dropdown-option" value="short">Short (2 bars)</option>
+                                                        <option class="dropdown-option" value="normal" selected>Normal (1/8 loop)</option>
+                                                        <option class="dropdown-option" value="long">Long (1/4 loop)</option>
+                                                    </select>
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <div class="cst-transport">
+                                            <button id="music-start" class="cst-tool cst-play" title="Start" aria-label="Start"><img src="../../images/silk/control_play_blue.png" alt=""></button>
+                                            <button id="music-transition" class="cst-tool cst-play" style="display: none;" title="Transition: crossfade to the current selection" aria-label="Transition"><img src="../../images/silk/control_fastforward_blue.png" alt=""></button>
+                                            <button id="music-reset" class="cst-tool cst-play" style="display: none;" title="Stop" aria-label="Stop"><img src="../../images/silk/control_stop_blue.png" alt=""></button>
+                                        </div>
+                                    </div>
+
+                                    <div class="mixer-loop" title="Loop position">
+                                        <div id="mixer-loop-bar"></div>
+                                    </div>
+
+                                    <div id="volume-loading" class="loading-background" style="display: none;">
+                                        <div id="volume-loading-bg">
+                                            <div id="volume-loading-bar"></div>
+                                            <div id="volume-loading-percentage">0%</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mixer-strips">
+                                    <div class="mixer-strip" data-group="0">
+                                        <div class="mixer-strip-head">
+                                            <button class="mixer-strip-role" type="button" aria-haspopup="menu" aria-expanded="false" title="Choose which layers this channel plays">
+                                                <span class="mixer-strip-name">Percussion</span>
+                                                <svg class="mixer-strip-chevron" viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4"/></svg>
+                                            </button>
+                                            <div class="mixer-strip-badge" title="Tempo of this channel's track"></div>
+                                        </div>
+                                        <div class="mixer-strip-layers">Layers 1 & 2</div>
+
+                                        <select class="dropdown-menu mixer-strip-select" id="layers-selector1" title="Track used for layers 1 & 2, typically drums and snares">
+                                            <option class="dropdown-option" value="">...</option>
+                                        </select>
+
+                                        <div class="mixer-strip-body">
+                                            <div class="mixer-meter"><div class="mixer-meter-fill"></div><div class="mixer-meter-peak"></div></div>
+                                            <div class="mixer-meter"><div class="mixer-meter-fill"></div><div class="mixer-meter-peak"></div></div>
+                                            <div class="mixer-fader-slot"><input id="mixer-fader1" class="mixer-fader" type="range" min="0" max="100" value="100" title="Channel volume (double-click to reset)"></div>
+                                        </div>
+                                        <div class="mixer-fader-value">0.0 dB</div>
+
+                                        <div class="mixer-fade" title="Fade automation, from toggles and Dynamic Layer Handling">
+                                            <div id="volume-bar1"></div>
+                                            <div id="volume-bar2"></div>
+                                        </div>
+
+                                        <div class="mixer-strip-buttons">
+                                            <label class="mixer-toggle mixer-toggle-on" title="Play this channel"><input id="starter-layer-checkbox1" type="checkbox">On</label>
+                                            <label class="mixer-toggle mixer-toggle-solo" title="Hear only soloed channels"><input class="mixer-solo" type="checkbox">Solo</label>
+                                            <label class="mixer-toggle mixer-toggle-lock" title="Keep Dynamic Layer Handling from switching this channel on or off"><input class="mixer-lock" type="checkbox">Lock</label>
+                                        </div>
+                                    </div>
+
+                                    <div class="mixer-strip" data-group="1">
+                                        <div class="mixer-strip-head">
+                                            <button class="mixer-strip-role" type="button" aria-haspopup="menu" aria-expanded="false" title="Choose which layers this channel plays">
+                                                <span class="mixer-strip-name">Drones</span>
+                                                <svg class="mixer-strip-chevron" viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4"/></svg>
+                                            </button>
+                                            <div class="mixer-strip-badge" title="Tempo of this channel's track"></div>
+                                        </div>
+                                        <div class="mixer-strip-layers">Layers 3 & 4</div>
+
+                                        <select class="dropdown-menu mixer-strip-select" id="layers-selector2" title="Track used for layers 3 & 4, commonly background drones and humming tones">
+                                            <option class="dropdown-option" value="">...</option>
+                                        </select>
+
+                                        <div class="mixer-strip-body">
+                                            <div class="mixer-meter"><div class="mixer-meter-fill"></div><div class="mixer-meter-peak"></div></div>
+                                            <div class="mixer-meter"><div class="mixer-meter-fill"></div><div class="mixer-meter-peak"></div></div>
+                                            <div class="mixer-fader-slot"><input id="mixer-fader2" class="mixer-fader" type="range" min="0" max="100" value="100" title="Channel volume (double-click to reset)"></div>
+                                        </div>
+                                        <div class="mixer-fader-value">0.0 dB</div>
+
+                                        <div class="mixer-fade" title="Fade automation, from toggles and Dynamic Layer Handling">
+                                            <div id="volume-bar3"></div>
+                                            <div id="volume-bar4"></div>
+                                        </div>
+
+                                        <div class="mixer-strip-buttons">
+                                            <label class="mixer-toggle mixer-toggle-on" title="Play this channel"><input id="starter-layer-checkbox2" type="checkbox">On</label>
+                                            <label class="mixer-toggle mixer-toggle-solo" title="Hear only soloed channels"><input class="mixer-solo" type="checkbox">Solo</label>
+                                            <label class="mixer-toggle mixer-toggle-lock" title="Keep Dynamic Layer Handling from switching this channel on or off"><input class="mixer-lock" type="checkbox">Lock</label>
+                                        </div>
+                                    </div>
+
+                                    <div class="mixer-strip" data-group="2">
+                                        <div class="mixer-strip-head">
+                                            <button class="mixer-strip-role" type="button" aria-haspopup="menu" aria-expanded="false" title="Choose which layers this channel plays">
+                                                <span class="mixer-strip-name">Variety</span>
+                                                <svg class="mixer-strip-chevron" viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4"/></svg>
+                                            </button>
+                                            <div class="mixer-strip-badge" title="Tempo of this channel's track"></div>
+                                        </div>
+                                        <div class="mixer-strip-layers">Layers 5 & 6</div>
+
+                                        <select class="dropdown-menu mixer-strip-select" id="layers-selector3" title="Track used for layers 5 & 6, varied sound elements">
+                                            <option class="dropdown-option" value="">...</option>
+                                        </select>
+
+                                        <div class="mixer-strip-body">
+                                            <div class="mixer-meter"><div class="mixer-meter-fill"></div><div class="mixer-meter-peak"></div></div>
+                                            <div class="mixer-meter"><div class="mixer-meter-fill"></div><div class="mixer-meter-peak"></div></div>
+                                            <div class="mixer-fader-slot"><input id="mixer-fader3" class="mixer-fader" type="range" min="0" max="100" value="100" title="Channel volume (double-click to reset)"></div>
+                                        </div>
+                                        <div class="mixer-fader-value">0.0 dB</div>
+
+                                        <div class="mixer-fade" title="Fade automation, from toggles and Dynamic Layer Handling">
+                                            <div id="volume-bar5"></div>
+                                            <div id="volume-bar6"></div>
+                                        </div>
+
+                                        <div class="mixer-strip-buttons">
+                                            <label class="mixer-toggle mixer-toggle-on" title="Play this channel"><input id="starter-layer-checkbox3" type="checkbox" checked>On</label>
+                                            <label class="mixer-toggle mixer-toggle-solo" title="Hear only soloed channels"><input class="mixer-solo" type="checkbox">Solo</label>
+                                            <label class="mixer-toggle mixer-toggle-lock" title="Keep Dynamic Layer Handling from switching this channel on or off"><input class="mixer-lock" type="checkbox">Lock</label>
+                                        </div>
+                                    </div>
+
+                                    <div class="mixer-strip" data-group="3">
+                                        <div class="mixer-strip-head">
+                                            <button class="mixer-strip-role" type="button" aria-haspopup="menu" aria-expanded="false" title="Choose which layers this channel plays">
+                                                <span class="mixer-strip-name">Ambience</span>
+                                                <svg class="mixer-strip-chevron" viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4"/></svg>
+                                            </button>
+                                            <div class="mixer-strip-badge" title="Tempo of this channel's track"></div>
+                                        </div>
+                                        <div class="mixer-strip-layers">Layers 7 & 8</div>
+
+                                        <select class="dropdown-menu mixer-strip-select" id="layers-selector4" title="Track used for layers 7 & 8, generally ambient sounds">
+                                            <option class="dropdown-option" value="">...</option>
+                                        </select>
+
+                                        <div class="mixer-strip-body">
+                                            <div class="mixer-meter"><div class="mixer-meter-fill"></div><div class="mixer-meter-peak"></div></div>
+                                            <div class="mixer-meter"><div class="mixer-meter-fill"></div><div class="mixer-meter-peak"></div></div>
+                                            <div class="mixer-fader-slot"><input id="mixer-fader4" class="mixer-fader" type="range" min="0" max="100" value="100" title="Channel volume (double-click to reset)"></div>
+                                        </div>
+                                        <div class="mixer-fader-value">0.0 dB</div>
+
+                                        <div class="mixer-fade" title="Fade automation, from toggles and Dynamic Layer Handling">
+                                            <div id="volume-bar7"></div>
+                                            <div id="volume-bar8"></div>
+                                        </div>
+
+                                        <div class="mixer-strip-buttons">
+                                            <label class="mixer-toggle mixer-toggle-on" title="Play this channel"><input id="starter-layer-checkbox4" type="checkbox" checked>On</label>
+                                            <label class="mixer-toggle mixer-toggle-solo" title="Hear only soloed channels"><input class="mixer-solo" type="checkbox">Solo</label>
+                                            <label class="mixer-toggle mixer-toggle-lock" title="Keep Dynamic Layer Handling from switching this channel on or off"><input class="mixer-lock" type="checkbox">Lock</label>
+                                        </div>
+                                    </div>
+
+                                    <div class="mixer-strip mixer-strip-master">
+                                        <div class="mixer-strip-head">
+                                            <div class="mixer-strip-name">Master</div>
+                                        </div>
+                                        <div class="mixer-strip-layers">Output</div>
+
+                                        <div class="mixer-filter">
+                                            <input id="mixer-filter" class="mixer-filter-knob" type="range" min="-100" max="100" value="0" title="Low-pass to the left, high-pass to the right (double-click to reset)">
+                                            <div class="mixer-filter-scale"><span>LPF</span><span id="mixer-filter-value">Filter Off</span><span>HPF</span></div>
+                                        </div>
+
+                                        <div class="mixer-strip-body">
+                                            <div class="mixer-meter"><div class="mixer-meter-fill"></div><div class="mixer-meter-peak"></div></div>
+                                            <div class="mixer-meter"><div class="mixer-meter-fill"></div><div class="mixer-meter-peak"></div></div>
+                                            <div class="mixer-fader-slot"><input id="mixer-master" class="mixer-fader" type="range" min="0" max="100" value="100" title="Master volume (double-click to reset)"></div>
+                                        </div>
+                                        <div class="mixer-fader-value">0.0 dB</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- The help pop-up, opened from the display's help button. -->
+        <dialog id="cst-help-dialog" class="cst-dialog" aria-labelledby="cst-help-title">
+            <div class="cst-dialog-panel">
+                <div class="cst-dialog-head">
+                    <h4 id="cst-help-title" class="section-header">How it works</h4>
+                    <button class="cst-tool cst-dialog-close" title="Close" aria-label="Close" data-close><img src="../../images/silk/cross.png" alt=""></button>
+                </div>
+
+                <p>Mirror's Edge&trade; Catalyst's soundtrack, made dynamic, entirely within the browser. Every soundtrack is split into four channels of two layers each, which you can mix, swap between tracks, and blend together.</p>
+
+                <ul>
+                    <li>Click the title to pick a main soundtrack, which fills in every channel. Swap individual channels to other tracks for more variety, or hit Shuffle in the display's corner to have it done for you.</li>
+                    <li>Hit play and enjoy listening. Each channel has its own fader and On, Solo and Lock buttons (Lock keeps Dynamic Layer Handling away from it), and the meters show what every layer is actually playing.</li>
+                    <li>Use the arrow next to a channel's name to pick which layers it plays, so two channels can both be percussion from different tracks, for example.</li>
+                    <li>No refreshing needed: change the soundtrack or any channel while playing and hit Transition to crossfade to it on the beat. The cog holds the playback options.</li>
+                    <li>Download the 8-channel version to replace the soundtracks in Mirror's Edge&trade; Catalyst, or a stereo mixdown of exactly what you hear.</li>
+                </ul>
+
+                <h4 class="section-header">Credits</h4>
+                <p>All tracks used in this system are made by Magnus Birgersson, also known as Solar Fields.</p>
+            </div>
+        </dialog>
+    </body>
+</html>

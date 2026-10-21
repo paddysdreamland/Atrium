@@ -49,30 +49,6 @@
                         <h3 class="main-header">Soundscape Player</h3>
 
                         <div class="section-container">
-                            <h4 class="section-header">Information</h4>
-
-                            <p class="section-paragraph">
-                                Half-Life 2's soundscapes, played back in the browser by a port of the Source engine's own soundscape system. These are the ambient beds, loops and one-off sounds the game layers around you in every area. Here's how it works:
-                            </p>
-
-                            <ul class="section-list-unspaced">
-                                <li>Click the title in the display to pick a soundscape, then hit the play button in the corner of the radar. Picking another one while playing crossfades to it, the same way the game does when you walk into a new area.</li>
-                                <li>The radar shows the sounds around you: loops glow at their positions, random sounds ripple where they play, and ambient sounds surround you. Drag the numbered positions around to move their sounds, snapping to the grid if you like. Scroll to zoom, drag empty space to pan, and double-click to reset the view. The cog holds the room effect and fade time settings.</li>
-                                <li>Every loop and random sound gets its own row beside the radar, with a live meter, Mute and Solo, above a log of the random sounds as they play.</li>
-                            </ul>
-
-                            <p class="section-paragraph">
-                                The soundscape logic follows the Source SDK 2013 code closely. The engine's own mixing isn't part of the SDK, so distance falloff, panning and the room effects are close approximations rather than exact copies.
-                            </p>
-
-                            <h4 class="section-header">Credits</h4>
-
-                            <p class="section-paragraph">Half-Life 2, its soundscapes and its sounds are made by Valve. The soundscape system is ported from Valve's Source SDK 2013.</p>
-                        </div>
-
-                        <h3 class="main-header">Player</h3>
-
-                        <div class="section-container">
                             <div class="ssp">
                                 <div class="ssp-deck">
                                     <div class="ssp-deck-top">
@@ -109,6 +85,7 @@
                                             </div>
 
                                             <div class="ssp-radar-settings">
+                                                <button id="ssp-help" class="ssp-tool" title="How it works" aria-label="How it works" aria-haspopup="dialog"><img src="../../images/silk/help.png" alt=""></button>
                                                 <button id="ssp-settings" class="ssp-tool" title="Settings" aria-label="Settings" aria-haspopup="true" aria-expanded="false" aria-controls="ssp-settings-menu"><img src="../../images/silk/cog.png" alt=""></button>
                                                 <div id="ssp-settings-menu" class="ssp-settings-menu" hidden>
                                                     <label class="ssp-setting">
@@ -174,5 +151,29 @@
                 </div>
             </div>
         </div>
+
+        <!-- The help pop-up, opened from the radar's help button. -->
+        <dialog id="ssp-help-dialog" class="ssp-dialog" aria-labelledby="ssp-help-title">
+            <div class="ssp-dialog-panel">
+                <div class="ssp-dialog-head">
+                    <h4 id="ssp-help-title" class="section-header">How it works</h4>
+                    <button class="ssp-tool ssp-dialog-close" title="Close" aria-label="Close" data-close><img src="../../images/silk/cross.png" alt=""></button>
+                </div>
+
+                <p>Half-Life 2's soundscapes, played back in the browser by a port of the Source engine's own soundscape system. These are the ambient beds, loops and one-off sounds the game layers around you in every area.</p>
+
+                <ul>
+                    <li>Click the title to pick a soundscape, then hit play in the radar's corner. Picking another one while playing crossfades to it, the same way the game does when you walk into a new area.</li>
+                    <li>The radar shows the sounds around you: loops glow at their positions, random sounds ripple where they play, and ambient sounds surround you.</li>
+                    <li>Drag the numbered positions to move their sounds. Scroll to zoom, drag empty space to pan, and double-click to reset the view. The toolbar sets the grid and snapping, and the cog holds the room effect and fade time.</li>
+                    <li>Every loop and random sound gets its own row with a live meter, Mute and Solo, above a log of the random sounds as they play.</li>
+                </ul>
+
+                <p class="ssp-dialog-note">The soundscape logic follows the Source SDK 2013 code closely. The engine's own mixing isn't part of the SDK, so distance falloff, panning and the room effects are close approximations rather than exact copies.</p>
+
+                <h4 class="section-header">Credits</h4>
+                <p>Half-Life 2, its soundscapes and its sounds are made by Valve. The soundscape system is ported from Valve's Source SDK 2013.</p>
+            </div>
+        </dialog>
     </body>
 </html>

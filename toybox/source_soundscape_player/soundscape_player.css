@@ -644,6 +644,8 @@
     position: absolute;
     right: 6px;
     top: 6px;
+    display: flex;
+    gap: 4px;
 }
 
 .ssp-radar-settings > .ssp-tool {
@@ -726,6 +728,69 @@
     margin: 0;
     font-size: 13px;
     color-scheme: dark;
+}
+
+/* The help pop-up */
+.ssp-dialog {
+    /* pd_main.css makes everything position: relative, so pin the modal explicitly. */
+    position: fixed;
+    inset: 0;
+    width: min(560px, calc(100vw - 32px));
+    height: fit-content;
+    max-height: calc(100vh - 48px);
+    margin: auto;
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--white);
+    font-family: "Lato";
+    overflow: visible;
+}
+
+.ssp-dialog::backdrop {
+    background-color: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(2px);
+}
+
+.ssp-dialog-panel {
+    max-height: calc(100vh - 48px);
+    padding: 12px 18px 18px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background:
+        radial-gradient(ellipse at 50% 0%, rgba(var(--custom-color), 0.12), transparent 70%),
+        rgb(14, 14, 14);
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.8);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow-y: auto;
+}
+
+.ssp-dialog-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+
+.ssp-dialog p,
+.ssp-dialog li {
+    font-size: 14px;
+    line-height: 1.45;
+    user-select: text;
+}
+
+.ssp-dialog ul {
+    padding-left: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.ssp-dialog .ssp-dialog-note {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.6);
 }
 
 @keyframes ssp-blink {

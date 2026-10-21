@@ -96,6 +96,7 @@ var socialLinks = {
     "twitch-button": "https://www.twitch.tv/paddysdreamland/about",
     "youtube-button": "https://www.youtube.com/@paddysdreamland",
     "github-button": "https://github.com/paddysdreamland/Website",
+    "ost-button": "/toybox/catalyst_soundtrack_player/",
     "glg-button": "/glassguessr.html",
     "soundscape-button": "/toybox/source_soundscape_player/",
     "staging-button": "https://staging.paddysdreamland.com"

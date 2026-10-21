@@ -451,6 +451,14 @@ radar.addEventListener("dblclick", event => {
 });
 document.getElementById("ssp-reset-view").addEventListener("click", resetView);
 
+// The help pop-up: a native modal dialog (Escape closes it for free); clicking the backdrop or the
+// cross closes it too. The panel fills the dialog, so a click on the dialog itself is the backdrop.
+const helpDialog = document.getElementById("ssp-help-dialog");
+document.getElementById("ssp-help").addEventListener("click", () => helpDialog.showModal());
+helpDialog.addEventListener("click", event => {
+    if (event.target === helpDialog || event.target.closest("[data-close]")) helpDialog.close();
+});
+
 // The cog's settings menu: closes on a click anywhere else, or Escape.
 const settingsButton = document.getElementById("ssp-settings");
 const settingsMenu = document.getElementById("ssp-settings-menu");

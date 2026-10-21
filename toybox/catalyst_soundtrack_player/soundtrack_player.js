@@ -1,7 +1,8 @@
-// Experimental mixer version of pd_music.js. The playback engine (tempo-matching, beat-synced
-// transitions, dynamic layer handling, 8-channel export) is the same; on top of it this adds a
-// persistent mixer graph (channel faders, solo, master filter and volume), real level meters, a
-// spectrum display, a beat clock, bar-quantized toggles, fade-out stop and a stereo mixdown export.
+// Catalyst Soundtrack Player - toybox app. Grew out of the main site's original player
+// (scripts/pd_music.js): the same playback engine (tempo-matching, beat-synced transitions, dynamic
+// layer handling, 8-channel export), plus a persistent mixer graph (channel faders, solo, master
+// filter and volume), real level meters, a spectrum display, a beat clock, bar-quantized toggles,
+// fade-out stop and a stereo mixdown export. The music itself stays in the site root's ME_Sound/.
 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
 const musicButton = document.getElementById("music-start");
@@ -344,7 +345,8 @@ function resetLoadingBar() {
 }
 
 async function loadAudio(url) {
-    const response = await fetch(url);
+    // The playlist's paths are relative to the site root (ME_Sound/...), not to this page's folder.
+    const response = await fetch(url.startsWith("/") ? url : "/" + url);
     const arrayBuffer = await response.arrayBuffer();
 
     loadPercentage += 12.5;
@@ -1206,6 +1208,36 @@ function shuffleLayers() {
 }
 
 shuffleButton.addEventListener("click", shuffleLayers);
+
+/* Help and settings */
+
+// The help pop-up: a native modal dialog (Escape closes it for free); clicking the backdrop or the
+// cross closes it too. The panel fills the dialog, so a click on the dialog itself is the backdrop.
+const helpDialog = document.getElementById("cst-help-dialog");
+document.getElementById("cst-help").addEventListener("click", () => helpDialog.showModal());
+helpDialog.addEventListener("click", event => {
+    if (event.target === helpDialog || event.target.closest("[data-close]")) helpDialog.close();
+});
+
+// The cog's settings menu: closes on a click anywhere else, or Escape.
+const settingsButton = document.getElementById("cst-settings");
+const settingsMenu = document.getElementById("cst-settings-menu");
+
+function setSettingsOpen(open) {
+    settingsMenu.hidden = !open;
+    settingsButton.setAttribute("aria-expanded", String(open));
+    settingsButton.setAttribute("aria-pressed", String(open));
+}
+
+settingsButton.addEventListener("click", () => setSettingsOpen(settingsMenu.hidden));
+document.addEventListener("pointerdown", event => {
+    if (!settingsMenu.hidden && !event.target.closest(".cst-corner")) setSettingsOpen(false);
+});
+settingsMenu.addEventListener("keydown", event => {
+    if (event.key !== "Escape") return;
+    setSettingsOpen(false);
+    settingsButton.focus();
+});
 
 /* Visuals */
 
