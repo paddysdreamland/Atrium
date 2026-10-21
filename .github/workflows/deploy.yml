@@ -250,36 +250,54 @@ jobs:
           # those commits still post through the normal webhook, just under Claude's name.
           DISCORD_WEBHOOK_CLAUDE: ${{ secrets.DISCORD_WEBHOOK_CLAUDE }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Passed in as a variable instead of pasted into the script, so quotes or backslashes
-          # in a commit message can't break the Python code.
-          COMMIT_MESSAGE: ${{ github.event.commits[0].message }}
+          # All commits in this push, passed in as a variable instead of pasted into the script,
+          # so quotes or backslashes in a commit message can't break the Python code.
+          COMMITS_JSON: ${{ toJSON(github.event.commits) }}
+          HEAD_MESSAGE: ${{ github.event.head_commit.message }}
         run: |
           python3 << 'EOF'
           import os, re, json, urllib.request
 
-          message = os.environ.get("COMMIT_MESSAGE", "")
           repo = "${{ github.repository }}"
           repo_name = repo.split("/")[1]
           branch = "${{ github.ref_name }}"
           actor = "${{ github.actor }}"
 
-          # Split summary and description
-          parts = message.split("\n", 1)
-          subject = parts[0].strip()
-          body = parts[1].strip() if len(parts) > 1 else subject
+          # A push can carry several commits (for example when staging is merged into Release).
+          # Every commit's description is posted, oldest first, so nothing gets lost.
+          # Merge commits are skipped, since the commits they bring in are already listed.
+          try:
+            commits = json.loads(os.environ.get("COMMITS_JSON") or "[]") or []
+          except Exception:
+            commits = []
+          messages = [c.get("message", "") for c in commits
+                      if not c.get("message", "").startswith(("Merge pull request", "Merge branch", "Merge remote-tracking"))]
+          if not messages:
+            messages = [os.environ.get("HEAD_MESSAGE", "")]
 
-          # Look for a "Co-Authored-By: Claude ... <email>" line. If found, post as plain
-          # "Claude" (no model name) and remove the line from the message.
+          # A "Co-Authored-By: Claude ... <email>" line means Claude helped. It's removed from the
+          # text, and if any commit in the push has it, the message posts as "Claude".
           claude_pattern = re.compile(
             r"^[ \t]*Co-Authored-By:[ \t]*Claude[^<\n]*?[ \t]*(<[^>\n]*>)?[ \t]*$",
             re.IGNORECASE | re.MULTILINE
           )
-          match = claude_pattern.search(body)
-          claude_name = "Claude" if match else None
-          if match:
-            body = claude_pattern.sub("", body).strip()
-            if not body:
-              body = subject
+          claude_name = None
+          bodies = []
+          for message in messages:
+            # Split summary and description; use the description, or the summary if there is none.
+            parts = message.split("\n", 1)
+            subject = parts[0].strip()
+            body = parts[1].strip() if len(parts) > 1 else ""
+            if claude_pattern.search(body):
+              claude_name = "Claude"
+              body = claude_pattern.sub("", body).strip()
+            bodies.append(body or subject)
+          body = "\n\n".join(b for b in bodies if b)
+
+          # Discord allows 2000 characters per message. Leave room for the footer line.
+          LIMIT = 1700
+          if len(body) > LIMIT:
+            body = body[:LIMIT].rsplit("\n", 1)[0].rstrip() + "\n\n…and more, see the full list on GitHub."
 
           # Fetch GitHub display name. Signed in with the workflow's own token, because
           # anonymous requests share a small hourly limit with everyone on GitHub's servers.
