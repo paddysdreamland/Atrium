@@ -143,12 +143,6 @@ const fadeSelect = document.getElementById("ssp-fade");
 fadeSelect.addEventListener("change", () => engine.setFadeTime(Number(fadeSelect.value)));
 engine.setFadeTime(Number(fadeSelect.value));
 
-const rangeSelect = document.getElementById("ssp-range");
-let radarRange = Number(rangeSelect.value);
-rangeSelect.addEventListener("change", () => {
-    radarRange = Number(rangeSelect.value);
-    document.getElementById("ssp-radar-scale").textContent = `${radarRange} units`;
-});
 
 /* Sound rows */
 
@@ -283,61 +277,202 @@ function renderMeters(deltaSeconds) {
 
 /* Radar */
 
+// A Hammer-style top view in Source units: the listener at the origin facing up (forward is +y,
+// right is +x). Scrolling zooms smoothly around the cursor (pinch on touch screens), dragging empty
+// space pans, dragging a numbered position moves its sounds, and double-clicking resets the view.
 const radar = document.getElementById("ssp-radar");
 const radarContext = radar.getContext("2d");
+const radarScaleLabel = document.getElementById("ssp-radar-scale");
 const radarBlips = []; // recent random sound plays, drawn as ripples
+const gridColors = { background: "#000000", minor: "#4B4B4B", major: "#642E01", axis: "#006464" };
+const defaultView = { x: 0, y: 0, range: 128 }; // range: units from the middle to the edge
+const minRange = 24;
+const maxRange = 16384;
+const view = { ...defaultView, targetRange: defaultView.range, anchor: null };
 let customColor = "0, 255, 192";
 let customColorCheckedAt = -Infinity;
-let draggedPosition = -1;
 let hoveredPosition = -1;
+let gridSize = 16;
+let snapToGrid = true;
 
-// Radar layout: the listener sits in the middle facing up (forward), right is right.
+const snapCheckbox = document.getElementById("ssp-snap");
+const gridSelect = document.getElementById("ssp-grid");
+const syncGrid = () => {
+    snapToGrid = snapCheckbox.checked;
+    gridSize = Number(gridSelect.value);
+};
+snapCheckbox.addEventListener("change", syncGrid);
+gridSelect.addEventListener("change", syncGrid);
+syncGrid();
+document.getElementById("ssp-reset-positions").addEventListener("click", () => engine.resetPositions());
+
 function radarMetrics() {
     const size = radar.clientWidth;
-    return { size, center: size / 2, scale: (size / 2 - 14) / radarRange };
+    return { size, center: size / 2, scale: (size / 2) / view.range };
 }
 
 function toScreen(point, metrics) {
-    const clamp = value => Math.max(-radarRange, Math.min(radarRange, value));
-    return { x: metrics.center + clamp(point.x) * metrics.scale, y: metrics.center - clamp(point.y) * metrics.scale };
+    return { x: metrics.center + (point.x - view.x) * metrics.scale, y: metrics.center - (point.y - view.y) * metrics.scale };
 }
 
-function positionAt(event) {
+function toWorld(screenX, screenY, metrics) {
+    return { x: view.x + (screenX - metrics.center) / metrics.scale, y: view.y - (screenY - metrics.center) / metrics.scale };
+}
+
+// Keeps a marker on the radar's edge when its point is off-screen, so it never disappears.
+function clampToRadar(point, metrics, margin = 10) {
+    return { x: Math.max(margin, Math.min(metrics.size - margin, point.x)), y: Math.max(margin, Math.min(metrics.size - margin, point.y)) };
+}
+
+function localPoint(event) {
     const rect = radar.getBoundingClientRect();
+    return { x: event.clientX - rect.left, y: event.clientY - rect.top };
+}
+
+function positionAt(point) {
     const metrics = radarMetrics();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
     for (let index = engine.positions.length - 1; index >= 0; index--) {
-        const point = toScreen(engine.positions[index], metrics);
-        if (Math.abs(point.x - x) <= 11 && Math.abs(point.y - y) <= 11) return index;
+        const marker = clampToRadar(toScreen(engine.positions[index], metrics), metrics);
+        if (Math.abs(marker.x - point.x) <= 11 && Math.abs(marker.y - point.y) <= 11) return index;
     }
     return -1;
 }
 
-radar.addEventListener("pointerdown", event => {
-    draggedPosition = positionAt(event);
-    if (draggedPosition >= 0) radar.setPointerCapture(event.pointerId);
-});
+// Sets a zoom target; the frame loop eases toward it, keeping the point under the anchor still.
+function zoomTo(range, anchor) {
+    const metrics = radarMetrics();
+    const point = anchor || { x: metrics.center, y: metrics.center };
+    view.targetRange = Math.max(minRange, Math.min(maxRange, range));
+    view.anchor = { screen: point, world: toWorld(point.x, point.y, metrics) };
+}
 
-radar.addEventListener("pointermove", event => {
-    if (draggedPosition < 0) {
-        hoveredPosition = positionAt(event);
-        radar.style.cursor = hoveredPosition >= 0 ? "grab" : "";
+function updateView(deltaSeconds) {
+    if (Math.abs(view.range - view.targetRange) <= view.targetRange * 0.001) {
+        view.range = view.targetRange;
+        view.anchor = null;
         return;
     }
-    const rect = radar.getBoundingClientRect();
-    const metrics = radarMetrics();
-    const clamp = value => Math.max(-radarRange, Math.min(radarRange, value));
-    const x = clamp((event.clientX - rect.left - metrics.center) / metrics.scale);
-    const y = clamp((metrics.center - (event.clientY - rect.top)) / metrics.scale);
-    engine.setPosition(draggedPosition, Math.round(x), Math.round(y));
+    // Ease in log space, so zooming in and out feel the same speed.
+    const t = 1 - Math.exp(-deltaSeconds * 14);
+    view.range = Math.exp(Math.log(view.range) + (Math.log(view.targetRange) - Math.log(view.range)) * t);
+    if (view.anchor) {
+        const metrics = radarMetrics();
+        view.x = view.anchor.world.x - (view.anchor.screen.x - metrics.center) / metrics.scale;
+        view.y = view.anchor.world.y + (view.anchor.screen.y - metrics.center) / metrics.scale;
+    }
+}
+
+radar.addEventListener("wheel", event => {
+    event.preventDefault(); // zoom the radar, not scroll the page
+    const delta = event.deltaMode === 1 ? event.deltaY * 33 : event.deltaY; // lines -> pixels
+    zoomTo(view.targetRange * Math.exp(delta * 0.0015), localPoint(event));
+}, { passive: false });
+
+// One pointer drags a position or pans; a second one turns it into a pinch zoom.
+const pointers = new Map();
+let drag = null;
+
+radar.addEventListener("pointerdown", event => {
+    radar.setPointerCapture(event.pointerId);
+    const point = localPoint(event);
+    pointers.set(event.pointerId, point);
+    if (pointers.size === 2) {
+        const [a, b] = [...pointers.values()];
+        drag = { kind: "pinch", startDistance: Math.hypot(a.x - b.x, a.y - b.y) || 1, startRange: view.targetRange };
+        return;
+    }
+    const index = positionAt(point);
+    drag = index >= 0 ? { kind: "position", index } : { kind: "pan", last: point };
+    view.anchor = null;
     radar.style.cursor = "grabbing";
 });
 
-const endDrag = () => { draggedPosition = -1; radar.style.cursor = ""; };
-radar.addEventListener("pointerup", endDrag);
-radar.addEventListener("pointercancel", endDrag);
-radar.addEventListener("dblclick", () => engine.resetPositions());
+radar.addEventListener("pointermove", event => {
+    const point = localPoint(event);
+    if (pointers.has(event.pointerId)) pointers.set(event.pointerId, point);
+    const metrics = radarMetrics();
+
+    if (!drag) {
+        hoveredPosition = positionAt(point);
+        radar.style.cursor = hoveredPosition >= 0 ? "grab" : "move";
+    } else if (drag.kind === "pinch") {
+        if (pointers.size < 2) return;
+        const [a, b] = [...pointers.values()];
+        zoomTo(drag.startRange * drag.startDistance / (Math.hypot(a.x - b.x, a.y - b.y) || 1), { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
+    } else if (drag.kind === "pan") {
+        view.x -= (point.x - drag.last.x) / metrics.scale;
+        view.y += (point.y - drag.last.y) / metrics.scale;
+        drag.last = point;
+    } else if (drag.kind === "position") {
+        const world = toWorld(point.x, point.y, metrics);
+        const place = value => {
+            const snapped = snapToGrid ? Math.round(value / gridSize) * gridSize : Math.round(value);
+            return Math.max(-maxRange, Math.min(maxRange, snapped));
+        };
+        engine.setPosition(drag.index, place(world.x), place(world.y));
+    }
+});
+
+const endPointer = event => {
+    pointers.delete(event.pointerId);
+    if (!pointers.size) {
+        drag = null;
+        radar.style.cursor = "";
+    } else if (drag && drag.kind === "pinch") {
+        drag = { kind: "pan", last: [...pointers.values()][0] }; // carry on panning with the finger left
+    }
+};
+radar.addEventListener("pointerup", endPointer);
+radar.addEventListener("pointercancel", endPointer);
+
+radar.addEventListener("dblclick", event => {
+    if (positionAt(localPoint(event)) >= 0) return;
+    view.x = defaultView.x;
+    view.y = defaultView.y;
+    view.anchor = null;
+    view.targetRange = defaultView.range;
+});
+
+// Hammer's grid: lines every grid step, brown every 1024 units, teal through the origin. Like
+// Hammer, lines that would be too tightly packed to read are skipped (the step doubles until not).
+function drawGrid(ctx, metrics) {
+    const { size, scale } = metrics;
+    ctx.fillStyle = gridColors.background;
+    ctx.fillRect(0, 0, size, size);
+
+    let step = gridSize;
+    while (step * scale < 8) step *= 2;
+    const topLeft = toWorld(0, 0, metrics);
+    const bottomRight = toWorld(size, size, metrics);
+    const lines = (from, to) => {
+        const values = [];
+        for (let value = Math.ceil(from / step) * step; value <= to; value += step) values.push(value);
+        return values;
+    };
+    const columns = lines(topLeft.x, bottomRight.x);
+    const rows = lines(bottomRight.y, topLeft.y);
+    const colorFor = value => value === 0 ? gridColors.axis : value % 1024 === 0 ? gridColors.major : gridColors.minor;
+
+    ctx.lineWidth = 1;
+    for (const color of [gridColors.minor, gridColors.major, gridColors.axis]) {
+        ctx.strokeStyle = color;
+        ctx.beginPath();
+        columns.forEach(x => {
+            if (colorFor(x) !== color) return;
+            const screenX = Math.round(toScreen({ x, y: 0 }, metrics).x) + 0.5;
+            ctx.moveTo(screenX, 0);
+            ctx.lineTo(screenX, size);
+        });
+        rows.forEach(y => {
+            if (colorFor(y) !== color) return;
+            const screenY = Math.round(toScreen({ x: 0, y }, metrics).y) + 0.5;
+            ctx.moveTo(0, screenY);
+            ctx.lineTo(size, screenY);
+        });
+        ctx.stroke();
+    }
+    return step;
+}
 
 function renderRadar(now) {
     const metrics = radarMetrics();
@@ -352,22 +487,20 @@ function renderRadar(now) {
     }
     const accent = alpha => `rgba(${customColor}, ${alpha})`;
     const ctx = radarContext;
-    const { size, center, scale } = metrics;
+    const { scale } = metrics;
     ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
-    ctx.clearRect(0, 0, size, size);
 
-    // Grid: quarter-range lines, the centre cross, and the radius random sounds play at.
-    ctx.lineWidth = 1;
-    for (let step = -4; step <= 4; step++) {
-        const offset = center + step * (radarRange / 4) * scale;
-        ctx.strokeStyle = step === 0 ? "rgba(255, 255, 255, 0.14)" : "rgba(255, 255, 255, 0.05)";
-        ctx.beginPath(); ctx.moveTo(offset, 0); ctx.lineTo(offset, size); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(0, offset); ctx.lineTo(size, offset); ctx.stroke();
-    }
+    const shownStep = drawGrid(ctx, metrics);
+    const label = `Grid ${gridSize}${shownStep !== gridSize ? ` (showing ${shownStep})` : ""} · ${Math.round(view.range * 2)} units across`;
+    if (radarScaleLabel.textContent !== label) radarScaleLabel.textContent = label;
+
+    const listener = toScreen({ x: 0, y: 0 }, metrics);
+
+    // The radius random-position sounds play at.
     if (36 * scale > 6) {
         ctx.setLineDash([3, 4]);
-        ctx.strokeStyle = accent(0.25);
-        ctx.beginPath(); ctx.arc(center, center, 36 * scale, 0, Math.PI * 2); ctx.stroke();
+        ctx.strokeStyle = accent(0.35);
+        ctx.beginPath(); ctx.arc(listener.x, listener.y, 36 * scale, 0, Math.PI * 2); ctx.stroke();
         ctx.setLineDash([]);
     }
 
@@ -375,11 +508,12 @@ function renderRadar(now) {
     let ambientLevel = 0;
     rowElements.forEach((pieces, row) => { if (row.isAmbient) ambientLevel = Math.max(ambientLevel, pieces.level); });
     if (ambientLevel > 0.01) {
-        const gradient = ctx.createRadialGradient(center, center, 4, center, center, 26 + ambientLevel * 34);
+        const radius = 26 + ambientLevel * 34;
+        const gradient = ctx.createRadialGradient(listener.x, listener.y, 4, listener.x, listener.y, radius);
         gradient.addColorStop(0, accent(0.28 * ambientLevel));
         gradient.addColorStop(1, accent(0));
         ctx.fillStyle = gradient;
-        ctx.beginPath(); ctx.arc(center, center, 26 + ambientLevel * 34, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(listener.x, listener.y, radius, 0, Math.PI * 2); ctx.fill();
     }
 
     // Random sound ripples, for as long as the sound plays (at least a second, at most four).
@@ -388,7 +522,7 @@ function renderRadar(now) {
         const life = Math.min(4, Math.max(1, blip.duration));
         const age = (now - blip.born) / 1000 / life;
         if (age >= 1) { radarBlips.splice(i, 1); continue; }
-        const point = blip.position ? toScreen(blip.position, metrics) : { x: center, y: center };
+        const point = blip.position ? toScreen(blip.position, metrics) : listener;
         ctx.strokeStyle = blip.position ? `rgba(255, 210, 90, ${1 - age})` : accent(0.6 * (1 - age));
         ctx.lineWidth = 2;
         ctx.beginPath(); ctx.arc(point.x, point.y, 4 + age * (blip.position ? 26 : 50), 0, Math.PI * 2); ctx.stroke();
@@ -399,12 +533,13 @@ function renderRadar(now) {
             ctx.fillText(waveLabel(blip.waveName), point.x + 8, point.y - 8);
         }
     }
+    ctx.lineWidth = 1;
 
     // Positional loops glow at their positions with their level, labelled, so even quiet ones show.
     const labelled = new Map(); // position -> labels already drawn there, to stack them
     rowElements.forEach((pieces, row) => {
         if (row.kind !== "loop" || row.isAmbient) return;
-        const point = toScreen(engine.positions[row.positionIndex], metrics);
+        const point = clampToRadar(toScreen(engine.positions[row.positionIndex], metrics), metrics);
         const strength = row.volumeTarget > 0 ? 1 : 0.4; // fading-out loops dim down
         const radius = 14 + pieces.level * 26;
         const gradient = ctx.createRadialGradient(point.x, point.y, 2, point.x, point.y, radius);
@@ -427,26 +562,26 @@ function renderRadar(now) {
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     engine.positions.forEach((position, index) => {
-        const point = toScreen(position, metrics);
+        const point = clampToRadar(toScreen(position, metrics), metrics);
         const lit = used.has(index);
-        const active = index === draggedPosition || index === hoveredPosition;
-        ctx.fillStyle = lit ? accent(active ? 0.5 : 0.3) : `rgba(255, 255, 255, ${active ? 0.15 : 0.05})`;
-        ctx.strokeStyle = lit ? accent(0.9) : "rgba(255, 255, 255, 0.25)";
-        ctx.lineWidth = 1;
+        const active = (drag && drag.kind === "position" && drag.index === index) || index === hoveredPosition;
+        ctx.fillStyle = lit ? accent(active ? 0.5 : 0.3) : `rgba(255, 255, 255, ${active ? 0.2 : 0.08})`;
+        ctx.strokeStyle = lit ? accent(0.9) : "rgba(255, 255, 255, 0.35)";
         ctx.beginPath(); ctx.rect(point.x - 8, point.y - 8, 16, 16); ctx.fill(); ctx.stroke();
-        ctx.fillStyle = lit ? "rgb(240, 240, 240)" : "rgba(255, 255, 255, 0.45)";
+        ctx.fillStyle = lit ? "rgb(240, 240, 240)" : "rgba(255, 255, 255, 0.6)";
         ctx.fillText(String(index), point.x, point.y + 0.5);
     });
     ctx.textAlign = "start";
     ctx.textBaseline = "alphabetic";
 
-    // The listener, facing forward.
+    // The listener, facing forward (kept on the edge if panned out of view).
+    const you = clampToRadar(listener, metrics);
     ctx.fillStyle = "rgb(240, 240, 240)";
     ctx.beginPath();
-    ctx.moveTo(center, center - 9);
-    ctx.lineTo(center + 6, center + 6);
-    ctx.lineTo(center, center + 3);
-    ctx.lineTo(center - 6, center + 6);
+    ctx.moveTo(you.x, you.y - 9);
+    ctx.lineTo(you.x + 6, you.y + 6);
+    ctx.lineTo(you.x, you.y + 3);
+    ctx.lineTo(you.x - 6, you.y + 6);
     ctx.closePath();
     ctx.fill();
 }
@@ -461,6 +596,7 @@ function renderFrame(now) {
     lastFrame = now;
 
     renderMeters(deltaSeconds);
+    updateView(deltaSeconds);
     renderRadar(now);
     renderStatus();
 }

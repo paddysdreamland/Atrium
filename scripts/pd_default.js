@@ -97,7 +97,7 @@ var socialLinks = {
     "youtube-button": "https://www.youtube.com/@paddysdreamland",
     "github-button": "https://github.com/paddysdreamland/Website",
     "glg-button": "/glassguessr.html",
-    "soundscape-button": "/toybox/source_soundscape_player/soundscape_player",
+    "soundscape-button": "/toybox/source_soundscape_player/",
     "staging-button": "https://staging.paddysdreamland.com"
 };
 
