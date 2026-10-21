@@ -37,26 +37,33 @@ jobs:
         if: steps.newest.outputs.deploy == 'true'
         env:
           BRANCH: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           python3 << 'EOF'
-          import json, os, subprocess
+          import json, os, re, subprocess, urllib.request
           from datetime import datetime
           from zoneinfo import ZoneInfo
 
           BRANCH = os.environ["BRANCH"]
+          REPO = os.environ["REPO"]
           RS, US = "\x1e", "\x1f"
+
+          # Same rule as the Discord step: a "Co-Authored-By: Claude ..." line marks the commit
+          # as made with Claude, and the line itself is removed from the changelog text.
+          CLAUDE_TRAILER = re.compile(r"^[ \t]*Co-Authored-By:[ \t]*Claude[^\n]*$", re.IGNORECASE | re.MULTILINE)
 
           def git_log(args):
               raw = subprocess.run(
                   ["git", "log", "--reverse", "--date=format:%Y-%m",
-                   f"--pretty=format:{RS}%H{US}%P{US}%ad{US}%aI{US}%s{US}%b"] + args,
+                   f"--pretty=format:{RS}%H{US}%P{US}%ad{US}%aI{US}%an{US}%s{US}%b"] + args,
                   capture_output=True, text=True, check=True).stdout
               commits = []
               for record in raw.split(RS):
                   record = record.strip("\n")
                   if not record:
                       continue
-                  commit_hash, parents, year_month, iso_date, subject, body = record.split(US, 5)
+                  commit_hash, parents, year_month, iso_date, author_name, subject, body = record.split(US, 6)
                   subject, body = subject.strip(), body.strip()
                   # GitHub merge commits look like "Merge pull request #3 from ...", with the
                   # pull request title as the first line of the body. Use title + description instead.
@@ -64,11 +71,15 @@ jobs:
                       lines = body.split("\n", 1)
                       subject = lines[0].strip()
                       body = lines[1].strip() if len(lines) > 1 else ""
+                  claude = bool(CLAUDE_TRAILER.search(body))
+                  body = CLAUDE_TRAILER.sub("", body).strip()
                   commits.append({
                       "hash": commit_hash,
                       "parents": parents.split(),
                       "year_month": year_month,
                       "date": iso_date[:10],
+                      "author_name": author_name.strip(),
+                      "claude": claude,
                       "subject": subject,
                       "body": body,
                   })
@@ -78,7 +89,39 @@ jobs:
               return year_month[2:].replace("-", ".")
 
           def entry(version, c):
-              return {"version": version, "date": c["date"], "subject": c["subject"], "body": c["body"]}
+              return {"version": version, "date": c["date"], "subject": c["subject"], "body": c["body"],
+                      "claude": c["claude"], "hash": c["hash"], "author_name": c["author_name"]}
+
+          # Looks up who made a commit on GitHub, so the changelog can show the same name and
+          # profile link as the Discord messages. Results are remembered, so each commit and each
+          # person is only asked about once. If GitHub can't be reached, the name from git is used.
+          def github_api(path):
+              req = urllib.request.Request(
+                  f"https://api.github.com/{path}",
+                  headers={
+                      "User-Agent": "DiscordBot (https://github.com, 1.0)",
+                      "Accept": "application/vnd.github+json",
+                      "Authorization": f"Bearer {os.environ['GITHUB_TOKEN']}",
+                  })
+              with urllib.request.urlopen(req, timeout=15) as res:
+                  return json.loads(res.read())
+
+          user_cache = {}
+          def author_of(commit_hash, fallback_name):
+              try:
+                  login = (github_api(f"repos/{REPO}/commits/{commit_hash}").get("author") or {}).get("login")
+              except Exception as e:
+                  print(f"Could not look up commit {commit_hash[:7]} ({e}), using git name.")
+                  login = None
+              if not login:
+                  return {"name": fallback_name, "url": None}
+              if login not in user_cache:
+                  try:
+                      name = github_api(f"users/{login}").get("name") or login
+                  except Exception:
+                      name = login
+                  user_cache[login] = {"name": name, "url": f"https://github.com/{login}"}
+              return user_cache[login]
 
           # Release numbers always come from the Release branch only: one number per commit made
           # directly on Release (a merged pull request counts as one).
@@ -116,6 +159,8 @@ jobs:
 
           # Newest first, capped so the file doesn't grow unbounded over the repo's life.
           changelog = list(reversed(entries))[:50]
+          for e in changelog:
+              e["author"] = author_of(e.pop("hash"), e.pop("author_name"))
           with open("changelog.json", "w") as f:
               json.dump(changelog, f, indent=2)
 
@@ -207,7 +252,7 @@ jobs:
             webhook = os.environ.get("DISCORD_WEBHOOK_CLAUDE") or os.environ["DISCORD_WEBHOOK"]
             payload = {
               "username": claude_name,
-              "content": f"{body}\n\n- {claude_name} with {footer_person} on {footer_place}"
+              "content": f"{body}\n\n- [{claude_name}](<https://github.com/claude>) with {footer_person} on {footer_place}"
             }
             print(f"Claude co-authored commit, posting as '{claude_name}'.")
           else:

@@ -1,5 +1,6 @@
 const CHANGELOG_ENTRY_LIMIT = 10;
 const CHANGELOG_MORE_URL = "https://github.com/paddysdreamland/Website/tree/Release";
+const CLAUDE_PROFILE_URL = "https://github.com/claude";
 
 function escapeHtml(str) {
     return str.replace(/[&<>"']/g, (c) => ({
@@ -57,6 +58,22 @@ function renderBody(body) {
     return html;
 }
 
+function profileLink(name, url) {
+    // Only GitHub profile links are turned into links, anything else stays plain text.
+    if (url && url.startsWith("https://github.com/")) {
+        return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener">${escapeHtml(name)}</a>`;
+    }
+    return escapeHtml(name);
+}
+
+// "— Paddy-V", or "— Claude with Paddy-V" for commits made together with Claude.
+function renderSignature(entry) {
+    if (!entry.author || !entry.author.name) return "";
+    const person = profileLink(entry.author.name, entry.author.url);
+    const claude = entry.claude ? `${profileLink("Claude", CLAUDE_PROFILE_URL)} with ` : "";
+    return `<p class="section-signature">— ${claude}${person}</p>`;
+}
+
 fetch("/version.json")
     .then((res) => res.json())
     .then((data) => {
@@ -80,6 +97,7 @@ if (changelogEl) {
                     </div>
                     <div class="changelog-subject">${escapeHtml(entry.subject)}</div>
                     ${renderBody(entry.body)}
+                    ${renderSignature(entry)}
                 </div>`;
             }).join("");
 
