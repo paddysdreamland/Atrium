@@ -179,26 +179,28 @@ jobs:
 
           entries = []
           counts = {}
+          release_version = "00.00-0"
           for g in groups:
               start, end = g["commits"][0], g["commits"][-1]
               ym = end["year_month"]
               counts[ym] = counts.get(ym, 0) + 1
               version = f"{short(ym)}-{counts[ym]}"
+              release_version = version
 
-              # A release that brought in several commits: list them first, as 26.10-17-1, -2, ...
-              # so people can see what happened between two releases. The release itself comes last.
+              # Every commit a release brought in is listed as 26.10-17-1, -2, ... (the same numbers
+              # staging showed for them), so people can see what happened between two releases.
               is_merge = len(end["parents"]) > 1
-              if is_merge or len(g["commits"]) > 1:
-                  base = start["parents"][0] if start["parents"] else None
-                  range_args = [f"{base}..{end['hash']}"] if base else [end["hash"]]
-                  brought_in = git_log(["--no-merges"] + range_args)
-                  if not is_merge:
-                      # The last commit is the release entry itself, so don't list it twice.
-                      brought_in = [b for b in brought_in if b["hash"] != end["hash"]]
-                  for i, sub in enumerate(brought_in, start=1):
-                      entries.append(entry(f"{version}-{i}", sub))
+              base = start["parents"][0] if start["parents"] else None
+              range_args = [f"{base}..{end['hash']}"] if base else [end["hash"]]
+              brought_in = git_log(["--no-merges"] + range_args)
+              for i, sub in enumerate(brought_in, start=1):
+                  entries.append(entry(f"{version}-{i}", sub))
 
-              entries.append(entry(version, end))
+              # A merged pull request also gets an entry of its own with the pull request's title
+              # and description. A fast-forward or a direct push has no such commit, so the release
+              # is just its list of changes.
+              if is_merge:
+                  entries.append(entry(version, end))
 
           if BRANCH == "staging":
               # Staging shows what the NEXT release will contain, with the same numbers it will get
@@ -210,7 +212,11 @@ jobs:
               for i, c in enumerate(pending, start=1):
                   entries.append(entry(f"{upcoming}-{i}", c))
 
-          version = entries[-1]["version"] if entries else "00.00-0"
+          # The live site shows the release number (26.10-23). Staging shows its newest pending
+          # change (26.10-24-2), or the current release if nothing is pending.
+          version = release_version
+          if BRANCH == "staging" and pending:
+              version = f"{upcoming}-{len(pending)}"
           with open("version.json", "w") as f:
               json.dump({"version": version}, f)
 
