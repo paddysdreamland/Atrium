@@ -39,6 +39,7 @@ jobs:
           BRANCH: ${{ github.ref_name }}
           REPO: ${{ github.repository }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EVENT_BEFORE: ${{ github.event.before }}
         run: |
           python3 << 'EOF'
           import json, os, re, subprocess, urllib.request
@@ -123,25 +124,81 @@ jobs:
                   user_cache[login] = {"name": name, "url": f"https://github.com/{login}"}
               return user_cache[login]
 
-          # Release numbers always come from the Release branch only: one number per commit made
-          # directly on Release (a merged pull request counts as one).
+          # Release numbers always come from the Release branch only: ONE NUMBER PER PUSH to Release.
+          # It doesn't matter how the commits got there (a pull request, a merge in GitHub Desktop
+          # that fast-forwarded, or several commits pushed at once), each push is one release.
           release_ref = "HEAD" if BRANCH == "Release" else "origin/Release"
+          ZERO = "0" * 40
+
+          def first_parent_hashes(rev_range):
+              try:
+                  return subprocess.run(["git", "rev-list", "--first-parent", rev_range],
+                                        capture_output=True, text=True, check=True).stdout.split()
+              except subprocess.CalledProcessError:
+                  return []
+
+          # GitHub's record of every push to Release: which commit the branch was on before the
+          # push, and which commit it was on after.
+          pushes = []
+          for page in range(1, 31):
+              try:
+                  items = github_api(f"repos/{REPO}/activity?ref=refs/heads/Release&per_page=100&page={page}")
+              except Exception as e:
+                  print(f"::warning::Could not read the push history of Release ({e}). Commits not found in it count one by one.")
+                  break
+              for a in items:
+                  if a.get("ref") in ("refs/heads/Release", "Release"):
+                      pushes.append((a.get("timestamp") or "", a.get("before") or "", a.get("after") or ""))
+              if len(items) < 100:
+                  break
+          pushes.sort()  # oldest first
+          push_ranges = [(before, after) for _, before, after in pushes]
+
+          # The push that started this very run, in case GitHub hasn't listed it yet.
+          event_before = os.environ.get("EVENT_BEFORE", "")
+          if BRANCH == "Release" and event_before:
+              push_ranges.append((event_before, "HEAD"))
+
+          # Remember which push brought in each commit on Release.
+          push_of = {}
+          for i, (before, after) in enumerate(push_ranges):
+              if not before or not after or before == ZERO or after == ZERO:
+                  continue  # creating or deleting the branch isn't a release
+              for h in first_parent_hashes(f"{before}..{after}"):
+                  push_of.setdefault(h, i)
+
+          # Group the commits on Release by the push that brought them in. A commit that isn't
+          # found in the push history counts on its own, like before.
+          groups = []
+          for c in git_log(["--first-parent", release_ref]):
+              key = push_of.get(c["hash"])
+              if groups and key is not None and groups[-1]["key"] == key:
+                  groups[-1]["commits"].append(c)
+              else:
+                  groups.append({"key": key, "commits": [c]})
 
           entries = []
           counts = {}
-          for c in git_log(["--first-parent", release_ref]):
-              ym = c["year_month"]
+          for g in groups:
+              start, end = g["commits"][0], g["commits"][-1]
+              ym = end["year_month"]
               counts[ym] = counts.get(ym, 0) + 1
               version = f"{short(ym)}-{counts[ym]}"
 
-              # A merged pull request: list the commits it brought in first, as 26.10-17-1, -2, ...
+              # A release that brought in several commits: list them first, as 26.10-17-1, -2, ...
               # so people can see what happened between two releases. The release itself comes last.
-              if len(c["parents"]) > 1:
-                  brought_in = git_log(["--no-merges", f"{c['parents'][0]}..{c['parents'][1]}"])
+              is_merge = len(end["parents"]) > 1
+              if is_merge or len(g["commits"]) > 1:
+                  base = start["parents"][0] if start["parents"] else None
+                  range_args = [f"{base}..{end['hash']}"] if base else [end["hash"]]
+                  brought_in = git_log(["--no-merges"] + range_args)
+                  if not is_merge:
+                      # The last commit is the release entry itself, so don't list it twice.
+                      brought_in = [b for b in brought_in if b["hash"] != end["hash"]]
                   for i, sub in enumerate(brought_in, start=1):
                       entries.append(entry(f"{version}-{i}", sub))
 
-              entries.append(entry(version, c))
+              entries.append(entry(version, end))
 
           if BRANCH == "staging":
               # Staging shows what the NEXT release will contain, with the same numbers it will get
