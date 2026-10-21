@@ -144,12 +144,18 @@ jobs:
       - name: Notify Discord
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          # Separate webhook for commits co-authored by Claude. If this secret doesn't exist yet,
+          # those commits still post through the normal webhook, just under Claude's name.
+          DISCORD_WEBHOOK_CLAUDE: ${{ secrets.DISCORD_WEBHOOK_CLAUDE }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Passed in as a variable instead of pasted into the script, so quotes or backslashes
+          # in a commit message can't break the Python code.
+          COMMIT_MESSAGE: ${{ github.event.commits[0].message }}
         run: |
           python3 << 'EOF'
-          import os, json, urllib.request
+          import os, re, json, urllib.request
 
-          message = """${{ github.event.commits[0].message }}"""
+          message = os.environ.get("COMMIT_MESSAGE", "")
           repo = "${{ github.repository }}"
           repo_name = repo.split("/")[1]
           branch = "${{ github.ref_name }}"
@@ -157,7 +163,21 @@ jobs:
 
           # Split summary and description
           parts = message.split("\n", 1)
-          body = parts[1].strip() if len(parts) > 1 else parts[0].strip()
+          subject = parts[0].strip()
+          body = parts[1].strip() if len(parts) > 1 else subject
+
+          # Look for a "Co-Authored-By: Claude ... <email>" line. If found, post as plain
+          # "Claude" (no model name) and remove the line from the message.
+          claude_pattern = re.compile(
+            r"^[ \t]*Co-Authored-By:[ \t]*Claude[^<\n]*?[ \t]*(<[^>\n]*>)?[ \t]*$",
+            re.IGNORECASE | re.MULTILINE
+          )
+          match = claude_pattern.search(body)
+          claude_name = "Claude" if match else None
+          if match:
+            body = claude_pattern.sub("", body).strip()
+            if not body:
+              body = subject
 
           # Fetch GitHub display name. Signed in with the workflow's own token, because
           # anonymous requests share a small hourly limit with everyone on GitHub's servers.
@@ -178,15 +198,29 @@ jobs:
           except Exception as e:
             print(f"Could not fetch display name ({e}), using '{actor}' instead.")
 
-          payload = {
-            "username": display_name,
-            "avatar_url": f"https://github.com/{actor}.png",
-            "content": f"{body}\n\n- [{display_name}](<https://github.com/{actor}>) on [{repo_name}/{branch}](<https://github.com/{repo}/tree/{branch}>)"
-          }
+          footer_place = f"[{repo_name}/{branch}](<https://github.com/{repo}/tree/{branch}>)"
+          footer_person = f"[{display_name}](<https://github.com/{actor}>)"
+
+          if claude_name:
+            # Posts as Claude. The profile picture comes from the Claude webhook's own settings
+            # in Discord, so no avatar is sent here.
+            webhook = os.environ.get("DISCORD_WEBHOOK_CLAUDE") or os.environ["DISCORD_WEBHOOK"]
+            payload = {
+              "username": claude_name,
+              "content": f"{body}\n\n- {claude_name} with {footer_person} on {footer_place}"
+            }
+            print(f"Claude co-authored commit, posting as '{claude_name}'.")
+          else:
+            webhook = os.environ["DISCORD_WEBHOOK"]
+            payload = {
+              "username": display_name,
+              "avatar_url": f"https://github.com/{actor}.png",
+              "content": f"{body}\n\n- {footer_person} on {footer_place}"
+            }
 
           data = json.dumps(payload).encode("utf-8")
           req = urllib.request.Request(
-            os.environ["DISCORD_WEBHOOK"] + "?wait=true",
+            webhook + "?wait=true",
             data=data,
             headers={
               "Content-Type": "application/json",
