@@ -285,26 +285,37 @@ const radarContext = radar.getContext("2d");
 const radarScaleLabel = document.getElementById("ssp-radar-scale");
 const radarBlips = []; // recent random sound plays, drawn as ripples
 const gridColors = { background: "#000000", minor: "#4B4B4B", major: "#642E01", axis: "#006464" };
-const defaultView = { x: 0, y: 0, range: 128 }; // range: units from the middle to the edge
+const defaultView = { x: 0, y: 0, range: 110 }; // range: units from the middle to the edge (220 across)
 const minRange = 24;
 const maxRange = 16384;
 const view = { ...defaultView, targetRange: defaultView.range, anchor: null };
 let customColor = "0, 255, 192";
 let customColorCheckedAt = -Infinity;
 let hoveredPosition = -1;
-let gridSize = 16;
+let gridSize = 32;
 let snapToGrid = true;
 
-const snapCheckbox = document.getElementById("ssp-snap");
-const gridSelect = document.getElementById("ssp-grid");
-const syncGrid = () => {
-    snapToGrid = snapCheckbox.checked;
-    gridSize = Number(gridSelect.value);
-};
-snapCheckbox.addEventListener("change", syncGrid);
-gridSelect.addEventListener("change", syncGrid);
-syncGrid();
+// The radar's toolbar: grid size in Hammer's powers of two, snapping, and resetting the positions.
+const minGridSize = 1;
+const maxGridSize = 512;
+const gridSmallerButton = document.getElementById("ssp-grid-smaller");
+const gridLargerButton = document.getElementById("ssp-grid-larger");
+const snapButton = document.getElementById("ssp-snap");
+
+function setGridSize(size) {
+    gridSize = Math.max(minGridSize, Math.min(maxGridSize, size));
+    gridSmallerButton.disabled = gridSize <= minGridSize;
+    gridLargerButton.disabled = gridSize >= maxGridSize;
+}
+
+gridSmallerButton.addEventListener("click", () => setGridSize(gridSize / 2));
+gridLargerButton.addEventListener("click", () => setGridSize(gridSize * 2));
+snapButton.addEventListener("click", () => {
+    snapToGrid = !snapToGrid;
+    snapButton.setAttribute("aria-pressed", String(snapToGrid));
+});
 document.getElementById("ssp-reset-positions").addEventListener("click", () => engine.resetPositions());
+setGridSize(gridSize);
 
 function radarMetrics() {
     const size = radar.clientWidth;

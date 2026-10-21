@@ -99,7 +99,13 @@
                                     <div class="ssp-deck-body">
                                         <div class="ssp-radar-wrap">
                                             <canvas id="ssp-radar" class="ssp-radar" title="Drag the numbered positions to move their sounds. Scroll to zoom, drag empty space to pan, double-click to reset the view."></canvas>
-                                            <div id="ssp-radar-scale" class="ssp-radar-scale">Grid 16</div>
+                                            <div class="ssp-radar-tools" role="toolbar" aria-label="Grid">
+                                                <button id="ssp-grid-smaller" class="ssp-tool" title="Smaller grid" aria-label="Smaller grid"><img src="../../images/silk/arrow_in.png" alt=""></button>
+                                                <button id="ssp-grid-larger" class="ssp-tool" title="Larger grid" aria-label="Larger grid"><img src="../../images/silk/arrow_out.png" alt=""></button>
+                                                <button id="ssp-snap" class="ssp-tool" aria-pressed="true" title="Snap positions to the grid" aria-label="Snap to grid"><img src="../../images/silk/shape_handles.png" alt=""></button>
+                                                <button id="ssp-reset-positions" class="ssp-tool" title="Reset positions" aria-label="Reset positions"><img src="../../images/silk/arrow_undo.png" alt=""></button>
+                                            </div>
+                                            <div id="ssp-radar-scale" class="ssp-radar-scale">Grid 32</div>
                                         </div>
 
                                         <div class="ssp-log">
@@ -155,26 +161,6 @@
                                             <option class="dropdown-option" value="10">10 seconds</option>
                                         </select>
                                     </label>
-
-                                    <div class="ssp-option ssp-option-select">
-                                        <span><b>Grid</b><small>Snap dragged positions to the grid, in Source units like Hammer's.</small></span>
-                                        <div class="ssp-grid-controls">
-                                            <label class="ssp-check"><input id="ssp-snap" type="checkbox" checked>Snap</label>
-                                            <select id="ssp-grid" class="dropdown-menu" aria-label="Grid size">
-                                                <option class="dropdown-option" value="1">1</option>
-                                                <option class="dropdown-option" value="2">2</option>
-                                                <option class="dropdown-option" value="4">4</option>
-                                                <option class="dropdown-option" value="8">8</option>
-                                                <option class="dropdown-option" value="16" selected>16</option>
-                                                <option class="dropdown-option" value="32">32</option>
-                                                <option class="dropdown-option" value="64">64</option>
-                                                <option class="dropdown-option" value="128">128</option>
-                                                <option class="dropdown-option" value="256">256</option>
-                                                <option class="dropdown-option" value="512">512</option>
-                                            </select>
-                                            <button id="ssp-reset-positions" class="ssp-button ssp-button-small" title="Put the numbered positions back where they started">Reset Positions</button>
-                                        </div>
-                                    </div>
                                 </div>
                             </div>
                         </div>

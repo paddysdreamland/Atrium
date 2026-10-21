@@ -363,12 +363,13 @@ class SoundscapeSystem {
         this.soundMixer = null;
         this.startToken = 0;
 
-        // Positions 0-7, in units relative to the listener (x = right, y = forward). 0-3 sit on the
-        // corners Valve's own playsoundscape preview uses; 4-7 are spares in front, right, behind and
-        // left. (The preview only enables 0-2, a bug that silences position 3, so all 8 are on here.)
+        // Positions 0-7, in units relative to the listener (x = right, y = forward), laid out on the
+        // radar's 32-unit grid: 0-3 on the corners around the listener, like Valve's playsoundscape
+        // preview (which uses 36 units), and 4-7 64 units out along the axes: in front, right, behind
+        // and left. (The preview only enables 0-2, a bug that silences position 3, so all 8 are on here.)
         this.positions = [
-            { x: -36, y: 36 }, { x: 36, y: 36 }, { x: -36, y: -36 }, { x: 36, y: -36 },
-            { x: 0, y: 72 }, { x: 72, y: 0 }, { x: 0, y: -72 }, { x: -72, y: 0 }
+            { x: -32, y: 32 }, { x: 32, y: 32 }, { x: -32, y: -32 }, { x: 32, y: -32 },
+            { x: 0, y: 64 }, { x: 64, y: 0 }, { x: 0, y: -64 }, { x: -64, y: 0 }
         ];
         this.defaultPositions = this.positions.map(position => ({ ...position }));
 
