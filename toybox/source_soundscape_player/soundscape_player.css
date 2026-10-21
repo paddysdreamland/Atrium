@@ -1,153 +1,6 @@
-/* Soundscape Player - toybox app styles, on top of the site's pd_main.css.
-   Follows the look of the Catalyst soundtrack mixer: dark panels, hairline edges, the accent colour. */
-
-.ssp {
-    --ssp-panel: rgb(16, 16, 16);
-    --ssp-well: rgb(8, 8, 8);
-    --ssp-edge: rgba(255, 255, 255, 0.1);
-    --ssp-dim: rgba(255, 255, 255, 0.55);
-    --ssp-warm: 255, 200, 64;
-
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    font-family: "Lato";
-}
-
-.ssp-back {
-    font-family: "Lato";
-    font-size: 13px;
-    font-weight: 700;
-    align-self: flex-start;
-}
-
-.ssp-back:hover {
-    text-decoration: underline;
-}
-
-/* Deck */
-.ssp-deck {
-    background:
-        radial-gradient(ellipse at 50% 0%, rgba(var(--custom-color), 0.14), transparent 70%),
-        url(../../images/patterns/grid1110_25.png),
-        var(--ssp-well);
-    border-radius: 8px;
-    border-top: 1px solid var(--ssp-edge);
-    border-bottom: 1px solid var(--ssp-edge);
-    padding: 12px 14px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    overflow: hidden;
-}
-
-.ssp-deck-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 16px;
-}
-
-.ssp-deck-info {
-    min-width: 0;
-}
-
-.ssp-status {
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--ssp-dim);
-}
-
-.ssp-status::before {
-    content: "";
-    width: 6px;
-    height: 6px;
-    margin-right: 6px;
-    border-radius: 50%;
-    background-color: currentColor;
-    display: inline-block;
-    vertical-align: 1px;
-}
-
-.ssp-status[data-state="playing"] {
-    color: rgb(var(--custom-color));
-}
-
-.ssp-status[data-state="busy"] {
-    color: rgb(var(--ssp-warm));
-}
-
-.ssp-status[data-state="busy"]::before {
-    animation: ssp-blink 0.8s ease-in-out infinite alternate;
-}
-
-/* The title is also the soundscape picker: the real <select> is stretched invisibly over it. */
-.ssp-title-picker {
-    max-width: calc(100% + 12px); /* make up for the negative margins */
-    margin: 0 -6px;
-    padding: 0 6px;
-    border-radius: 6px;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    transition: background-color 0.15s;
-}
-
-.ssp-title-picker:hover {
-    background-color: rgba(255, 255, 255, 0.07);
-}
-
-.ssp-title-picker:has(select:focus-visible) {
-    outline: 2px solid rgb(var(--custom-color));
-}
-
-.ssp-title-picker select {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    opacity: 0;
-    cursor: pointer;
-    font-size: 16px; /* 16px+ stops iOS zooming in when the list opens */
-    /* Invisible here, but the list the browser opens takes these. */
-    background-color: rgb(16, 16, 16);
-    color: var(--white);
-    font-family: "Lato";
-    color-scheme: dark;
-}
-
-.ssp-title {
-    min-width: 0;
-    font-size: 24px;
-    font-weight: 900;
-    line-height: 1.2;
-    margin-top: 2px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.ssp-title.is-empty {
-    color: rgb(var(--custom-color));
-}
-
-.ssp-title-chevron {
-    width: 14px;
-    height: 9px;
-    flex-shrink: 0;
-    fill: none;
-    stroke: rgb(var(--custom-color));
-    stroke-width: 1.6;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-}
-
-.ssp-subtitle {
-    font-size: 12px;
-    color: var(--ssp-dim);
-}
+/* Soundscape Player - toybox app styles. The shared pieces (deck, title picker, icon buttons, cog menu,
+   help dialog, toggles) come from ../shared/toybox.css; this is what is unique to this player: the
+   stats, the radar, the sound rows and the recent sounds log. */
 
 .ssp-stats {
     display: flex;
@@ -172,7 +25,7 @@
 
 .ssp-stat small {
     font-size: 11px;
-    color: var(--ssp-dim);
+    color: var(--tb-dim);
 }
 
 .ssp-deck-body {
@@ -184,7 +37,7 @@
 .ssp-radar-wrap {
     border-radius: 6px;
     background-color: #000000;
-    box-shadow: 0 0 0 1px var(--ssp-edge);
+    box-shadow: 0 0 0 1px var(--tb-edge);
     overflow: hidden;
 }
 
@@ -195,61 +48,6 @@
     touch-action: none; /* the radar handles its own drags and pinches */
 }
 
-/* The radar's toolbar: tiny Silk icon buttons over the top-left corner. */
-.ssp-radar-tools {
-    position: absolute;
-    left: 6px;
-    top: 6px;
-    padding: 2px;
-    border-radius: 4px;
-    background-color: rgba(0, 0, 0, 0.75);
-    box-shadow: 0 0 0 1px var(--ssp-edge);
-    display: flex;
-    gap: 2px;
-}
-
-.ssp-tool {
-    width: 22px;
-    height: 22px;
-    border-radius: 3px;
-    background: none;
-    display: grid;
-    place-items: center;
-    cursor: pointer;
-    transition: background-color 0.15s;
-}
-
-.ssp-tool img {
-    width: 16px;
-    height: 16px;
-    display: block;
-}
-
-.ssp-tool:hover {
-    background-color: rgba(255, 255, 255, 0.12);
-}
-
-.ssp-tool:focus-visible {
-    outline: 2px solid rgb(var(--custom-color));
-}
-
-.ssp-tool[aria-pressed="true"] {
-    background-color: rgba(var(--custom-color), 0.25);
-    box-shadow: inset 0 0 0 1px rgba(var(--custom-color), 0.7);
-}
-
-.ssp-tool:disabled {
-    opacity: 0.35;
-    cursor: default;
-    background: none;
-}
-
-.ssp-tool-divider {
-    width: 1px;
-    margin: 3px 1px;
-    background-color: var(--ssp-edge);
-}
-
 .ssp-radar-scale {
     position: absolute;
     right: 6px;
@@ -258,7 +56,7 @@
     border-radius: 3px;
     background-color: rgba(0, 0, 0, 0.7);
     font-size: 10px;
-    color: var(--ssp-dim);
+    color: var(--tb-dim);
     font-variant-numeric: tabular-nums;
     pointer-events: none;
 }
@@ -308,7 +106,7 @@
     font-weight: 700;
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: var(--ssp-dim);
+    color: var(--tb-dim);
 }
 
 .ssp-log-list {
@@ -326,7 +124,7 @@
 }
 
 .ssp-log-list li:first-child {
-    background-color: rgba(var(--ssp-warm), 0.1);
+    background-color: rgba(var(--tb-warm), 0.1);
 }
 
 .ssp-log-list b {
@@ -341,82 +139,13 @@
 .ssp-log-list small,
 .ssp-log-list .ssp-log-empty {
     font-size: 11px;
-    color: var(--ssp-dim);
+    color: var(--tb-dim);
 }
 
 .ssp-log-list .ssp-log-empty {
     background: none;
     padding: 0;
     animation: none;
-}
-
-.ssp-loading {
-    position: absolute;
-    inset: 0;
-    background-color: rgba(0, 0, 0, 0.5);
-}
-
-.ssp-loading[hidden] {
-    display: none;
-}
-
-.ssp-loading-bar {
-    width: 160px;
-    height: 24px;
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    border-radius: 6px;
-    background-color: black;
-    overflow: hidden;
-}
-
-#ssp-loading-fill {
-    width: 0%;
-    height: 100%;
-    background-color: rgb(var(--custom-color));
-    background-image: url(../../images/patterns/hazard_dark.png);
-    background-size: 12px;
-    transition: width 0.2s;
-}
-
-#ssp-loading-text {
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    font-family: "Lato";
-    font-weight: 900;
-}
-
-/* Play/stop and the master volume, over the radar's bottom-left corner */
-.ssp-radar-transport {
-    position: absolute;
-    left: 6px;
-    bottom: 6px;
-    padding: 2px 8px 2px 2px;
-    border-radius: 4px;
-    background-color: rgba(0, 0, 0, 0.75);
-    box-shadow: 0 0 0 1px var(--ssp-edge);
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.ssp-tool[hidden] {
-    display: none;
-}
-
-.ssp-tool-play {
-    width: 26px;
-    height: 26px;
-    background-color: rgba(var(--custom-color), 0.18);
-    box-shadow: inset 0 0 0 1px rgba(var(--custom-color), 0.6);
-}
-
-.ssp-tool-play:hover {
-    background-color: rgba(var(--custom-color), 0.32);
 }
 
 .ssp-radar-volume {
@@ -435,7 +164,7 @@
 .ssp-master-value {
     min-width: 2.6em;
     font-size: 10px;
-    color: var(--ssp-dim);
+    color: var(--tb-dim);
     font-variant-numeric: tabular-nums;
 }
 
@@ -500,18 +229,18 @@
 .ssp-rows-empty {
     padding: 14px;
     border-radius: 6px;
-    background-color: var(--ssp-panel);
+    background-color: var(--tb-panel);
     font-size: 13px;
-    color: var(--ssp-dim);
+    color: var(--tb-dim);
     text-align: center;
 }
 
 .ssp-row {
     padding: 6px 8px;
     border-radius: 6px;
-    border-top: 1px solid var(--ssp-edge);
-    border-bottom: 1px solid var(--ssp-edge);
-    background-color: var(--ssp-panel);
+    border-top: 1px solid var(--tb-edge);
+    border-bottom: 1px solid var(--tb-edge);
+    background-color: var(--tb-panel);
     display: grid;
     grid-template-columns: 54px minmax(0, 1fr) auto;
     align-items: center;
@@ -537,7 +266,7 @@
 }
 
 .ssp-row[data-kind="random"] .ssp-badge {
-    color: rgb(var(--ssp-warm));
+    color: rgb(var(--tb-warm));
 }
 
 .ssp-row-name {
@@ -550,7 +279,7 @@
 
 .ssp-row-details {
     font-size: 11px;
-    color: var(--ssp-dim);
+    color: var(--tb-dim);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -575,8 +304,8 @@
 }
 
 .ssp-row[data-kind="random"] .ssp-row-meter-fill {
-    background-color: rgba(var(--ssp-warm), 0.85);
-    box-shadow: 0 0 6px rgb(var(--ssp-warm));
+    background-color: rgba(var(--tb-warm), 0.85);
+    box-shadow: 0 0 6px rgb(var(--tb-warm));
 }
 
 .ssp-row-state {
@@ -584,7 +313,7 @@
     grid-row: 2;
     font-size: 10px;
     text-align: right;
-    color: var(--ssp-dim);
+    color: var(--tb-dim);
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
 }
@@ -597,222 +326,14 @@
     gap: 4px;
 }
 
-.ssp-toggle {
-    padding: 3px 7px;
-    border-radius: 4px;
-    border-top: 1px solid var(--ssp-edge);
-    border-bottom: 1px solid var(--ssp-edge);
-    background-color: rgb(28, 28, 28);
-    color: var(--ssp-dim);
-    font-size: 10px;
-    font-weight: 900;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    cursor: pointer;
-    user-select: none;
-    transition: background-color 0.15s, color 0.15s, box-shadow 0.15s;
-}
-
-.ssp-toggle input {
-    position: absolute;
-    opacity: 0;
-    pointer-events: none;
-}
-
-.ssp-toggle:hover {
-    color: var(--white);
-}
-
-.ssp-toggle:has(input:focus-visible) {
-    outline: 2px solid rgb(var(--custom-color));
-}
-
-.ssp-toggle-mute:has(input:checked) {
-    background-color: rgba(255, 128, 128, 0.18);
-    color: rgb(255, 128, 128);
-    box-shadow: inset 0 0 0 1px rgba(255, 128, 128, 0.6);
-}
-
-.ssp-toggle-solo:has(input:checked) {
-    background-color: rgba(var(--ssp-warm), 0.18);
-    color: rgb(var(--ssp-warm));
-    box-shadow: inset 0 0 0 1px rgba(var(--ssp-warm), 0.6);
-}
-
-/* The cog's settings menu, in the radar's top-right corner */
-.ssp-radar-settings {
-    position: absolute;
-    right: 6px;
-    top: 6px;
-    display: flex;
-    gap: 4px;
-}
-
-.ssp-radar-settings > .ssp-tool {
-    width: 26px;
-    height: 26px;
-    background-color: rgba(0, 0, 0, 0.75);
-    box-shadow: 0 0 0 1px var(--ssp-edge);
-}
-
-.ssp-radar-settings > .ssp-tool:hover {
-    background-color: rgb(36, 36, 36);
-}
-
-.ssp-radar-settings > .ssp-tool[aria-pressed="true"] {
-    background-color: rgba(var(--custom-color), 0.25);
-    box-shadow: inset 0 0 0 1px rgba(var(--custom-color), 0.7);
-}
-
-.ssp-settings-menu {
-    position: absolute;
-    right: 0;
-    top: calc(100% + 4px);
-    width: 230px;
-    max-width: calc(100vw - 60px);
-    padding: 6px;
-    border-radius: 6px;
-    border: 1px solid var(--ssp-edge);
-    background-color: rgb(22, 22, 22);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7);
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    z-index: 10;
-}
-
-.ssp-settings-menu[hidden] {
-    display: none;
-}
-
-.ssp-setting {
-    padding: 6px 8px;
-    border-radius: 4px;
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-    cursor: pointer;
-}
-
-.ssp-setting:hover {
-    background-color: rgba(255, 255, 255, 0.05);
-}
-
-.ssp-setting input {
-    margin: 2px 0 0;
-    accent-color: rgb(var(--custom-color));
-    flex-shrink: 0;
-}
-
-.ssp-setting b {
-    display: block;
-    font-size: 13px;
-    font-weight: 700;
-}
-
-.ssp-setting small {
-    display: block;
-    font-size: 11px;
-    line-height: 1.3;
-    color: var(--ssp-dim);
-}
-
-.ssp-setting-select {
-    flex-direction: column;
-    gap: 6px;
-    cursor: default;
-}
-
-.ssp-setting-select select {
-    width: 100%;
-    margin: 0;
-    font-size: 13px;
-    color-scheme: dark;
-}
-
-/* The help pop-up */
-.ssp-dialog {
-    /* pd_main.css makes everything position: relative, so pin the modal explicitly. */
-    position: fixed;
-    inset: 0;
-    width: min(560px, calc(100vw - 32px));
-    height: fit-content;
-    max-height: calc(100vh - 48px);
-    margin: auto;
-    padding: 0;
-    border: none;
-    background: none;
-    color: var(--white);
-    font-family: "Lato";
-    overflow: visible;
-}
-
-.ssp-dialog::backdrop {
-    background-color: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(2px);
-}
-
-.ssp-dialog-panel {
-    max-height: calc(100vh - 48px);
-    padding: 12px 18px 18px;
-    border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    background:
-        radial-gradient(ellipse at 50% 0%, rgba(var(--custom-color), 0.12), transparent 70%),
-        rgb(14, 14, 14);
-    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.8);
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    overflow-y: auto;
-}
-
-.ssp-dialog-head {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 10px;
-}
-
-.ssp-dialog p,
-.ssp-dialog li {
-    font-size: 14px;
-    line-height: 1.45;
-    user-select: text;
-}
-
-.ssp-dialog ul {
-    padding-left: 18px;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-
-.ssp-dialog .ssp-dialog-note {
-    font-size: 13px;
-    color: rgba(255, 255, 255, 0.6);
-}
-
-@keyframes ssp-blink {
-    from { opacity: 1; }
-    to { opacity: 0.3; }
-}
-
 @keyframes ssp-arrive {
     from { opacity: 0; transform: translateY(-4px); }
     to { opacity: 1; transform: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .ssp-status[data-state="busy"]::before,
     .ssp-log-list li {
         animation: none;
-    }
-}
-
-@media screen and (max-width: 1040px) {
-    #website-holder {
-        width: calc(100% - 10px);
     }
 }
 
@@ -837,11 +358,6 @@
 }
 
 @media screen and (max-width: 480px) {
-    .ssp-deck-top {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
     .ssp-stats {
         justify-content: space-between;
     }
@@ -853,4 +369,15 @@
     .ssp-slider {
         width: 64px;
     }
+}
+
+/* Tweaks to the shared toybox pieces (toybox/shared/toybox.css) for this player */
+.ssp-radar-transport {
+    padding-right: 8px;
+    gap: 6px; /* room around the volume slider */
+}
+
+.ssp-row .tb-toggle {
+    padding: 3px 7px;
+    font-size: 10px;
 }

@@ -1,0 +1,539 @@
+/* Toybox shared styles: the pieces every toybox app's player is built from, on top of the site's
+   pd_main.css. Each app links this, then its own stylesheet for what's unique to it.
+
+   An app's player root gets the "tb" class (for these variables), and uses the tb- classes below:
+   the deck, its title picker and status, the tiny Silk icon buttons laid over a display, the cog
+   menu, the help dialog, the loading bar and the On/Solo/Mute/Lock toggles. */
+
+.tb {
+    --tb-panel: rgb(16, 16, 16);
+    --tb-well: rgb(8, 8, 8);
+    --tb-edge: rgba(255, 255, 255, 0.1);
+    --tb-dim: rgba(255, 255, 255, 0.55);
+    --tb-warm: 255, 200, 64;
+    --tb-lock: 150, 170, 255;
+    --tb-danger: 255, 128, 128;
+
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    font-family: "Lato";
+    color: var(--white);
+}
+
+/* Page */
+.tb-back {
+    font-family: "Lato";
+    font-size: 13px;
+    font-weight: 700;
+    align-self: flex-start;
+}
+
+.tb-back:hover {
+    text-decoration: underline;
+}
+
+@media screen and (max-width: 1040px) {
+    #website-holder {
+        width: calc(100% - 10px);
+    }
+}
+
+/* Deck: the display at the top of a player */
+.tb-deck {
+    background:
+        radial-gradient(ellipse at 50% 0%, rgba(var(--custom-color), 0.14), transparent 70%),
+        url(../../images/patterns/grid1110_25.png),
+        var(--tb-well);
+    border-radius: 8px;
+    border-top: 1px solid var(--tb-edge);
+    border-bottom: 1px solid var(--tb-edge);
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    position: relative;
+}
+
+.tb-deck-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+}
+
+.tb-deck-info {
+    min-width: 0;
+}
+
+.tb-status {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--tb-dim);
+}
+
+.tb-status::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    margin-right: 6px;
+    border-radius: 50%;
+    background-color: currentColor;
+    display: inline-block;
+    vertical-align: 1px;
+}
+
+.tb-status[data-state="playing"] {
+    color: rgb(var(--custom-color));
+}
+
+.tb-status[data-state="playing"]::before {
+    box-shadow: 0 0 6px rgb(var(--custom-color));
+}
+
+.tb-status[data-state="busy"] {
+    color: rgb(var(--tb-warm));
+}
+
+.tb-status[data-state="busy"]::before {
+    animation: tb-blink 0.8s ease-in-out infinite alternate;
+}
+
+/* The title is also the picker: the real <select> is stretched invisibly over it, so clicking
+   anywhere on the title opens the browser's own list. */
+.tb-title-picker {
+    max-width: calc(100% + 12px); /* make up for the negative margins, or the title is cut 12px short */
+    margin: 0 -6px;
+    padding: 0 6px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: background-color 0.15s;
+}
+
+.tb-title-picker:hover {
+    background-color: rgba(255, 255, 255, 0.07);
+}
+
+.tb-title-picker:has(select:focus-visible) {
+    outline: 2px solid rgb(var(--custom-color));
+}
+
+.tb-title-picker select {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+    font-size: 16px; /* 16px+ stops iOS zooming in when the list opens */
+    /* Invisible here, but the list the browser opens takes these, so it stays dark. */
+    background-color: rgb(16, 16, 16);
+    color: var(--white);
+    font-family: "Lato";
+    color-scheme: dark;
+}
+
+.tb-title {
+    min-width: 0;
+    font-size: 24px;
+    font-weight: 900;
+    line-height: 1.2;
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tb-title.is-empty {
+    color: rgb(var(--custom-color));
+}
+
+.tb-title-chevron {
+    width: 14px;
+    height: 9px;
+    flex-shrink: 0;
+    fill: none;
+    stroke: rgb(var(--custom-color));
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.tb-subtitle {
+    font-size: 12px;
+    color: var(--tb-dim);
+}
+
+/* Icon buttons: tiny Silk icons, grouped into boxes laid over a display's corners */
+.tb-tool {
+    width: 22px;
+    height: 22px;
+    margin: 0;
+    padding: 0;
+    border: none;
+    border-radius: 3px;
+    background: none;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    transition: background-color 0.15s;
+}
+
+.tb-tool[hidden] {
+    display: none;
+}
+
+.tb-tool img {
+    width: 16px;
+    height: 16px;
+    display: block;
+}
+
+.tb-tool:hover {
+    background-color: rgba(255, 255, 255, 0.12);
+}
+
+.tb-tool:focus-visible {
+    outline: 2px solid rgb(var(--custom-color));
+}
+
+.tb-tool[aria-pressed="true"] {
+    background-color: rgba(var(--custom-color), 0.25);
+    box-shadow: inset 0 0 0 1px rgba(var(--custom-color), 0.7);
+}
+
+.tb-tool:disabled {
+    opacity: 0.35;
+    cursor: default;
+    background: none;
+}
+
+/* A button with something waiting on it (like Transition with changes pending) glows. */
+.tb-tool.is-pending {
+    animation: tb-pending 1.2s ease-in-out infinite;
+}
+
+.tb-tool-divider {
+    width: 1px;
+    align-self: stretch;
+    margin: 3px 1px;
+    background-color: var(--tb-edge);
+}
+
+.tb-toolbar,
+.tb-transport {
+    position: absolute;
+    left: 6px;
+    padding: 2px;
+    border-radius: 4px;
+    background-color: rgba(0, 0, 0, 0.75);
+    box-shadow: 0 0 0 1px var(--tb-edge);
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    z-index: 2;
+}
+
+.tb-toolbar {
+    top: 6px;
+}
+
+.tb-transport {
+    bottom: 6px;
+}
+
+/* Play / transition / stop: a touch bigger, in the accent colour */
+.tb-play {
+    width: 26px;
+    height: 26px;
+    background-color: rgba(var(--custom-color), 0.18);
+    box-shadow: inset 0 0 0 1px rgba(var(--custom-color), 0.6);
+}
+
+.tb-play:hover {
+    background-color: rgba(var(--custom-color), 0.32);
+}
+
+/* Help and settings, in a display's top-right corner */
+.tb-corner {
+    position: absolute;
+    right: 6px;
+    top: 6px;
+    display: flex;
+    gap: 4px;
+    z-index: 5;
+}
+
+.tb-corner > .tb-tool {
+    width: 26px;
+    height: 26px;
+    background-color: rgba(0, 0, 0, 0.75);
+    box-shadow: 0 0 0 1px var(--tb-edge);
+}
+
+.tb-corner > .tb-tool:hover {
+    background-color: rgb(36, 36, 36);
+}
+
+.tb-corner > .tb-tool[aria-pressed="true"] {
+    background-color: rgba(var(--custom-color), 0.25);
+    box-shadow: inset 0 0 0 1px rgba(var(--custom-color), 0.7);
+}
+
+/* The cog's settings menu */
+.tb-menu {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 4px);
+    width: 250px;
+    max-width: calc(100vw - 60px);
+    padding: 6px;
+    border-radius: 6px;
+    border: 1px solid var(--tb-edge);
+    background-color: rgb(22, 22, 22);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    z-index: 10;
+}
+
+.tb-menu[hidden] {
+    display: none;
+}
+
+.tb-setting {
+    padding: 6px 8px;
+    border-radius: 4px;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.tb-setting:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.tb-setting input {
+    margin: 2px 0 0;
+    accent-color: rgb(var(--custom-color));
+    flex-shrink: 0;
+}
+
+.tb-setting b {
+    display: block;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.tb-setting small {
+    display: block;
+    font-size: 11px;
+    line-height: 1.3;
+    color: var(--tb-dim);
+}
+
+.tb-setting-select {
+    flex-direction: column;
+    gap: 6px;
+    cursor: default;
+}
+
+.tb-setting-select select {
+    width: 100%;
+    margin: 0;
+    font-size: 13px;
+    color-scheme: dark;
+}
+
+/* The help pop-up */
+.tb-dialog {
+    /* pd_main.css makes everything position: relative, so pin the modal explicitly. */
+    position: fixed;
+    inset: 0;
+    width: min(580px, calc(100vw - 32px));
+    height: fit-content;
+    max-height: calc(100vh - 48px);
+    margin: auto;
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--white);
+    font-family: "Lato";
+    overflow: visible;
+}
+
+.tb-dialog::backdrop {
+    background-color: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(2px);
+}
+
+.tb-dialog-panel {
+    max-height: calc(100vh - 48px);
+    padding: 12px 18px 18px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background:
+        radial-gradient(ellipse at 50% 0%, rgba(var(--custom-color), 0.12), transparent 70%),
+        rgb(14, 14, 14);
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.8);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow-y: auto;
+}
+
+.tb-dialog-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+
+.tb-dialog p,
+.tb-dialog li {
+    font-size: 14px;
+    line-height: 1.45;
+    user-select: text;
+}
+
+.tb-dialog ul {
+    padding-left: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.tb-dialog .tb-dialog-note {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+/* Loading bar, over the deck while sounds load */
+.tb-loading {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 20;
+}
+
+.tb-loading[hidden] {
+    display: none;
+}
+
+.tb-loading-bar {
+    width: 160px;
+    height: 24px;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    border-radius: 6px;
+    background-color: black;
+    overflow: hidden;
+}
+
+.tb-loading-fill {
+    width: 0%;
+    height: 100%;
+    background-color: rgb(var(--custom-color));
+    background-image: url(../../images/patterns/hazard_dark.png);
+    background-size: 12px;
+    transition: width 0.2s;
+}
+
+.tb-loading-text {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    font-family: "Lato";
+    font-weight: 900;
+}
+
+/* On / Solo / Mute / Lock toggles: a hidden checkbox inside a label */
+.tb-toggle {
+    padding: 4px 8px;
+    border-radius: 4px;
+    border-top: 1px solid var(--tb-edge);
+    border-bottom: 1px solid var(--tb-edge);
+    background-color: rgb(28, 28, 28);
+    color: var(--tb-dim);
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 0.04em;
+    text-align: center;
+    text-transform: uppercase;
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.15s, color 0.15s, box-shadow 0.15s;
+}
+
+.tb-toggle input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.tb-toggle:hover {
+    color: var(--white);
+}
+
+.tb-toggle:has(input:focus-visible) {
+    outline: 2px solid rgb(var(--custom-color));
+}
+
+.tb-toggle-on:has(input:checked) {
+    background-color: rgba(var(--custom-color), 0.18);
+    color: rgb(var(--custom-color));
+    box-shadow: inset 0 0 0 1px rgba(var(--custom-color), 0.6), 0 0 10px rgba(var(--custom-color), 0.2);
+}
+
+.tb-toggle-solo:has(input:checked) {
+    background-color: rgba(var(--tb-warm), 0.18);
+    color: rgb(var(--tb-warm));
+    box-shadow: inset 0 0 0 1px rgba(var(--tb-warm), 0.6), 0 0 10px rgba(var(--tb-warm), 0.2);
+}
+
+.tb-toggle-mute:has(input:checked) {
+    background-color: rgba(var(--tb-danger), 0.18);
+    color: rgb(var(--tb-danger));
+    box-shadow: inset 0 0 0 1px rgba(var(--tb-danger), 0.6);
+}
+
+.tb-toggle-lock:has(input:checked) {
+    background-color: rgba(var(--tb-lock), 0.18);
+    color: rgb(var(--tb-lock));
+    box-shadow: inset 0 0 0 1px rgba(var(--tb-lock), 0.6), 0 0 10px rgba(var(--tb-lock), 0.2);
+}
+
+@keyframes tb-blink {
+    from { opacity: 1; }
+    to { opacity: 0.3; }
+}
+
+@keyframes tb-pending {
+    0%, 100% { box-shadow: inset 0 0 0 1px rgba(var(--tb-warm), 0.3); }
+    50% { box-shadow: inset 0 0 0 1px rgba(var(--tb-warm), 0.9), 0 0 10px rgba(var(--tb-warm), 0.35); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .tb-status[data-state="busy"]::before,
+    .tb-tool.is-pending {
+        animation: none;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .tb-deck-top {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}

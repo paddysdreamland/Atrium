@@ -5,10 +5,10 @@
 // fade-out stop and a stereo mixdown export. The music itself stays in the site root's ME_Sound/.
 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
-const musicButton = document.getElementById("music-start");
-const musicTransition = document.getElementById("music-transition");
-const musicReset = document.getElementById("music-reset");
-const musicDownload = document.getElementById("music-download");
+const musicButton = document.getElementById("cst-start");
+const musicTransition = document.getElementById("cst-transition");
+const musicReset = document.getElementById("cst-stop");
+const musicDownload = document.getElementById("cst-download");
 const mixdownDownload = document.getElementById("mixer-download-stereo");
 const shuffleButton = document.getElementById("mixer-shuffle");
 
@@ -22,8 +22,8 @@ const layerSelectors = [
     document.getElementById("layers-selector3"),
     document.getElementById("layers-selector4")
 ];
-const loadingIndicator = document.getElementById("volume-loading");
-const currentBPMDisplay = document.getElementById("current-bpm");
+const loadingIndicator = document.getElementById("cst-loading");
+const currentBPMDisplay = document.getElementById("cst-bpm");
 
 const quantizeCheckbox = document.getElementById("mixer-quantize");
 const fadeStopCheckbox = document.getElementById("mixer-fade-stop");
@@ -334,8 +334,8 @@ document.addEventListener("click", event => {
     updateFilter();
 })();
 
-const volumeLoadingBar = document.getElementById("volume-loading-bar");
-const volumeLoadingPercentage = document.getElementById("volume-loading-percentage");
+const volumeLoadingBar = document.getElementById("cst-loading-fill");
+const volumeLoadingPercentage = document.getElementById("cst-loading-text");
 var loadPercentage = 0;
 
 function resetLoadingBar() {
@@ -1231,7 +1231,7 @@ function setSettingsOpen(open) {
 
 settingsButton.addEventListener("click", () => setSettingsOpen(settingsMenu.hidden));
 document.addEventListener("pointerdown", event => {
-    if (!settingsMenu.hidden && !event.target.closest(".cst-corner")) setSettingsOpen(false);
+    if (!settingsMenu.hidden && !event.target.closest(".tb-corner")) setSettingsOpen(false);
 });
 settingsMenu.addEventListener("keydown", event => {
     if (event.key !== "Escape") return;

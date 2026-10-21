@@ -19,6 +19,7 @@
         <link rel="icon" type="image/x-icon" href="../../images/app_icon_16.png">
 
         <link rel="stylesheet" href="../../styles/pd_main.css">
+        <link rel="stylesheet" href="../shared/toybox.css">
         <link rel="stylesheet" href="soundtrack_player.css">
 
         <!-- The visitor's accent colour and corner radius from the main site's Customization settings. -->
@@ -44,30 +45,30 @@
             <div id="main-holder">
                 <div class="main-scrollable">
                     <div class="section-wrapper">
-                        <a class="cst-back" href="/">&larr; Back to Paddy's Dreamland&trade;</a>
+                        <a class="tb-back" href="/">&larr; Back to Paddy's Dreamland&trade;</a>
 
                         <h3 class="main-header">Mirror's Edge™ Catalyst – Soundtrack Player & Mixer</h3>
 
                         <div class="section-container">
-                            <div id="cst" class="mixer">
-                                <div class="mixer-deck">
-                                    <div class="mixer-deck-top">
-                                        <div class="mixer-deck-info">
-                                            <div id="mixer-status" class="mixer-status">Stopped</div>
+                            <div id="cst" class="mixer tb">
+                                <div class="tb-deck">
+                                    <div class="tb-deck-top">
+                                        <div class="tb-deck-info">
+                                            <div id="mixer-status" class="tb-status">Stopped</div>
                                             <!-- The main soundtrack picker: the native select sits invisibly over the title, so clicking the title opens it. -->
-                                            <div class="mixer-title-picker">
-                                                <span id="mixer-title" class="mixer-title">Choose a soundtrack</span>
-                                                <svg class="mixer-title-chevron" viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4"/></svg>
+                                            <div class="tb-title-picker">
+                                                <span id="mixer-title" class="tb-title">Choose a soundtrack</span>
+                                                <svg class="tb-title-chevron" viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4"/></svg>
                                                 <select id="track-selector" aria-label="Main soundtrack" title="Choose the main soundtrack, which fills every channel and sets the tempo">
                                                     <option class="dropdown-option" value="">Choose a soundtrack...</option>
                                                 </select>
                                             </div>
-                                            <div id="mixer-subtitle" class="mixer-subtitle">Click the title to pick one and begin</div>
+                                            <div id="mixer-subtitle" class="tb-subtitle">Click the title to pick one and begin</div>
                                             <div id="mixer-next" class="mixer-next" hidden></div>
                                         </div>
 
                                         <div class="mixer-deck-tempo">
-                                            <div id="current-bpm" class="mixer-bpm">N/A BPM</div>
+                                            <div id="cst-bpm" class="mixer-bpm">N/A BPM</div>
 
                                             <div class="mixer-beat">
                                                 <div class="mixer-beat-leds">
@@ -85,34 +86,34 @@
                                     <div class="mixer-screen">
                                         <canvas id="mixer-spectrum" class="mixer-spectrum"></canvas>
 
-                                        <div class="cst-tools" role="toolbar" aria-label="Mix">
-                                            <button id="mixer-shuffle" class="cst-tool" title="Shuffle layers: swap every channel to a random track with a matching tempo" aria-label="Shuffle layers"><img src="../../images/silk/arrow_switch.png" alt=""></button>
-                                            <span class="cst-tool-divider" aria-hidden="true"></span>
-                                            <button id="music-download" class="cst-tool" title="Download 8CH: a WAV of the active channels, for replacing the game's music" aria-label="Download 8-channel WAV"><img src="../../images/silk/disk.png" alt=""></button>
-                                            <button id="mixer-download-stereo" class="cst-tool" title="Download mixdown: a stereo WAV of the mix as you hear it, faders and filter included" aria-label="Download stereo mixdown"><img src="../../images/silk/music.png" alt=""></button>
+                                        <div class="tb-toolbar" role="toolbar" aria-label="Mix">
+                                            <button id="mixer-shuffle" class="tb-tool" title="Shuffle layers: swap every channel to a random track with a matching tempo" aria-label="Shuffle layers"><img src="../../images/silk/arrow_switch.png" alt=""></button>
+                                            <span class="tb-tool-divider" aria-hidden="true"></span>
+                                            <button id="cst-download" class="tb-tool" title="Download 8CH: a WAV of the active channels, for replacing the game's music" aria-label="Download 8-channel WAV"><img src="../../images/silk/disk.png" alt=""></button>
+                                            <button id="mixer-download-stereo" class="tb-tool" title="Download mixdown: a stereo WAV of the mix as you hear it, faders and filter included" aria-label="Download stereo mixdown"><img src="../../images/silk/music.png" alt=""></button>
                                         </div>
 
-                                        <div class="cst-corner">
-                                            <button id="cst-help" class="cst-tool" title="How it works" aria-label="How it works" aria-haspopup="dialog"><img src="../../images/silk/help.png" alt=""></button>
-                                            <button id="cst-settings" class="cst-tool" title="Settings" aria-label="Settings" aria-haspopup="true" aria-expanded="false" aria-controls="cst-settings-menu"><img src="../../images/silk/cog.png" alt=""></button>
-                                            <div id="cst-settings-menu" class="cst-settings-menu" hidden>
-                                                <label class="cst-setting">
+                                        <div class="tb-corner">
+                                            <button id="cst-help" class="tb-tool" title="How it works" aria-label="How it works" aria-haspopup="dialog"><img src="../../images/silk/help.png" alt=""></button>
+                                            <button id="cst-settings" class="tb-tool" title="Settings" aria-label="Settings" aria-haspopup="true" aria-expanded="false" aria-controls="cst-settings-menu"><img src="../../images/silk/cog.png" alt=""></button>
+                                            <div id="cst-settings-menu" class="tb-menu" hidden>
+                                                <label class="tb-setting">
                                                     <input id="starter-layer-checkbox5" type="checkbox" checked>
                                                     <span><b>Dynamic Layer Handling</b><small>Randomly brings channels in and out every loop.</small></span>
                                                 </label>
-                                                <label class="cst-setting">
+                                                <label class="tb-setting">
                                                     <input id="starter-layer-checkbox6" type="checkbox" checked>
                                                     <span><b>Maintain BPM</b><small>Transitions keep the current tempo instead of gliding to the new track's.</small></span>
                                                 </label>
-                                                <label class="cst-setting">
+                                                <label class="tb-setting">
                                                     <input id="mixer-quantize" type="checkbox" checked>
                                                     <span><b>Quantize to Bar</b><small>Toggles and transitions wait for the next bar to start.</small></span>
                                                 </label>
-                                                <label class="cst-setting">
+                                                <label class="tb-setting">
                                                     <input id="mixer-fade-stop" type="checkbox" checked>
                                                     <span><b>Fade Out on Stop</b><small>Stop eases the mix out instead of cutting it.</small></span>
                                                 </label>
-                                                <label class="cst-setting cst-setting-select">
+                                                <label class="tb-setting tb-setting-select">
                                                     <span><b>Fade Length</b><small>How long transitions and channel toggles take to fade.</small></span>
                                                     <select id="mixer-fade-length" class="dropdown-menu">
                                                         <option class="dropdown-option" value="instant">Instant</option>
@@ -124,10 +125,10 @@
                                             </div>
                                         </div>
 
-                                        <div class="cst-transport">
-                                            <button id="music-start" class="cst-tool cst-play" title="Start" aria-label="Start"><img src="../../images/silk/control_play_blue.png" alt=""></button>
-                                            <button id="music-transition" class="cst-tool cst-play" style="display: none;" title="Transition: crossfade to the current selection" aria-label="Transition"><img src="../../images/silk/control_fastforward_blue.png" alt=""></button>
-                                            <button id="music-reset" class="cst-tool cst-play" style="display: none;" title="Stop" aria-label="Stop"><img src="../../images/silk/control_stop_blue.png" alt=""></button>
+                                        <div class="tb-transport">
+                                            <button id="cst-start" class="tb-tool tb-play" title="Start" aria-label="Start"><img src="../../images/silk/control_play_blue.png" alt=""></button>
+                                            <button id="cst-transition" class="tb-tool tb-play" style="display: none;" title="Transition: crossfade to the current selection" aria-label="Transition"><img src="../../images/silk/control_fastforward_blue.png" alt=""></button>
+                                            <button id="cst-stop" class="tb-tool tb-play" style="display: none;" title="Stop" aria-label="Stop"><img src="../../images/silk/control_stop_blue.png" alt=""></button>
                                         </div>
                                     </div>
 
@@ -135,10 +136,10 @@
                                         <div id="mixer-loop-bar"></div>
                                     </div>
 
-                                    <div id="volume-loading" class="loading-background" style="display: none;">
-                                        <div id="volume-loading-bg">
-                                            <div id="volume-loading-bar"></div>
-                                            <div id="volume-loading-percentage">0%</div>
+                                    <div id="cst-loading" class="tb-loading" style="display: none;">
+                                        <div class="tb-loading-bar">
+                                            <div id="cst-loading-fill" class="tb-loading-fill"></div>
+                                            <span id="cst-loading-text" class="tb-loading-text">0%</span>
                                         </div>
                                     </div>
                                 </div>
@@ -171,9 +172,9 @@
                                         </div>
 
                                         <div class="mixer-strip-buttons">
-                                            <label class="mixer-toggle mixer-toggle-on" title="Play this channel"><input id="starter-layer-checkbox1" type="checkbox">On</label>
-                                            <label class="mixer-toggle mixer-toggle-solo" title="Hear only soloed channels"><input class="mixer-solo" type="checkbox">Solo</label>
-                                            <label class="mixer-toggle mixer-toggle-lock" title="Keep Dynamic Layer Handling from switching this channel on or off"><input class="mixer-lock" type="checkbox">Lock</label>
+                                            <label class="tb-toggle tb-toggle-on" title="Play this channel"><input id="starter-layer-checkbox1" type="checkbox">On</label>
+                                            <label class="tb-toggle tb-toggle-solo" title="Hear only soloed channels"><input class="mixer-solo" type="checkbox">Solo</label>
+                                            <label class="tb-toggle tb-toggle-lock" title="Keep Dynamic Layer Handling from switching this channel on or off"><input class="mixer-lock" type="checkbox">Lock</label>
                                         </div>
                                     </div>
 
@@ -204,9 +205,9 @@
                                         </div>
 
                                         <div class="mixer-strip-buttons">
-                                            <label class="mixer-toggle mixer-toggle-on" title="Play this channel"><input id="starter-layer-checkbox2" type="checkbox">On</label>
-                                            <label class="mixer-toggle mixer-toggle-solo" title="Hear only soloed channels"><input class="mixer-solo" type="checkbox">Solo</label>
-                                            <label class="mixer-toggle mixer-toggle-lock" title="Keep Dynamic Layer Handling from switching this channel on or off"><input class="mixer-lock" type="checkbox">Lock</label>
+                                            <label class="tb-toggle tb-toggle-on" title="Play this channel"><input id="starter-layer-checkbox2" type="checkbox">On</label>
+                                            <label class="tb-toggle tb-toggle-solo" title="Hear only soloed channels"><input class="mixer-solo" type="checkbox">Solo</label>
+                                            <label class="tb-toggle tb-toggle-lock" title="Keep Dynamic Layer Handling from switching this channel on or off"><input class="mixer-lock" type="checkbox">Lock</label>
                                         </div>
                                     </div>
 
@@ -237,9 +238,9 @@
                                         </div>
 
                                         <div class="mixer-strip-buttons">
-                                            <label class="mixer-toggle mixer-toggle-on" title="Play this channel"><input id="starter-layer-checkbox3" type="checkbox" checked>On</label>
-                                            <label class="mixer-toggle mixer-toggle-solo" title="Hear only soloed channels"><input class="mixer-solo" type="checkbox">Solo</label>
-                                            <label class="mixer-toggle mixer-toggle-lock" title="Keep Dynamic Layer Handling from switching this channel on or off"><input class="mixer-lock" type="checkbox">Lock</label>
+                                            <label class="tb-toggle tb-toggle-on" title="Play this channel"><input id="starter-layer-checkbox3" type="checkbox" checked>On</label>
+                                            <label class="tb-toggle tb-toggle-solo" title="Hear only soloed channels"><input class="mixer-solo" type="checkbox">Solo</label>
+                                            <label class="tb-toggle tb-toggle-lock" title="Keep Dynamic Layer Handling from switching this channel on or off"><input class="mixer-lock" type="checkbox">Lock</label>
                                         </div>
                                     </div>
 
@@ -270,9 +271,9 @@
                                         </div>
 
                                         <div class="mixer-strip-buttons">
-                                            <label class="mixer-toggle mixer-toggle-on" title="Play this channel"><input id="starter-layer-checkbox4" type="checkbox" checked>On</label>
-                                            <label class="mixer-toggle mixer-toggle-solo" title="Hear only soloed channels"><input class="mixer-solo" type="checkbox">Solo</label>
-                                            <label class="mixer-toggle mixer-toggle-lock" title="Keep Dynamic Layer Handling from switching this channel on or off"><input class="mixer-lock" type="checkbox">Lock</label>
+                                            <label class="tb-toggle tb-toggle-on" title="Play this channel"><input id="starter-layer-checkbox4" type="checkbox" checked>On</label>
+                                            <label class="tb-toggle tb-toggle-solo" title="Hear only soloed channels"><input class="mixer-solo" type="checkbox">Solo</label>
+                                            <label class="tb-toggle tb-toggle-lock" title="Keep Dynamic Layer Handling from switching this channel on or off"><input class="mixer-lock" type="checkbox">Lock</label>
                                         </div>
                                     </div>
 
@@ -303,11 +304,11 @@
         </div>
 
         <!-- The help pop-up, opened from the display's help button. -->
-        <dialog id="cst-help-dialog" class="cst-dialog" aria-labelledby="cst-help-title">
-            <div class="cst-dialog-panel">
-                <div class="cst-dialog-head">
+        <dialog id="cst-help-dialog" class="tb-dialog" aria-labelledby="cst-help-title">
+            <div class="tb-dialog-panel">
+                <div class="tb-dialog-head">
                     <h4 id="cst-help-title" class="section-header">How it works</h4>
-                    <button class="cst-tool cst-dialog-close" title="Close" aria-label="Close" data-close><img src="../../images/silk/cross.png" alt=""></button>
+                    <button class="tb-tool tb-dialog-close" title="Close" aria-label="Close" data-close><img src="../../images/silk/cross.png" alt=""></button>
                 </div>
 
                 <p>Mirror's Edge&trade; Catalyst's soundtrack, made dynamic, entirely within the browser. Every soundtrack is split into four channels of two layers each, which you can mix, swap between tracks, and blend together.</p>

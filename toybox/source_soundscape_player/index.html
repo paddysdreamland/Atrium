@@ -19,6 +19,7 @@
         <link rel="icon" type="image/x-icon" href="../../images/app_icon_16.png">
 
         <link rel="stylesheet" href="../../styles/pd_main.css">
+        <link rel="stylesheet" href="../shared/toybox.css">
         <link rel="stylesheet" href="soundscape_player.css">
 
         <!-- The visitor's accent colour and corner radius from the main site's Customization settings. -->
@@ -44,25 +45,25 @@
             <div id="main-holder">
                 <div class="main-scrollable">
                     <div class="section-wrapper">
-                        <a class="ssp-back" href="/">&larr; Back to Paddy's Dreamland&trade;</a>
+                        <a class="tb-back" href="/">&larr; Back to Paddy's Dreamland&trade;</a>
 
-                        <h3 class="main-header">Soundscape Player</h3>
+                        <h3 class="main-header">Half-Life 2 – Soundscape Player</h3>
 
                         <div class="section-container">
-                            <div class="ssp">
-                                <div class="ssp-deck">
-                                    <div class="ssp-deck-top">
-                                        <div class="ssp-deck-info">
-                                            <div id="ssp-status" class="ssp-status" data-state="busy">Loading soundscapes</div>
+                            <div class="ssp tb">
+                                <div class="tb-deck">
+                                    <div class="tb-deck-top">
+                                        <div class="tb-deck-info">
+                                            <div id="ssp-status" class="tb-status" data-state="busy">Loading soundscapes</div>
                                             <!-- The soundscape picker: the native select sits invisibly over the title, so clicking the title opens it. -->
-                                            <div class="ssp-title-picker">
-                                                <span id="ssp-title" class="ssp-title is-empty">Choose a soundscape</span>
-                                                <svg class="ssp-title-chevron" viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4"/></svg>
+                                            <div class="tb-title-picker">
+                                                <span id="ssp-title" class="tb-title is-empty">Choose a soundscape</span>
+                                                <svg class="tb-title-chevron" viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4"/></svg>
                                                 <select id="ssp-select" aria-label="Soundscape" title="Choose a soundscape">
                                                     <option value="">Choose a soundscape...</option>
                                                 </select>
                                             </div>
-                                            <div id="ssp-subtitle" class="ssp-subtitle">Click the title to pick one and begin</div>
+                                            <div id="ssp-subtitle" class="tb-subtitle">Click the title to pick one and begin</div>
                                         </div>
 
                                         <div class="ssp-stats">
@@ -75,25 +76,25 @@
                                     <div class="ssp-deck-body">
                                         <div class="ssp-radar-wrap">
                                             <canvas id="ssp-radar" class="ssp-radar" title="Drag the numbered positions to move their sounds. Scroll to zoom, drag empty space to pan, double-click to reset the view."></canvas>
-                                            <div class="ssp-radar-tools" role="toolbar" aria-label="Radar">
-                                                <button id="ssp-grid-smaller" class="ssp-tool" title="Smaller grid" aria-label="Smaller grid"><img src="../../images/silk/arrow_in.png" alt=""></button>
-                                                <button id="ssp-grid-larger" class="ssp-tool" title="Larger grid" aria-label="Larger grid"><img src="../../images/silk/arrow_out.png" alt=""></button>
-                                                <button id="ssp-snap" class="ssp-tool" aria-pressed="true" title="Snap positions to the grid" aria-label="Snap to grid"><img src="../../images/silk/shape_handles.png" alt=""></button>
-                                                <span class="ssp-tool-divider" aria-hidden="true"></span>
-                                                <button id="ssp-reset-positions" class="ssp-tool" title="Reset positions" aria-label="Reset positions"><img src="../../images/silk/arrow_undo.png" alt=""></button>
-                                                <button id="ssp-reset-view" class="ssp-tool" title="Reset view" aria-label="Reset view"><img src="../../images/silk/house.png" alt=""></button>
+                                            <div class="tb-toolbar" role="toolbar" aria-label="Radar">
+                                                <button id="ssp-grid-smaller" class="tb-tool" title="Smaller grid" aria-label="Smaller grid"><img src="../../images/silk/arrow_in.png" alt=""></button>
+                                                <button id="ssp-grid-larger" class="tb-tool" title="Larger grid" aria-label="Larger grid"><img src="../../images/silk/arrow_out.png" alt=""></button>
+                                                <button id="ssp-snap" class="tb-tool" aria-pressed="true" title="Snap positions to the grid" aria-label="Snap to grid"><img src="../../images/silk/shape_handles.png" alt=""></button>
+                                                <span class="tb-tool-divider" aria-hidden="true"></span>
+                                                <button id="ssp-reset-positions" class="tb-tool" title="Reset positions" aria-label="Reset positions"><img src="../../images/silk/arrow_undo.png" alt=""></button>
+                                                <button id="ssp-reset-view" class="tb-tool" title="Reset view" aria-label="Reset view"><img src="../../images/silk/house.png" alt=""></button>
                                             </div>
 
-                                            <div class="ssp-radar-settings">
-                                                <button id="ssp-help" class="ssp-tool" title="How it works" aria-label="How it works" aria-haspopup="dialog"><img src="../../images/silk/help.png" alt=""></button>
-                                                <button id="ssp-settings" class="ssp-tool" title="Settings" aria-label="Settings" aria-haspopup="true" aria-expanded="false" aria-controls="ssp-settings-menu"><img src="../../images/silk/cog.png" alt=""></button>
-                                                <div id="ssp-settings-menu" class="ssp-settings-menu" hidden>
-                                                    <label class="ssp-setting">
+                                            <div class="tb-corner">
+                                                <button id="ssp-help" class="tb-tool" title="How it works" aria-label="How it works" aria-haspopup="dialog"><img src="../../images/silk/help.png" alt=""></button>
+                                                <button id="ssp-settings" class="tb-tool" title="Settings" aria-label="Settings" aria-haspopup="true" aria-expanded="false" aria-controls="ssp-settings-menu"><img src="../../images/silk/cog.png" alt=""></button>
+                                                <div id="ssp-settings-menu" class="tb-menu" hidden>
+                                                    <label class="tb-setting">
                                                         <input id="ssp-dsp" type="checkbox" checked>
                                                         <span><b>Room Effect</b><small>The soundscape's DSP room type, like the reverb of a tunnel or cavern.</small></span>
                                                     </label>
 
-                                                    <label class="ssp-setting ssp-setting-select">
+                                                    <label class="tb-setting tb-setting-select">
                                                         <span><b>Fade Time</b><small>How long soundscapes take to crossfade (soundscape_fadetime).</small></span>
                                                         <select id="ssp-fade" class="dropdown-menu">
                                                             <option class="dropdown-option" value="0">Instant</option>
@@ -105,9 +106,9 @@
                                                     </label>
                                                 </div>
                                             </div>
-                                            <div class="ssp-radar-transport">
-                                                <button id="ssp-play" class="ssp-tool ssp-tool-play" title="Play" aria-label="Play"><img src="../../images/silk/control_play_blue.png" alt=""></button>
-                                                <button id="ssp-stop" class="ssp-tool ssp-tool-play" title="Stop" aria-label="Stop" hidden><img src="../../images/silk/control_stop_blue.png" alt=""></button>
+                                            <div class="tb-transport ssp-radar-transport">
+                                                <button id="ssp-play" class="tb-tool tb-play" title="Play" aria-label="Play"><img src="../../images/silk/control_play_blue.png" alt=""></button>
+                                                <button id="ssp-stop" class="tb-tool tb-play" title="Stop" aria-label="Stop" hidden><img src="../../images/silk/control_stop_blue.png" alt=""></button>
                                                 <label class="ssp-radar-volume" title="Master volume (double-click to reset)">
                                                     <img id="ssp-volume-icon" src="../../images/silk/sound.png" alt="">
                                                     <input id="ssp-volume" class="ssp-slider" type="range" min="0" max="100" value="80" aria-label="Master volume">
@@ -138,10 +139,10 @@
                                         </div>
                                     </div>
 
-                                    <div id="ssp-loading" class="ssp-loading" hidden>
-                                        <div class="ssp-loading-bar">
-                                            <div id="ssp-loading-fill"></div>
-                                            <span id="ssp-loading-text">0%</span>
+                                    <div id="ssp-loading" class="tb-loading" hidden>
+                                        <div class="tb-loading-bar">
+                                            <div id="ssp-loading-fill" class="tb-loading-fill"></div>
+                                            <span id="ssp-loading-text" class="tb-loading-text">0%</span>
                                         </div>
                                     </div>
                                 </div>
@@ -153,11 +154,11 @@
         </div>
 
         <!-- The help pop-up, opened from the radar's help button. -->
-        <dialog id="ssp-help-dialog" class="ssp-dialog" aria-labelledby="ssp-help-title">
-            <div class="ssp-dialog-panel">
-                <div class="ssp-dialog-head">
+        <dialog id="ssp-help-dialog" class="tb-dialog" aria-labelledby="ssp-help-title">
+            <div class="tb-dialog-panel">
+                <div class="tb-dialog-head">
                     <h4 id="ssp-help-title" class="section-header">How it works</h4>
-                    <button class="ssp-tool ssp-dialog-close" title="Close" aria-label="Close" data-close><img src="../../images/silk/cross.png" alt=""></button>
+                    <button class="tb-tool tb-dialog-close" title="Close" aria-label="Close" data-close><img src="../../images/silk/cross.png" alt=""></button>
                 </div>
 
                 <p>Half-Life 2's soundscapes, played back in the browser by a port of the Source engine's own soundscape system. These are the ambient beds, loops and one-off sounds the game layers around you in every area.</p>
@@ -169,7 +170,7 @@
                     <li>Every loop and random sound gets its own row with a live meter, Mute and Solo, above a log of the random sounds as they play.</li>
                 </ul>
 
-                <p class="ssp-dialog-note">The soundscape logic follows the Source SDK 2013 code closely. The engine's own mixing isn't part of the SDK, so distance falloff, panning and the room effects are close approximations rather than exact copies.</p>
+                <p class="tb-dialog-note">The soundscape logic follows the Source SDK 2013 code closely. The engine's own mixing isn't part of the SDK, so distance falloff, panning and the room effects are close approximations rather than exact copies.</p>
 
                 <h4 class="section-header">Credits</h4>
                 <p>Half-Life 2, its soundscapes and its sounds are made by Valve. The soundscape system is ported from Valve's Source SDK 2013.</p>

@@ -1,168 +1,22 @@
-/* Catalyst Soundtrack Player - toybox app styles, on top of the site's pd_main.css.
-   Rules are scoped under #cst where they need to beat pd_main.css's own id-based Music Box styles. */
+/* Catalyst Soundtrack Player - toybox app styles. The shared pieces (deck, title picker, icon buttons,
+   cog menu, help dialog, toggles) come from ../shared/toybox.css; this is what is unique to this
+   player: the tempo readout, the screen and the channel strips. Rules scoped under #cst beat
+   pd_main.css styles that still target ids used here (the #volume-bar fade bars). */
 
-.mixer {
-    --mixer-panel: rgb(16, 16, 16);
-    --mixer-well: rgb(8, 8, 8);
-    --mixer-edge: rgba(255, 255, 255, 0.1);
-    --mixer-dim: rgba(255, 255, 255, 0.55);
-    --mixer-solo: 255, 200, 64;
-    --mixer-lock: 150, 170, 255;
-    --mixer-body-height: 160px;
-
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    font-family: "Lato";
-    color: var(--white);
-}
-
-.mixer-deck,
 .mixer-strip {
-    border-top: 1px solid var(--mixer-edge);
-    border-bottom: 1px solid var(--mixer-edge);
-}
-
-/* Deck: the display at the top */
-.mixer-deck {
-    background:
-        radial-gradient(ellipse at 50% 0%, rgba(var(--custom-color), 0.14), transparent 70%),
-        url(../../images/patterns/grid1110_25.png),
-        var(--mixer-well);
-    border-radius: 8px;
-    padding: 12px 14px 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    position: relative;
-    /* No overflow clipping: the cog's menu hangs out of the deck over the strips. The background
-       already follows the rounded corners on its own. */
-}
-
-.mixer-deck-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 16px;
-}
-
-.mixer-deck-info {
-    min-width: 0;
-}
-
-.mixer-status {
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--mixer-dim);
-}
-
-.mixer-status::before {
-    content: "";
-    width: 6px;
-    height: 6px;
-    margin-right: 6px;
-    border-radius: 50%;
-    background-color: currentColor;
-    display: inline-block;
-    vertical-align: 1px;
-}
-
-.mixer-status[data-state="playing"] {
-    color: rgb(var(--custom-color));
-}
-
-.mixer-status[data-state="playing"]::before {
-    box-shadow: 0 0 6px rgb(var(--custom-color));
-}
-
-.mixer-status[data-state="busy"] {
-    color: rgb(var(--mixer-solo));
-}
-
-.mixer-status[data-state="busy"]::before {
-    animation: mixer-blink 0.8s ease-in-out infinite alternate;
-}
-
-/* The title is also the main soundtrack picker: the real <select> is stretched invisibly over it,
-   so clicking anywhere on the title opens the browser's own list. */
-.mixer-title-picker {
-    max-width: calc(100% + 12px); /* make up for the negative margins, or the title is cut 12px short */
-    margin: 0 -6px;
-    padding: 0 6px;
-    border-radius: 6px;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    position: relative;
-    transition: background-color 0.15s;
-}
-
-.mixer-title-picker:hover {
-    background-color: rgba(255, 255, 255, 0.07);
-}
-
-.mixer-title-picker:has(select:focus-visible) {
-    outline: 2px solid rgb(var(--custom-color));
-}
-
-#cst .mixer-title-picker select {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    margin: 0;
-    opacity: 0;
-    font-size: 16px; /* 16px+ stops iOS zooming in when the list opens */
-    cursor: pointer;
-    /* Invisible here, but the list the browser opens takes these, so it stays dark like the other selectors. */
-    background-color: rgb(16, 16, 16);
-    color: var(--white);
-    font-family: "Lato";
-    color-scheme: dark;
-}
-
-.mixer-title {
-    min-width: 0;
-    font-size: 24px;
-    font-weight: 900;
-    line-height: 1.2;
-    margin-top: 2px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.mixer-title.is-empty {
-    color: rgb(var(--custom-color));
-}
-
-.mixer-title-chevron {
-    width: 14px;
-    height: 9px;
-    flex-shrink: 0;
-    fill: none;
-    stroke: rgb(var(--custom-color));
-    stroke-width: 1.6;
-    stroke-linecap: round;
-    stroke-linejoin: round;
+    border-top: 1px solid var(--tb-edge);
+    border-bottom: 1px solid var(--tb-edge);
 }
 
 .mixer-next {
     margin-top: 4px;
     font-size: 12px;
     font-weight: 700;
-    color: rgb(var(--mixer-solo));
+    color: rgb(var(--tb-warm));
 }
 
 .mixer-next[hidden] {
     display: none;
-}
-
-.mixer-subtitle {
-    font-size: 12px;
-    color: var(--mixer-dim);
 }
 
 .mixer-deck-tempo {
@@ -171,16 +25,6 @@
     align-items: flex-end;
     gap: 6px;
     flex-shrink: 0;
-}
-
-#cst #current-bpm {
-    background: none;
-    border: none;
-    padding: 0;
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--mixer-dim);
-    white-space: nowrap;
 }
 
 .mixer-bpm-value {
@@ -235,7 +79,7 @@
 .mixer-screen {
     border-radius: 6px;
     background-color: rgba(0, 0, 0, 0.45);
-    box-shadow: 0 0 0 1px var(--mixer-edge);
+    box-shadow: 0 0 0 1px var(--tb-edge);
 }
 
 .mixer-spectrum {
@@ -266,7 +110,7 @@
 }
 
 .mixer-strip {
-    background-color: var(--mixer-panel);
+    background-color: var(--tb-panel);
     border-radius: 8px;
     padding: 8px;
     display: flex;
@@ -300,7 +144,7 @@
 .mixer-strip-master {
     background:
         linear-gradient(180deg, rgba(var(--custom-color), 0.08), transparent 60%),
-        var(--mixer-panel);
+        var(--tb-panel);
 }
 
 .mixer-strip-head {
@@ -377,7 +221,7 @@
     z-index: 10; /* above the strip's own positioned meters and toggles */
     padding: 4px;
     border-radius: 6px;
-    border: 1px solid var(--mixer-edge);
+    border: 1px solid var(--tb-edge);
     background-color: rgb(22, 22, 22);
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7);
     display: flex;
@@ -429,7 +273,7 @@
     display: block;
     font-size: 11px;
     line-height: 1.3;
-    color: var(--mixer-dim);
+    color: var(--tb-dim);
 }
 
 .mixer-strip-badge {
@@ -439,7 +283,7 @@
     border-radius: 3px;
     white-space: nowrap;
     border: 1px solid currentColor;
-    color: var(--mixer-dim);
+    color: var(--tb-dim);
 }
 
 .mixer-strip-badge:empty {
@@ -460,7 +304,7 @@
 
 .mixer-strip-layers {
     font-size: 11px;
-    color: var(--mixer-dim);
+    color: var(--tb-dim);
     margin-top: -4px;
 }
 
@@ -480,7 +324,7 @@
     /* dB scale ticks behind the meters */
     background:
         repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.05) 0 1px, transparent 1px 12.5%),
-        var(--mixer-well);
+        var(--tb-well);
     background-origin: content-box;
 }
 
@@ -630,7 +474,7 @@
     justify-content: space-between;
     font-size: 10px;
     line-height: 12px;
-    color: var(--mixer-dim);
+    color: var(--tb-dim);
 }
 
 #mixer-filter-value {
@@ -641,7 +485,7 @@
 .mixer-fader-value {
     font-size: 11px;
     text-align: center;
-    color: var(--mixer-dim);
+    color: var(--tb-dim);
     font-variant-numeric: tabular-nums;
 }
 
@@ -668,76 +512,13 @@
     gap: 4px;
 }
 
-.mixer-toggle {
-    flex: 1;
-    padding: 5px 0;
-    border-radius: 4px;
-    border-top: 1px solid var(--mixer-edge);
-    border-bottom: 1px solid var(--mixer-edge);
-    background-color: rgb(28, 28, 28);
-    color: var(--mixer-dim);
-    font-size: 11px;
-    font-weight: 900;
-    letter-spacing: 0.04em;
-    text-align: center;
-    text-transform: uppercase;
-    cursor: pointer;
-    user-select: none;
-    position: relative;
-    transition: background-color 0.15s, color 0.15s, box-shadow 0.15s;
-}
-
-.mixer-toggle input {
-    position: absolute;
-    opacity: 0;
-    pointer-events: none;
-}
-
-.mixer-toggle:hover {
-    color: var(--white);
-}
-
-.mixer-toggle:has(input:focus-visible) {
-    outline: 2px solid rgb(var(--custom-color));
-}
-
-.mixer-toggle-on:has(input:checked) {
-    background-color: rgba(var(--custom-color), 0.18);
-    color: rgb(var(--custom-color));
-    box-shadow: inset 0 0 0 1px rgba(var(--custom-color), 0.6), 0 0 10px rgba(var(--custom-color), 0.2);
-}
-
-.mixer-toggle-solo:has(input:checked) {
-    background-color: rgba(var(--mixer-solo), 0.18);
-    color: rgb(var(--mixer-solo));
-    box-shadow: inset 0 0 0 1px rgba(var(--mixer-solo), 0.6), 0 0 10px rgba(var(--mixer-solo), 0.2);
-}
-
-.mixer-toggle-lock:has(input:checked) {
-    background-color: rgba(var(--mixer-lock), 0.18);
-    color: rgb(var(--mixer-lock));
-    box-shadow: inset 0 0 0 1px rgba(var(--mixer-lock), 0.6), 0 0 10px rgba(var(--mixer-lock), 0.2);
-}
-
 /* A quantized toggle waiting for the next bar */
-.mixer-strip.is-queued .mixer-toggle-on {
-    animation: mixer-blink 0.25s steps(2, jump-none) infinite alternate;
-}
-
-@keyframes mixer-blink {
-    from { opacity: 1; }
-    to { opacity: 0.3; }
-}
-
-@keyframes mixer-pending {
-    0%, 100% { box-shadow: inset 0 0 0 1px rgba(var(--mixer-solo), 0.3); }
-    50% { box-shadow: inset 0 0 0 1px rgba(var(--mixer-solo), 0.9), 0 0 10px rgba(var(--mixer-solo), 0.35); }
+.mixer-strip.is-queued .tb-toggle-on {
+    animation: tb-blink 0.25s steps(2, jump-none) infinite alternate;
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .mixer-status[data-state="busy"]::before,
-    .mixer-strip.is-queued .mixer-toggle-on,
-    #cst #music-transition.is-pending {
+    .mixer-strip.is-queued .tb-toggle-on {
         animation: none;
     }
 }
@@ -762,11 +543,6 @@
 }
 
 @media screen and (max-width: 480px) {
-    .mixer-deck-top {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
     .mixer-deck-tempo {
         flex-direction: row;
         justify-content: space-between;
@@ -774,259 +550,19 @@
     }
 }
 
-/* Page */
-.cst-back {
-    font-family: "Lato";
-    font-size: 13px;
+/* Tweaks to the shared toybox pieces (toybox/shared/toybox.css) for this player */
+.mixer {
+    --mixer-body-height: 160px;
+}
+
+.mixer-bpm {
+    font-size: 12px;
     font-weight: 700;
-    align-self: flex-start;
+    color: var(--tb-dim);
+    white-space: nowrap;
 }
 
-.cst-back:hover {
-    text-decoration: underline;
-}
-
-@media screen and (max-width: 1040px) {
-    #website-holder {
-        width: calc(100% - 10px);
-    }
-}
-
-/* Controls over the screen: tiny Silk icon buttons. #cst beats pd_main.css's #music-start etc. */
-.cst-tools,
-.cst-transport {
-    position: absolute;
-    left: 6px;
-    padding: 2px;
-    border-radius: 4px;
-    background-color: rgba(0, 0, 0, 0.75);
-    box-shadow: 0 0 0 1px var(--mixer-edge);
-    display: flex;
-    gap: 2px;
-}
-
-.cst-tools {
-    top: 6px;
-}
-
-.cst-transport {
-    bottom: 6px;
-}
-
-#cst .cst-tool {
-    width: 22px;
-    height: 22px;
-    margin: 0;
-    padding: 0;
-    border: none;
-    border-radius: 3px;
-    background: none;
-    display: grid;
-    place-items: center;
-    cursor: pointer;
-    transition: background-color 0.15s;
-}
-
-#cst .cst-tool img {
-    width: 16px;
-    height: 16px;
-    display: block;
-}
-
-#cst .cst-tool:hover {
-    background-color: rgba(255, 255, 255, 0.12);
-}
-
-#cst .cst-tool:focus-visible {
-    outline: 2px solid rgb(var(--custom-color));
-}
-
-.cst-tool-divider {
-    width: 1px;
-    margin: 3px 1px;
-    background-color: var(--mixer-edge);
-}
-
-#cst .cst-play {
-    width: 26px;
-    height: 26px;
-    background-color: rgba(var(--custom-color), 0.18);
-    box-shadow: inset 0 0 0 1px rgba(var(--custom-color), 0.6);
-}
-
-#cst .cst-play:hover {
-    background-color: rgba(var(--custom-color), 0.32);
-}
-
-/* Transition glows while the selection differs from what's playing. */
-#cst #music-transition.is-pending {
-    animation: mixer-pending 1.2s ease-in-out infinite;
-}
-
-/* Help and settings, in the screen's top-right corner */
-.cst-corner {
-    position: absolute;
-    right: 6px;
-    top: 6px;
-    display: flex;
-    gap: 4px;
-    z-index: 5;
-}
-
-#cst .cst-corner > .cst-tool {
-    width: 26px;
-    height: 26px;
-    background-color: rgba(0, 0, 0, 0.75);
-    box-shadow: 0 0 0 1px var(--mixer-edge);
-}
-
-#cst .cst-corner > .cst-tool:hover {
-    background-color: rgb(36, 36, 36);
-}
-
-#cst .cst-corner > .cst-tool[aria-pressed="true"] {
-    background-color: rgba(var(--custom-color), 0.25);
-    box-shadow: inset 0 0 0 1px rgba(var(--custom-color), 0.7);
-}
-
-.cst-settings-menu {
-    position: absolute;
-    right: 0;
-    top: calc(100% + 4px);
-    width: 250px;
-    max-width: calc(100vw - 60px);
-    padding: 6px;
-    border-radius: 6px;
-    border: 1px solid var(--mixer-edge);
-    background-color: rgb(22, 22, 22);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7);
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-}
-
-.cst-settings-menu[hidden] {
-    display: none;
-}
-
-.cst-setting {
-    padding: 6px 8px;
-    border-radius: 4px;
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-    cursor: pointer;
-}
-
-.cst-setting:hover {
-    background-color: rgba(255, 255, 255, 0.05);
-}
-
-.cst-setting input {
-    margin: 2px 0 0;
-    accent-color: rgb(var(--custom-color));
-    flex-shrink: 0;
-}
-
-.cst-setting b {
-    display: block;
-    font-size: 13px;
-    font-weight: 700;
-}
-
-.cst-setting small {
-    display: block;
-    font-size: 11px;
-    line-height: 1.3;
-    color: var(--mixer-dim);
-}
-
-.cst-setting-select {
-    flex-direction: column;
-    gap: 6px;
-    cursor: default;
-}
-
-#cst .cst-setting-select select {
-    width: 100%;
-    margin: 0;
-    font-size: 13px;
-    color-scheme: dark;
-}
-
-/* The help pop-up */
-.cst-dialog {
-    /* pd_main.css makes everything position: relative, so pin the modal explicitly. */
-    position: fixed;
-    inset: 0;
-    width: min(580px, calc(100vw - 32px));
-    height: fit-content;
-    max-height: calc(100vh - 48px);
-    margin: auto;
-    padding: 0;
-    border: none;
-    background: none;
-    color: var(--white);
-    font-family: "Lato";
-    overflow: visible;
-}
-
-.cst-dialog::backdrop {
-    background-color: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(2px);
-}
-
-.cst-dialog-panel {
-    max-height: calc(100vh - 48px);
-    padding: 12px 18px 18px;
-    border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    background:
-        radial-gradient(ellipse at 50% 0%, rgba(var(--custom-color), 0.12), transparent 70%),
-        rgb(14, 14, 14);
-    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.8);
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    overflow-y: auto;
-}
-
-.cst-dialog-head {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 10px;
-}
-
-.cst-dialog .cst-tool {
-    width: 22px;
-    height: 22px;
-    border-radius: 3px;
-    background: none;
-    display: grid;
-    place-items: center;
-    cursor: pointer;
-}
-
-.cst-dialog .cst-tool:hover {
-    background-color: rgba(255, 255, 255, 0.12);
-}
-
-.cst-dialog .cst-tool img {
-    width: 16px;
-    height: 16px;
-}
-
-.cst-dialog p,
-.cst-dialog li {
-    font-size: 14px;
-    line-height: 1.45;
-    user-select: text;
-}
-
-.cst-dialog ul {
-    padding-left: 18px;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
+.mixer-strip-buttons .tb-toggle {
+    flex: 1;
+    padding: 5px 0;
 }

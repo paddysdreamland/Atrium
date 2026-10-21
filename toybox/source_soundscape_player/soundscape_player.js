@@ -180,8 +180,8 @@ function createRowElement(row) {
         <div class="ssp-row-meter"><div class="ssp-row-meter-fill"></div></div>
         <div class="ssp-row-state"></div>
         <div class="ssp-row-buttons">
-            <label class="ssp-toggle ssp-toggle-mute" title="Mute this sound"><input type="checkbox">Mute</label>
-            <label class="ssp-toggle ssp-toggle-solo" title="Hear only soloed sounds"><input type="checkbox">Solo</label>
+            <label class="tb-toggle tb-toggle-mute" title="Mute this sound"><input type="checkbox">Mute</label>
+            <label class="tb-toggle tb-toggle-solo" title="Hear only soloed sounds"><input type="checkbox">Solo</label>
         </div>`;
     const [mute, solo] = element.querySelectorAll("input");
     mute.checked = row.muted;
@@ -471,7 +471,7 @@ function setSettingsOpen(open) {
 
 settingsButton.addEventListener("click", () => setSettingsOpen(settingsMenu.hidden));
 document.addEventListener("pointerdown", event => {
-    if (!settingsMenu.hidden && !event.target.closest(".ssp-radar-settings")) setSettingsOpen(false);
+    if (!settingsMenu.hidden && !event.target.closest(".tb-corner")) setSettingsOpen(false);
 });
 settingsMenu.addEventListener("keydown", event => {
     if (event.key !== "Escape") return;
