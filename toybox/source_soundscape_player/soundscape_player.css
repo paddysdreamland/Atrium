@@ -263,11 +263,44 @@
     pointer-events: none;
 }
 
-.ssp-log {
+/* Beside the radar: the sound rows above the recent sounds log, together exactly as tall as the
+   radar. The inner box is out of the flow so long lists can't stretch the deck; the rows scroll
+   when a soundscape has lots of them. (On small screens they stack under the radar instead.) */
+.ssp-side {
     min-width: 0;
+}
+
+.ssp-side-inner {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.ssp-panel {
+    min-height: 0;
     display: flex;
     flex-direction: column;
     gap: 6px;
+}
+
+.ssp-panel-sounds {
+    flex: 1 1 auto;
+}
+
+.ssp-panel-sounds .ssp-rows {
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: 2px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(var(--custom-color), 0.45) transparent;
+}
+
+.ssp-panel-log {
+    flex: 0 0 auto;
+    max-height: 38%;
+    overflow: hidden; /* newest first, so the oldest are the ones cut off */
 }
 
 .ssp-panel-title {
@@ -357,69 +390,51 @@
     font-weight: 900;
 }
 
-/* Transport */
-.ssp-transport {
+/* Play/stop and the master volume, over the radar's bottom-left corner */
+.ssp-radar-transport {
+    position: absolute;
+    left: 6px;
+    bottom: 6px;
+    padding: 2px 8px 2px 2px;
+    border-radius: 4px;
+    background-color: rgba(0, 0, 0, 0.75);
+    box-shadow: 0 0 0 1px var(--ssp-edge);
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    flex-wrap: wrap;
-    gap: 10px;
-}
-
-.ssp-transport-group {
-    display: flex;
     gap: 6px;
 }
 
-.ssp-button {
-    padding: 7px 18px;
-    border-radius: 4px;
-    border-top: 1px solid var(--ssp-edge);
-    border-bottom: 1px solid var(--ssp-edge);
-    background-color: var(--ssp-panel);
-    color: var(--white);
-    font-family: "Lato";
-    font-size: 14px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: background-color 0.15s, box-shadow 0.15s;
-}
-
-.ssp-button[hidden] {
+.ssp-tool[hidden] {
     display: none;
 }
 
-.ssp-button:hover {
-    background-color: rgb(32, 32, 32);
-    box-shadow: inset 0 0 0 1px rgba(var(--custom-color), 0.5);
-}
-
-.ssp-button:focus-visible {
-    outline: 2px solid rgb(var(--custom-color));
-}
-
-.ssp-button-primary {
-    background-color: rgba(var(--custom-color), 0.2);
-    color: rgb(var(--custom-color));
+.ssp-tool-play {
+    width: 26px;
+    height: 26px;
+    background-color: rgba(var(--custom-color), 0.18);
     box-shadow: inset 0 0 0 1px rgba(var(--custom-color), 0.6);
 }
 
-#ssp-stop {
-    color: rgb(255, 128, 128);
+.ssp-tool-play:hover {
+    background-color: rgba(var(--custom-color), 0.32);
 }
 
-.ssp-master {
+.ssp-radar-volume {
     display: flex;
     align-items: center;
-    gap: 10px;
-    font-size: 13px;
-    font-weight: 700;
+    gap: 6px;
+    cursor: pointer;
+}
+
+.ssp-radar-volume img {
+    width: 16px;
+    height: 16px;
+    display: block;
 }
 
 .ssp-master-value {
-    min-width: 3em;
-    font-size: 12px;
-    font-weight: 400;
+    min-width: 2.6em;
+    font-size: 10px;
     color: var(--ssp-dim);
     font-variant-numeric: tabular-nums;
 }
@@ -427,8 +442,8 @@
 .ssp-slider {
     --fill: 80%;
 
-    width: 180px;
-    height: 20px;
+    width: 90px;
+    height: 18px;
     -webkit-appearance: none;
     appearance: none;
     background: transparent;
@@ -475,9 +490,8 @@
     outline: 2px solid rgb(var(--custom-color));
 }
 
-/* Sound rows */
+/* Sound rows: badge, name/details and buttons on top, the meter and its state underneath */
 .ssp-rows {
-    margin-top: 6px;
     display: flex;
     flex-direction: column;
     gap: 4px;
@@ -493,15 +507,16 @@
 }
 
 .ssp-row {
-    padding: 8px 10px;
+    padding: 6px 8px;
     border-radius: 6px;
     border-top: 1px solid var(--ssp-edge);
     border-bottom: 1px solid var(--ssp-edge);
     background-color: var(--ssp-panel);
     display: grid;
-    grid-template-columns: 62px minmax(0, 1fr) 140px 150px auto;
+    grid-template-columns: 54px minmax(0, 1fr) auto;
     align-items: center;
-    gap: 10px;
+    gap: 5px 8px;
+    flex-shrink: 0;
     transition: opacity 0.3s;
 }
 
@@ -542,7 +557,9 @@
 }
 
 .ssp-row-meter {
-    height: 8px;
+    grid-column: 1 / 3;
+    grid-row: 2;
+    height: 6px;
     border-radius: 2px;
     background-color: black;
     overflow: hidden;
@@ -563,25 +580,31 @@
 }
 
 .ssp-row-state {
-    font-size: 11px;
+    grid-column: 3;
+    grid-row: 2;
+    font-size: 10px;
+    text-align: right;
     color: var(--ssp-dim);
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
 }
 
 .ssp-row-buttons {
+    grid-column: 3;
+    grid-row: 1;
     display: flex;
+    justify-content: flex-end;
     gap: 4px;
 }
 
 .ssp-toggle {
-    padding: 4px 10px;
+    padding: 3px 7px;
     border-radius: 4px;
     border-top: 1px solid var(--ssp-edge);
     border-bottom: 1px solid var(--ssp-edge);
     background-color: rgb(28, 28, 28);
     color: var(--ssp-dim);
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 900;
     letter-spacing: 0.04em;
     text-transform: uppercase;
@@ -733,23 +756,18 @@
         grid-template-columns: minmax(0, 1fr);
     }
 
-    .ssp-row {
-        grid-template-columns: 62px minmax(0, 1fr) auto;
+    /* Stacked under the radar: the lists just grow, no scrolling or cut-off. */
+    .ssp-side-inner {
+        position: static;
     }
 
-    .ssp-row-meter {
-        grid-column: 1 / -1;
-        grid-row: 2;
+    .ssp-panel-sounds .ssp-rows {
+        overflow: visible;
+        padding-right: 0;
     }
 
-    .ssp-row-state {
-        grid-column: 2;
-        grid-row: 3;
-    }
-
-    .ssp-row-buttons {
-        grid-column: 3;
-        grid-row: 1;
+    .ssp-panel-log {
+        max-height: none;
     }
 }
 
@@ -768,6 +786,6 @@
     }
 
     .ssp-slider {
-        width: 120px;
+        width: 64px;
     }
 }

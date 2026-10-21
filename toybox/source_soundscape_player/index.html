@@ -56,9 +56,9 @@
                             </p>
 
                             <ul class="section-list-unspaced">
-                                <li>Click the title in the display to pick a soundscape and hit Play. Picking another one while playing crossfades to it, the same way the game does when you walk into a new area.</li>
+                                <li>Click the title in the display to pick a soundscape, then hit the play button in the corner of the radar. Picking another one while playing crossfades to it, the same way the game does when you walk into a new area.</li>
                                 <li>The radar shows the sounds around you: loops glow at their positions, random sounds ripple where they play, and ambient sounds surround you. Drag the numbered positions around to move their sounds, snapping to the grid if you like. Scroll to zoom, drag empty space to pan, and double-click to reset the view. The cog holds the room effect and fade time settings.</li>
-                                <li>Every loop and random sound gets its own row below, with a live meter, Mute and Solo.</li>
+                                <li>Every loop and random sound gets its own row beside the radar, with a live meter, Mute and Solo, above a log of the random sounds as they play.</li>
                             </ul>
 
                             <p class="section-paragraph">
@@ -128,14 +128,36 @@
                                                     </label>
                                                 </div>
                                             </div>
+                                            <div class="ssp-radar-transport">
+                                                <button id="ssp-play" class="ssp-tool ssp-tool-play" title="Play" aria-label="Play"><img src="../../images/silk/control_play_blue.png" alt=""></button>
+                                                <button id="ssp-stop" class="ssp-tool ssp-tool-play" title="Stop" aria-label="Stop" hidden><img src="../../images/silk/control_stop_blue.png" alt=""></button>
+                                                <label class="ssp-radar-volume" title="Master volume (double-click to reset)">
+                                                    <img id="ssp-volume-icon" src="../../images/silk/sound.png" alt="">
+                                                    <input id="ssp-volume" class="ssp-slider" type="range" min="0" max="100" value="80" aria-label="Master volume">
+                                                    <span id="ssp-volume-value" class="ssp-master-value">80%</span>
+                                                </label>
+                                            </div>
+
                                             <div id="ssp-radar-scale" class="ssp-radar-scale">Grid 32</div>
                                         </div>
 
-                                        <div class="ssp-log">
-                                            <div class="ssp-panel-title">Recent Sounds</div>
-                                            <ol id="ssp-log" class="ssp-log-list">
-                                                <li class="ssp-log-empty">Random sounds show up here as they play.</li>
-                                            </ol>
+                                        <!-- Sounds and recent sounds share the space beside the radar (or stack under it on small screens). -->
+                                        <div class="ssp-side">
+                                            <div class="ssp-side-inner">
+                                                <section class="ssp-panel ssp-panel-sounds">
+                                                    <div class="ssp-panel-title" title="Every loop and random sound the soundscape runs, sub-soundscapes included">Sounds</div>
+                                                    <div id="ssp-rows" class="ssp-rows">
+                                                        <div class="ssp-rows-empty">Nothing playing yet.</div>
+                                                    </div>
+                                                </section>
+
+                                                <section class="ssp-panel ssp-panel-log">
+                                                    <div class="ssp-panel-title">Recent Sounds</div>
+                                                    <ol id="ssp-log" class="ssp-log-list">
+                                                        <li class="ssp-log-empty">Random sounds show up here as they play.</li>
+                                                    </ol>
+                                                </section>
+                                            </div>
                                         </div>
                                     </div>
 
@@ -144,27 +166,6 @@
                                             <div id="ssp-loading-fill"></div>
                                             <span id="ssp-loading-text">0%</span>
                                         </div>
-                                    </div>
-                                </div>
-
-                                <div class="ssp-transport">
-                                    <div class="ssp-transport-group">
-                                        <button id="ssp-play" class="ssp-button ssp-button-primary">Play</button>
-                                        <button id="ssp-stop" class="ssp-button" hidden>Stop</button>
-                                    </div>
-
-                                    <label class="ssp-master" title="Master volume (double-click to reset)">
-                                        <span>Master</span>
-                                        <input id="ssp-volume" class="ssp-slider" type="range" min="0" max="100" value="80">
-                                        <span id="ssp-volume-value" class="ssp-master-value">80%</span>
-                                    </label>
-                                </div>
-
-                                <div class="ssp-sounds">
-                                    <div class="setting-label">Sounds</div>
-                                    <div class="setting-label-small">Every loop and random sound the soundscape runs, sub-soundscapes included.</div>
-                                    <div id="ssp-rows" class="ssp-rows">
-                                        <div class="ssp-rows-empty">Nothing playing yet.</div>
                                     </div>
                                 </div>
                             </div>

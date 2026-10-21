@@ -125,11 +125,14 @@ engine.on("status", status => {
 /* Controls */
 
 const volumeSlider = document.getElementById("ssp-volume");
+const volumeIcon = document.getElementById("ssp-volume-icon");
 const updateVolume = () => {
     const position = volumeSlider.value / 100;
     engine.setMasterVolume(position * position); // squared, so the travel feels even to the ear
     document.getElementById("ssp-volume-value").textContent = `${volumeSlider.value}%`;
     volumeSlider.style.setProperty("--fill", `${volumeSlider.value}%`);
+    const icon = position === 0 ? "sound_mute" : position < 0.4 ? "sound_low" : "sound";
+    if (!volumeIcon.src.endsWith(`/${icon}.png`)) volumeIcon.src = `../../images/silk/${icon}.png`;
 };
 volumeSlider.addEventListener("input", updateVolume);
 volumeSlider.addEventListener("dblclick", () => { volumeSlider.value = 80; updateVolume(); });
