@@ -244,6 +244,12 @@
     background: none;
 }
 
+.ssp-tool-divider {
+    width: 1px;
+    margin: 3px 1px;
+    background-color: var(--ssp-edge);
+}
+
 .ssp-radar-scale {
     position: absolute;
     right: 6px;
@@ -610,53 +616,92 @@
     box-shadow: inset 0 0 0 1px rgba(var(--ssp-warm), 0.6);
 }
 
-/* Options */
-.ssp-options {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 6px;
+/* The cog's settings menu, in the radar's top-right corner */
+.ssp-radar-settings {
+    position: absolute;
+    right: 6px;
+    top: 6px;
 }
 
-.ssp-option {
-    padding: 8px 10px;
+.ssp-radar-settings > .ssp-tool {
+    width: 26px;
+    height: 26px;
+    background-color: rgba(0, 0, 0, 0.75);
+    box-shadow: 0 0 0 1px var(--ssp-edge);
+}
+
+.ssp-radar-settings > .ssp-tool:hover {
+    background-color: rgb(36, 36, 36);
+}
+
+.ssp-radar-settings > .ssp-tool[aria-pressed="true"] {
+    background-color: rgba(var(--custom-color), 0.25);
+    box-shadow: inset 0 0 0 1px rgba(var(--custom-color), 0.7);
+}
+
+.ssp-settings-menu {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 4px);
+    width: 230px;
+    max-width: calc(100vw - 60px);
+    padding: 6px;
     border-radius: 6px;
-    border-top: 1px solid var(--ssp-edge);
-    border-bottom: 1px solid var(--ssp-edge);
-    background-color: var(--ssp-panel);
+    border: 1px solid var(--ssp-edge);
+    background-color: rgb(22, 22, 22);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    z-index: 10;
+}
+
+.ssp-settings-menu[hidden] {
+    display: none;
+}
+
+.ssp-setting {
+    padding: 6px 8px;
+    border-radius: 4px;
     display: flex;
     align-items: flex-start;
-    gap: 10px;
+    gap: 8px;
     cursor: pointer;
 }
 
-.ssp-option input {
+.ssp-setting:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.ssp-setting input {
     margin: 2px 0 0;
     accent-color: rgb(var(--custom-color));
     flex-shrink: 0;
 }
 
-.ssp-option b {
+.ssp-setting b {
     display: block;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 700;
 }
 
-.ssp-option small {
+.ssp-setting small {
     display: block;
-    font-size: 12px;
+    font-size: 11px;
+    line-height: 1.3;
     color: var(--ssp-dim);
 }
 
-.ssp-option-select {
+.ssp-setting-select {
     flex-direction: column;
     gap: 6px;
     cursor: default;
 }
 
-.ssp-option-select select {
+.ssp-setting-select select {
     width: 100%;
     margin: 0;
-    font-size: 14px;
+    font-size: 13px;
     color-scheme: dark;
 }
 
@@ -705,10 +750,6 @@
     .ssp-row-buttons {
         grid-column: 3;
         grid-row: 1;
-    }
-
-    .ssp-options {
-        grid-template-columns: minmax(0, 1fr);
     }
 }
 

@@ -436,12 +436,36 @@ const endPointer = event => {
 radar.addEventListener("pointerup", endPointer);
 radar.addEventListener("pointercancel", endPointer);
 
-radar.addEventListener("dblclick", event => {
-    if (positionAt(localPoint(event)) >= 0) return;
+function resetView() {
     view.x = defaultView.x;
     view.y = defaultView.y;
     view.anchor = null;
     view.targetRange = defaultView.range;
+}
+
+radar.addEventListener("dblclick", event => {
+    if (positionAt(localPoint(event)) < 0) resetView();
+});
+document.getElementById("ssp-reset-view").addEventListener("click", resetView);
+
+// The cog's settings menu: closes on a click anywhere else, or Escape.
+const settingsButton = document.getElementById("ssp-settings");
+const settingsMenu = document.getElementById("ssp-settings-menu");
+
+function setSettingsOpen(open) {
+    settingsMenu.hidden = !open;
+    settingsButton.setAttribute("aria-expanded", String(open));
+    settingsButton.setAttribute("aria-pressed", String(open));
+}
+
+settingsButton.addEventListener("click", () => setSettingsOpen(settingsMenu.hidden));
+document.addEventListener("pointerdown", event => {
+    if (!settingsMenu.hidden && !event.target.closest(".ssp-radar-settings")) setSettingsOpen(false);
+});
+settingsMenu.addEventListener("keydown", event => {
+    if (event.key !== "Escape") return;
+    setSettingsOpen(false);
+    settingsButton.focus();
 });
 
 // Hammer's grid: lines every grid step, brown every 1024 units, teal through the origin. Like
