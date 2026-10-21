@@ -875,6 +875,10 @@ button {
     padding-left: 5% !important;
 }
 
+.changelog-subject {
+    display: none;
+}
+
 .section-header,
 .changelog-entry-header {
     color: rgb(var(--custom-color));
@@ -886,8 +890,20 @@ button {
     border-image: linear-gradient(90deg, rgb(var(--custom-color)), transparent) 1;
 }
 
+.changelog-entry-header {
+    margin-bottom: 10px;
+}
+
+.changelog-version {
+    color: rgb(var(--custom-color));
+}
+
+.changelog-date {
+    opacity: 0.25;
+    font-size: 12px;
+}
+
 .section-paragraph,
-.changelog-subject,
 .changelog-text {
     font-family: "Lato";
     font-weight: 400;
@@ -1535,8 +1551,7 @@ li > a {
 }
 
 /* Helpers */
-.spaced-out,
-.changelog-entry-header {
+.spaced-out {
     display: flex;
     justify-content: space-between;
 }
