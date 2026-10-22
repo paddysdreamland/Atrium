@@ -2,35 +2,8 @@ document.addEventListener("DOMContentLoaded", function () {
     const subtitles = [
         // Paddy-V
         `Some people like to call this place an atrium, which makes sense considering its nature.`,
-
-        // ChatGPT
         `You can be discoverable and miserable, or obscure and authentic.`,
-        
-        // Low Roar
-        `The dream controls my attitude, tells me what to say and to do.`,
-        `You're a part of me, and I'm a part of you.`,
-        
-        // Muse
-        `How can we win when fools can be kings?`,
-        `Don't waste your time, or time will waste you.`,
-
-        // Mystery Skulls
-        `I'm not freaking out, but it feels like time is running out.`,
-        `I need to stop worrying about the things I can't control.`,
-        `I used to worry every day, now I got better things.`,
-        `I can't fight this feeling, it's not in my head.`,
-        `This time I might just disappear.`,
-
-        // Tame Impala
-        `If only there could be another way to do this.`,
-
-        // Vylet Pony
-        `Just imagine what it's like to be like me, live like me.`,
-        `I can't remember anymore, maybe I buried the key?`,
-        `Isn't it great to be exactly who you are?`,
-
-        // The Weeknd
-        `Scared? Don't worry, we'll be there to hold your hand.`,
+        `Welcome to the inner workings of my mind.`,
     ];
 
     const subHour = new Date().getUTCHours();
