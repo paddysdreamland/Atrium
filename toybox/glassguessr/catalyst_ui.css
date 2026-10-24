@@ -1,0 +1,199 @@
+.activity-icon {
+    background-image: url("ui/texturemappings/activityiconwin32.png");
+    background-repeat: no-repeat;
+    --uv-x: 0.875;
+    --uv-y: 0.75;
+    width: 64px; height: 64px;
+    position: fixed; right: 96px; top: 64px;
+    animation: activity-icon-anim 0.7s steps(1, end) infinite;
+}
+
+@keyframes activity-icon-anim {
+    0%      { background-position: calc(0.8261719   / var(--uv-x) * 100%) calc(0.5585938   / var(--uv-y) * 100%); } /* frame 0  */
+    4.762%  { background-position: calc(0.8261719   / var(--uv-x) * 100%) calc(0.2851563   / var(--uv-y) * 100%); } /* frame 1  */
+    9.524%  { background-position: calc(0.8261719   / var(--uv-x) * 100%) calc(0.01171875  / var(--uv-y) * 100%); } /* frame 2  */
+    14.286% { background-position: calc(0.6894531   / var(--uv-x) * 100%) calc(0.5585938   / var(--uv-y) * 100%); } /* frame 3  */
+    19.048% { background-position: calc(0.6894531   / var(--uv-x) * 100%) calc(0.2851563   / var(--uv-y) * 100%); } /* frame 4  */
+    23.810% { background-position: calc(0.6894531   / var(--uv-x) * 100%) calc(0.01171875  / var(--uv-y) * 100%); } /* frame 5  */
+    28.571% { background-position: calc(0.5527344   / var(--uv-x) * 100%) calc(0.5585938   / var(--uv-y) * 100%); } /* frame 6  */
+    33.333% { background-position: calc(0.5527344   / var(--uv-x) * 100%) calc(0.2851563   / var(--uv-y) * 100%); } /* frame 7  */
+    38.095% { background-position: calc(0.5527344   / var(--uv-x) * 100%) calc(0.01171875  / var(--uv-y) * 100%); } /* frame 8  */
+    42.857% { background-position: calc(0.4160156   / var(--uv-x) * 100%) calc(0.5585938   / var(--uv-y) * 100%); } /* frame 9  */
+    47.619% { background-position: calc(0.4160156   / var(--uv-x) * 100%) calc(0.2851563   / var(--uv-y) * 100%); } /* frame 10 */
+    52.381% { background-position: calc(0.2792969   / var(--uv-x) * 100%) calc(0.5585938   / var(--uv-y) * 100%); } /* frame 11 */
+    57.143% { background-position: calc(0.4160156   / var(--uv-x) * 100%) calc(0.01171875  / var(--uv-y) * 100%); } /* frame 12 */
+    61.905% { background-position: calc(0.1425781   / var(--uv-x) * 100%) calc(0.5585938   / var(--uv-y) * 100%); } /* frame 13 */
+    66.667% { background-position: calc(0.2792969   / var(--uv-x) * 100%) calc(0.2851563   / var(--uv-y) * 100%); } /* frame 14 */
+    71.429% { background-position: calc(0.005859375 / var(--uv-x) * 100%) calc(0.5585938   / var(--uv-y) * 100%); } /* frame 15 */
+    76.190% { background-position: calc(0.2792969   / var(--uv-x) * 100%) calc(0.01171875  / var(--uv-y) * 100%); } /* frame 16 */
+    80.952% { background-position: calc(0.1425781   / var(--uv-x) * 100%) calc(0.2851563   / var(--uv-y) * 100%); } /* frame 17 */
+    85.714% { background-position: calc(0.005859375 / var(--uv-x) * 100%) calc(0.2851563   / var(--uv-y) * 100%); } /* frame 18 */
+    90.476% { background-position: calc(0.1425781   / var(--uv-x) * 100%) calc(0.01171875  / var(--uv-y) * 100%); } /* frame 19 */
+    95.238% { background-position: calc(0.005859375 / var(--uv-x) * 100%) calc(0.01171875  / var(--uv-y) * 100%); } /* frame 20 */
+}
+/* Values below are read from the game's UI blueprints in Frosty Editor, at
+   their 1920x1080 authoring size, so one blueprint unit is one CSS pixel. */
+:root {
+    --ar-navy: 0, 19, 53;                     /* AR_title PlateGradient*Dark */
+    --ar-blink: 60, 161, 255;                 /* Templates/Timer TemplateBlink tint */
+    --lens-tint: 141, 221, 255;               /* LensMapPanel minimap colorize */
+    --ar-text: rgba(255, 255, 255, 0.85);     /* large_white / titleMedium_white */
+}
+
+/* AR plate - UI/Widgets/Templates/AR_title, the base of Catalyst's timer and
+   most of its AR labels. A 48px plate with 8px corners over a blur
+   (PlateBlur, BlurRaster blend), 8px navy gradients along the top and bottom
+   edges, 48px of text padding either side (Templates/Timer AutoAdjust*Padding),
+   and Europe Extended at 21pt (titleMedium_white). PlateTinted is a black fill
+   whose alpha the widget animates rather than stores, so 0.5 is a choice:
+   enough to keep white text legible over a white city. */
+.ar-plate {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    height: 48px;
+    padding: 0 48px;
+    border-radius: 8px;
+    background-color: rgba(0, 0, 0, 0.5);
+    background-image: linear-gradient(
+        rgba(var(--ar-navy), 0.8),
+        rgba(var(--ar-navy), 0) 8px,
+        rgba(var(--ar-navy), 0) calc(100% - 8px),
+        rgba(var(--ar-navy), 0.8)
+    );
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    font-family: "Europe Ext", "Lato", sans-serif;
+    font-size: 21px;
+    line-height: 1;
+    color: var(--ar-text);
+    white-space: nowrap;
+}
+
+/* limiterVertical (UI/Art/Menu) - the hairline bracket at each end of the
+   plate. Its vector path is a 1-unit upright with half-unit returns, turning
+   through 8-unit radius corners inside an 8x24 box, 4-sliced to the plate's
+   height. In AR_title, limiterLeft sits at x 0.5 and limiterRight at
+   width - 16.5, both 16 wide, with the right one turned 180 degrees by a
+   TransformMultiplier - so each upright lies 0.5px inside the plate's edge
+   and its 8px corners trace the plate's own. The (+-20, 0) Offsets in the
+   blueprint are leftovers that PositionExpansion layout ignores. */
+.ar-plate::before,
+.ar-plate::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 8px;
+    border: 0 solid rgba(255, 255, 255, 0.7);
+    border-top-width: 0.5px;
+    border-bottom-width: 0.5px;
+    pointer-events: none;
+    transition: transform 0.15s ease;
+    animation: ar-limiter-in 0.6s linear both;
+}
+
+.ar-plate::before {
+    left: 0.5px;
+    border-left-width: 1px;
+    border-radius: 8px 0 0 8px;
+    --limiter-from: -8px;
+}
+
+.ar-plate::after {
+    right: 0.5px;
+    border-right-width: 1px;
+    border-radius: 0 8px 8px 0;
+    --limiter-from: 8px;
+}
+
+/* AR_title's timeline: the brackets wait 0.2s, then slide in from 8px outside
+   while fading from 0 to their resting 0.7 (the 0.85 stored on the element is
+   overwritten by the timeline). Runs whenever a plate is shown, since showing
+   it restarts the animation. Uses translate so the hover nudge below, on
+   transform, never fights it. */
+@keyframes ar-limiter-in {
+    0%, 33% { translate: var(--limiter-from) 0; opacity: 0; }
+    100%    { translate: 0 0; opacity: 1; }
+}
+
+.ar-label {
+    font-size: 13px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    opacity: 0.6;
+}
+
+.ar-value {
+    font-variant-numeric: tabular-nums;
+}
+
+/* The same plate as a button. The brackets open out on hover. */
+.ar-button {
+    font-size: 18px; /* large_white */
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    text-align: center;
+    cursor: pointer;
+    transition: background-color 0.15s ease, opacity 0.15s ease;
+}
+
+.ar-button:hover:not(:disabled),
+.ar-button:focus-visible {
+    background-color: rgba(var(--ar-blink), 0.3);
+}
+
+.ar-button:hover:not(:disabled)::before,
+.ar-button:focus-visible::before { transform: translateX(-4px); }
+
+.ar-button:hover:not(:disabled)::after,
+.ar-button:focus-visible::after { transform: translateX(4px); }
+
+.ar-button:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+/* FX_timerBlink - the blue flash laid over a timer plate when it changes
+   state. Restarted from script by removing and re-adding the class. */
+.ar-blink {
+    animation: ar-blink 0.6s ease-out;
+}
+
+@keyframes ar-blink {
+    from { box-shadow: inset 0 0 0 100px rgba(var(--ar-blink), 0.55), 0 0 24px rgba(var(--ar-blink), 0.6); }
+    to   { box-shadow: inset 0 0 0 100px rgba(var(--ar-blink), 0),    0 0 24px rgba(var(--ar-blink), 0); }
+}
+
+/* Lens minimap - UI/Widgets/HUD/Lens/LensMapPanel: a 384px clipping window
+   (PamUIScrollPanelWidgetData) over a bitmap colorized rgb(141, 221, 255) at
+   0.8 alpha. The screenshot keeps its own colours, since tinting it would
+   bury the clues, so the tint goes into the frame and scanlines instead. */
+.lens-panel {
+    position: relative;
+    display: block;
+    width: 384px;
+    aspect-ratio: 16 / 9;
+    padding: 0;
+    overflow: hidden;
+    border-radius: 8px;
+    background-color: rgba(var(--lens-tint), 0.15);
+    box-shadow: 0 0 0 1px rgba(var(--lens-tint), 0.8), 0 0 24px rgba(var(--lens-tint), 0.25);
+}
+
+.lens-panel img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.lens-panel::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(rgba(var(--lens-tint), 0.07) 0 1px, transparent 1px 3px);
+    pointer-events: none;
+}

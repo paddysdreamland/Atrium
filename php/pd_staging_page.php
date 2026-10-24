@@ -10,7 +10,7 @@ require __DIR__ . '/pd_staging.php';
 pd_guard();
 pd_staging_gate();
 
-// Only plain top-level page names like "glassguessr.html". No folders, no "..".
+// Only plain top-level page names like "obs_timer_15.html". No folders, no "..".
 // pd_main.html is only ever served through index.php.
 $file = (string) ($_GET['f'] ?? '');
 $path = dirname(__DIR__) . '/' . $file;

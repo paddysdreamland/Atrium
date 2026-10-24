@@ -1,4 +1,4 @@
-import { fromFrostbite } from "./glg_map.js";
+import { fromFrostbite } from "./glassguessr_map.js";
 
 /* Round data for GlassGuessr.
  *
@@ -7,16 +7,18 @@ import { fromFrostbite } from "./glg_map.js";
  * scale at read time, so a location can be pasted straight in without any
  * arithmetic and can always be checked back against the game later.
  *
- *   image       the screenshot for the round.
- *   position    [x, y, z] in Frostbite coordinates.
+ *   image       the screenshot for the round, under locations/. Keep the
+ *               names meaningless: anyone can read the URL in the network tab,
+ *               so a descriptive name gives the answer away.
+ *   position    [x, y, z] in Frostbite coordinates, null until measured.
  *   difficulty  1..5, optional.
  */
 export const LOCATIONS = [
-    {
-        image: "images/glg/locations/regatta-bay-waterfront.jpg",
-        position: [1017.928711, 116.246872, -147.650406],
-        difficulty: 2
-    }
+    { image: "locations/MirrorsEdgeCatalyst_HjhXtfW3CV.jpg", position: [-86.3, 56.1, 146.2] },
+    { image: "locations/MirrorsEdgeCatalyst_QnDBtAYgP1.jpg", position: [190.5, 59.1, -1.3] },
+    { image: "locations/MirrorsEdgeCatalyst_rAq7gzLWqH.jpg", position: [-41.0, 55.3, 43.9] },
+    { image: "locations/MirrorsEdgeCatalyst_VKdkqXOot2.jpg", position: [39.1, 67.8, 187.4] },
+    { image: "locations/MirrorsEdgeCatalyst_yOtpp2sx7s.jpg", position: [65.3, 55.8, 33.0] }
 ];
 
 /* Frostbite position as model-space coordinates, ready for addMarker, scoring
@@ -46,6 +48,10 @@ export function validateLocations(locations = LOCATIONS) {
         else if (seen.has(location.image)) problems.push(name + ": duplicate image");
         seen.add(location.image);
 
+        if (location.position === null) {
+            problems.push(name + ": no position yet");
+            continue;
+        }
         if (!Array.isArray(location.position) || location.position.length !== 3) {
             problems.push(name + ": position must be [x, y, z]");
             continue;

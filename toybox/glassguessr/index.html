@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>Glassguessr</title>
+
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <meta name="description" content="A basic 3D map of Glass with a pointer. Made for the Beat Revival's #glassguessr channel.">
+        <meta name="author" content="Drawing Pad">
+        <meta name="theme-color" content="#FF4040">
+        <meta name="robots" content="index, follow">
+
+        <meta name="twitter:title" content="Glassguessr">
+        <meta name="twitter:description" content="A basic 3D map of Glass with a pointer. Made for the Beat Revival's #glassguessr channel.">
+        <meta name="twitter:image" content="https://www.paddysdreamland.com/images/embeds/glg_banner1.png">
+        <meta name="twitter:card" content="summary_large_image">
+
+        <meta property="og:title" content="Glassguessr">
+        <meta property="og:description" content="A basic 3D map of Glass with a pointer. Made for the Beat Revival's #glassguessr channel.">
+        <meta property="og:image" content="https://www.paddysdreamland.com/images/embeds/glg_banner1.png">
+        <meta property="og:site_name" content="Paddy's Dreamland™">
+        <meta property="og:url" content="https://www.paddysdreamland.com/toybox/glassguessr/">
+        <meta property="og:type" content="website">
+
+        <link rel="icon" type="image/x-icon" href="../../images/app_icon_16.png">
+
+        <link rel="stylesheet" href="../../styles/pd_main.css">
+        <link rel="stylesheet" href="glassguessr.css">
+        <link rel="stylesheet" href="catalyst_ui.css">
+
+        <!-- The visitor's accent colour and corner radius from the main site's Customization settings. -->
+        <script>
+            try {
+                const savedColor = localStorage.getItem("customColor");
+                const savedBorderRadius = localStorage.getItem("customBorderRadius");
+                if (savedColor) document.documentElement.style.setProperty("--custom-color", savedColor);
+                if (savedBorderRadius) document.documentElement.style.setProperty("--custom-border-radius", savedBorderRadius);
+            } catch (error) { /* storage blocked: keep the defaults */ }
+        </script>
+
+        <script type="importmap">
+            {
+                "imports": {
+                    "three": "./vendor/three/three.module.js",
+                    "three/addons/": "./vendor/three/addons/"
+                }
+            }
+        </script>
+    </head>
+
+    <body data-screen="loading">
+        <div id="map-holder"></div>
+
+        <div id="menu">
+            <a class="glg-back" href="/">&larr; Back to Paddy's Dreamland&trade;</a>
+
+            <div class="glg-screen-body">
+                <div class="glg-kicker">Mirror's Edge&trade; Catalyst</div>
+                <h1 class="glg-title">Glassguessr</h1>
+
+                <p id="menu-subtitle" class="glg-subtitle">
+                    screenshots from around the city of Glass. Find where each one was taken.
+                    This is an early prototype, please be patient.
+                </p>
+
+                <button id="start-button" class="ar-plate ar-button" type="button">Play Demo</button>
+
+                <div class="glg-modifiers">
+                    <div class="glg-modifiers-title">Modifiers</div>
+                    <button id="count-height-toggle" class="glg-modifier" type="button" aria-pressed="false">
+                        <span class="glg-modifier-name">Count Height</span>
+                        <span class="glg-modifier-hint">The answer's region becomes a sphere: height level matters.</span>
+                    </button>
+                </div>            </div>
+        </div>
+
+        <div id="hud">
+            <!-- Round counter and clock, styled after Templates/Timer. -->
+            <div id="round-plate" class="ar-plate">
+                <span class="ar-label">Round</span>
+                <span id="round-count" class="ar-value">1/5</span>
+                <span id="round-clock" class="ar-value">00:00.00</span>
+            </div>
+
+            <!-- The round's screenshot, in the Lens minimap frame. Click or Space to enlarge. -->
+            <button id="photo-panel" class="lens-panel" type="button" title="Enlarge (Space)">
+                <img id="photo" alt="The screenshot to place on the map">
+            </button>
+
+            <div id="action-bar">
+                <div id="result-plate" class="ar-plate" hidden>
+                    <span id="result-distance" class="ar-value"></span>
+                    <span class="ar-label">away</span>
+                    <span id="result-points" class="ar-value"></span>
+                    <span class="ar-label">pts</span>
+                </div>
+                <button id="guess-button" class="ar-plate ar-button" type="button" disabled>Place a marker</button>
+                <button id="next-button" class="ar-plate ar-button" type="button" hidden>Next round</button>
+            </div>
+        </div>
+
+        <div id="summary">
+            <div class="glg-screen-body">
+                <div class="glg-kicker">Run complete</div>
+                <h1 id="summary-total" class="glg-title">0</h1>
+                <p id="summary-out-of" class="glg-subtitle"></p>
+                <ol id="summary-rounds" class="glg-rounds"></ol>
+                <button id="again-button" class="ar-plate ar-button" type="button">Play again</button>
+            </div>
+        </div>
+
+        <div id="controls-holder">
+            <div class="controls-title">Controls</div>
+
+            <div class="controls-row"><span class="controls-keys"><kbd>Drag</kbd></span><span class="ck-text">Pan</span></div>
+            <div class="controls-row"><span class="controls-keys"><kbd>Shift/Control</kbd><kbd>Drag</kbd></span><span class="ck-text">Orbit</span></div>
+            <div class="controls-row"><span class="controls-keys"><kbd>Mouse Wheel</kbd></span><span class="ck-text">Zoom</span></div>
+            <div class="controls-row"><span class="controls-keys"><kbd>&#8592;</kbd><kbd>&#8593;</kbd><kbd>&#8595;</kbd><kbd>&#8594;</kbd></span><span class="ck-text">Pan</span></div>
+            <div class="controls-row"><span class="controls-keys"><kbd>Click</kbd></span><span class="ck-text">Place marker</span></div>
+            <div class="controls-row"><span class="controls-keys"><kbd>Space</kbd></span><span class="ck-text">Enlarge photo</span></div>
+            <div class="controls-row"><span class="controls-keys"><kbd>Enter</kbd></span><span class="ck-text">Guess / next</span></div>        </div>
+
+        <div id="loading-holder">
+            <div class="activity-icon"></div>
+            <div id="loading-label">Loading Glass</div>
+        </div>
+
+        <script type="module" src="glassguessr_game.js"></script>
+
+        <div id="git-version" class="version-date controls-title"></div>
+        <script src="../../scripts/version.js"></script>
+    </body>
+</html>
