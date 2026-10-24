@@ -88,7 +88,7 @@ body[data-screen="menu"] .version-date {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 12px;
+    gap: 10px;
     max-width: 560px;
 }
 
@@ -114,10 +114,11 @@ body[data-screen="menu"] .version-date {
 
 .glg-kicker {
     font-family: "Europe Ext", "Lato", sans-serif;
-    font-size: 16px;
-    letter-spacing: 0.3em;
+    font-size: 24px;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
     color: rgba(var(--custom-color), 1);
+    left: 2px;
 }
 
 .glg-title {
@@ -139,8 +140,38 @@ body[data-screen="menu"] .version-date {
     line-height: 16px;
 }
 
-/* Modifiers: optional rules under the start button, each a toggle whose box
-   fills in runner red when on (aria-pressed). */
+.glg-buttons-wrapper {
+    width: 384px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.glg-button {
+    background-color: white;
+    color: black;
+    height: 32px; width: 100%;
+    text-transform: uppercase;
+    font-family: "Europe Ext", "Lato", sans-serif;
+    font-size: 16px; font-weight: 500;
+    border: solid 2px white;
+    border-radius: 8px 0 8px 0;
+    padding: 0 16px;
+    left: 0px;
+
+    transition: 0.1s;
+} .glg-button:hover {
+    background-color: rgb(var(--custom-color));
+    color: white;
+    border-color: rgb(var(--custom-color));
+    left: 10px;
+
+    transition: 0.1s;
+}
+
+/* Toggles - the modifiers under the start button and the switches in the
+   settings dialog - are a box that fills in runner red when on (aria-pressed),
+   a name and a hint. */
 .glg-modifiers {
     display: flex;
     flex-direction: column;
@@ -159,10 +190,10 @@ body[data-screen="menu"] .version-date {
 .glg-modifier {
     display: grid;
     grid-template-columns: 14px 1fr;
-    column-gap: 10px;
+    column-gap: 8px;
     align-items: baseline;
     max-width: 420px;
-    padding: 4px 0;
+    padding: 0px 0px;
     background: none;
     border: none;
     text-align: left;
@@ -177,7 +208,7 @@ body[data-screen="menu"] .version-date {
     height: 12px;
     border: 1px solid rgba(255, 255, 255, 0.8);
     border-radius: 2px;
-    transform: translateY(1px);
+    transform: translateY(2px);
 }
 
 .glg-modifier[aria-pressed="true"]::before {
@@ -203,6 +234,65 @@ body[data-screen="menu"] .version-date {
 .glg-modifier:hover .glg-modifier-name,
 .glg-modifier:focus-visible .glg-modifier-name {
     color: rgb(255, 255, 255);
+}
+
+.glg-text-button {
+    margin-top: 10px;
+    padding: 4px 0;
+    background: none;
+    border: none;
+    font-family: "Europe Ext", "Lato", sans-serif;
+    font-size: 12px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.7);
+    cursor: pointer;
+}
+
+.glg-text-button:hover,
+.glg-text-button:focus-visible {
+    color: rgb(255, 255, 255);
+}
+
+/* Settings dialog - dark glass like the HUD plates. pd_main.css gives every
+   element position: relative, which would knock the modal out of the
+   viewport centre, so it is placed explicitly. */
+.glg-dialog {
+    position: fixed;
+    inset: 0;
+    margin: auto;
+    width: min(480px, calc(100vw - 32px));
+    height: fit-content;
+    padding: 24px 28px;
+    border: none;
+    border-radius: 8px;
+    background: rgba(0, 8, 20, 0.85);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    color: rgb(255, 255, 255);
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.4);
+}
+
+.glg-dialog::backdrop {
+    background: rgba(0, 8, 20, 0.35);
+}
+
+.glg-dialog-title {
+    font-family: "Europe Ext", "Lato", sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.glg-dialog .glg-modifiers {
+    margin-top: 14px;
+}
+
+.glg-dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 22px;
 }
 
 
@@ -272,8 +362,8 @@ body[data-screen="menu"] .version-date {
     cursor: zoom-out;
 }
 
-#photo-panel.expanded::after {
-    opacity: 0;
+#photo-panel.expanded > img {
+    opacity: 1;
 }
 
 #action-bar {
@@ -365,25 +455,6 @@ body[data-screen="menu"] .version-date {
 }
 
 /* Control tips */
-#controls-holder {
-    position: fixed;
-    right: 24px;
-    bottom: 24px;
-    z-index: 50;
-    padding: 10px 12px 9px;
-    flex-direction: column;
-    gap: 4px;
-    border-radius: 8px;
-    background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    font-size: 12px;
-    line-height: 1;
-    /* The canvas underneath uses click-to-guess, so the panel must never be
-       able to swallow one. */
-    pointer-events: none;
-    user-select: none;
-}
 
 .controls-title {
     margin-bottom: 3px;
@@ -395,7 +466,7 @@ body[data-screen="menu"] .version-date {
 }
 
 .controls-row {
-    display: flex;
+    display: none;
     align-items: center;
     justify-content: space-between;
     gap: 14px;

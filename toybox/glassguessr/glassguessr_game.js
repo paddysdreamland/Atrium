@@ -29,6 +29,17 @@ try {
     modifiers.countHeight = saved.countHeight === true;
 } catch (err) { /* defaults */ }
 
+/* Settings - player preferences from the menu's settings dialog, applied at
+   once and remembered per browser. orbitWithModifier swaps right-drag orbit
+   for shift/ctrl + drag, for browsers that keep the right button for mouse
+   gestures. */
+const SETTINGS_KEY = "glgSettings";
+const settings = { orbitWithModifier: false };
+try {
+    const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}");
+    settings.orbitWithModifier = saved.orbitWithModifier === true;
+} catch (err) { /* defaults */ }
+
 /* The guess reveal, in order: the accept sound and the camera easing in on
    the guess marker (REVEAL_FLY_SECONDS), a short hold once it settles
    (REVEAL_HOLD_SECONDS), then the line reaching out to the hidden answer over
@@ -107,6 +118,10 @@ const ui = {
     menuSubtitle: $("menu-subtitle"),
     start: $("start-button"),
     countHeight: $("count-height-toggle"),
+    settingsButton: $("settings-button"),
+    settingsDialog: $("settings-dialog"),
+    orbitModifier: $("orbit-modifier-toggle"),
+    orbitKeys: $("orbit-keys"),
     roundPlate: $("round-plate"),
     roundCount: $("round-count"),
     roundClock: $("round-clock"),
@@ -139,6 +154,20 @@ function toggleCountHeight() {
 }
 
 showModifiers();
+
+function applySettings() {
+    map.setOrbitWithModifier(settings.orbitWithModifier);
+    ui.orbitModifier.setAttribute("aria-pressed", String(settings.orbitWithModifier));
+    ui.orbitKeys.textContent = settings.orbitWithModifier ? "Shift Drag" : "Right Drag";
+}
+
+function toggleOrbitModifier() {
+    settings.orbitWithModifier = !settings.orbitWithModifier;
+    try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (err) { /* not remembered */ }
+    applySettings();
+}
+
+applySettings();
 
 const playable = LOCATIONS.filter((l) => Array.isArray(l.position));
 
@@ -320,6 +349,8 @@ function showSummary() {
 
 ui.start.addEventListener("click", startRun);
 ui.countHeight.addEventListener("click", toggleCountHeight);
+ui.settingsButton.addEventListener("click", () => ui.settingsDialog.showModal());
+ui.orbitModifier.addEventListener("click", toggleOrbitModifier);
 ui.guess.addEventListener("click", submitGuess);
 ui.next.addEventListener("click", nextRound);
 ui.again.addEventListener("click", showMenu);
@@ -327,8 +358,9 @@ ui.photoPanel.addEventListener("click", () => setPhotoExpanded(!ui.photoPanel.cl
 
 window.addEventListener("keydown", (e) => {
     if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
-    /* A focused button already acts on Space and Enter itself. */
-    if (e.target instanceof HTMLButtonElement) return;
+    /* A focused button already acts on Space and Enter itself, and the
+       settings dialog handles its own keys (Escape closes it). */
+    if (e.target instanceof HTMLButtonElement || ui.settingsDialog.open) return;
     const screen = document.body.dataset.screen;
     const inRun = screen === "round" || screen === "reveal" || screen === "result";
 

@@ -56,15 +56,20 @@
             <a class="glg-back" href="/">&larr; Back to Paddy's Dreamland&trade;</a>
 
             <div class="glg-screen-body">
-                <div class="glg-kicker">Mirror's Edge&trade; Catalyst</div>
-                <h1 class="glg-title">Glassguessr</h1>
+                <div>
+                    <div class="glg-kicker">Mirror's Edge&trade; Catalyst</div>
+                    <h1 class="glg-title">Glassguessr</h1>
+                </div>
 
                 <p id="menu-subtitle" class="glg-subtitle">
                     screenshots from around the city of Glass. Find where each one was taken.
                     This is an early prototype, please be patient.
                 </p>
 
-                <button id="start-button" class="ar-plate ar-button" type="button">Play Demo</button>
+                <div class="glg-buttons-wrapper">
+                    <button id="start-button" class="glg-button" type="button">Play Demo</button>
+                    <button id="settings-button" class="glg-button" type="button">Settings</button>
+                </div>
 
                 <div class="glg-modifiers">
                     <div class="glg-modifiers-title">Modifiers</div>
@@ -78,13 +83,13 @@
         <div id="hud">
             <!-- Round counter and clock, styled after Templates/Timer. -->
             <div id="round-plate" class="ar-plate">
-                <span class="ar-label">Round</span>
+                <!--<span class="ar-label">Round</span>-->
                 <span id="round-count" class="ar-value">1/5</span>
                 <span id="round-clock" class="ar-value">00:00.00</span>
             </div>
 
             <!-- The round's screenshot, in the Lens minimap frame. Click or Space to enlarge. -->
-            <button id="photo-panel" class="lens-panel" type="button" title="Enlarge (Space)">
+            <button id="photo-panel" class="ar-photo" type="button" title="Enlarge (Space)">
                 <img id="photo" alt="The screenshot to place on the map">
             </button>
 
@@ -95,7 +100,7 @@
                     <span id="result-points" class="ar-value"></span>
                     <span class="ar-label">pts</span>
                 </div>
-                <button id="guess-button" class="ar-plate ar-button" type="button" disabled>Place a marker</button>
+                <button id="guess-button" class="ar-plate ar-button" type="button" disabled style="display: none;">Place a marker</button>
                 <button id="next-button" class="ar-plate ar-button" type="button" hidden>Next round</button>
             </div>
         </div>
@@ -106,20 +111,87 @@
                 <h1 id="summary-total" class="glg-title">0</h1>
                 <p id="summary-out-of" class="glg-subtitle"></p>
                 <ol id="summary-rounds" class="glg-rounds"></ol>
-                <button id="again-button" class="ar-plate ar-button" type="button">Play again</button>
+                <button id="again-button" class="glg-button" type="button">Play again</button>
             </div>
         </div>
 
-        <div id="controls-holder">
-            <div class="controls-title">Controls</div>
+        <dialog id="settings-dialog" class="glg-dialog">
+            <div class="glg-dialog-title">Settings</div>
 
-            <div class="controls-row"><span class="controls-keys"><kbd>Drag</kbd></span><span class="ck-text">Pan</span></div>
-            <div class="controls-row"><span class="controls-keys"><kbd>Shift/Control</kbd><kbd>Drag</kbd></span><span class="ck-text">Orbit</span></div>
-            <div class="controls-row"><span class="controls-keys"><kbd>Mouse Wheel</kbd></span><span class="ck-text">Zoom</span></div>
-            <div class="controls-row"><span class="controls-keys"><kbd>&#8592;</kbd><kbd>&#8593;</kbd><kbd>&#8595;</kbd><kbd>&#8594;</kbd></span><span class="ck-text">Pan</span></div>
-            <div class="controls-row"><span class="controls-keys"><kbd>Click</kbd></span><span class="ck-text">Place marker</span></div>
-            <div class="controls-row"><span class="controls-keys"><kbd>Space</kbd></span><span class="ck-text">Enlarge photo</span></div>
-            <div class="controls-row"><span class="controls-keys"><kbd>Enter</kbd></span><span class="ck-text">Guess / next</span></div>        </div>
+            <div class="glg-modifiers">
+                <div class="glg-modifiers-title">Accessibility</div>
+                <button id="orbit-modifier-toggle" class="glg-modifier" type="button" aria-pressed="false">
+                    <span class="glg-modifier-name">Orbit with Shift + Drag</span>
+                    <span class="glg-modifier-hint">For browsers that use the right mouse button for gestures, like Vivaldi or Opera: orbit with Shift or Control + drag instead, and the right button is left alone.</span>
+                </button>
+            </div>
+
+            <form method="dialog" class="glg-dialog-actions">
+                <button class="ar-plate ar-button" type="submit">Done</button>
+            </form>
+        </dialog>
+
+        <div id="controls-holder" class="beat-controls">
+            <div class="beat-controls-row">
+                <div class="beat-controls-text">Pan</div>
+                <img src="ui/mouse1.svg" class="beat-controls-image">
+            </div>
+
+            <div class="beat-controls-row">
+                <div class="beat-controls-text">Orbit</div>
+                <img src="ui/mouse2.svg" class="beat-controls-image">
+            </div>
+
+            <div class="beat-controls-row">
+                <div class="beat-controls-text">Zoom In</div>
+                <img src="ui/mwheelup.svg" class="beat-controls-image">
+            </div>
+
+            <div class="beat-controls-row">
+                <div class="beat-controls-text">Zoom Out</div>
+                <img src="ui/mwheeldown.svg" class="beat-controls-image">
+            </div>
+
+            <div class="beat-controls-row">
+                <div class="beat-controls-text">Enlarge</div>
+                <img src="ui/space.svg" class="beat-controls-image">
+            </div>
+
+            <div class="beat-controls-row">
+                <div class="beat-controls-text">Submit</div>
+                <img src="ui/return.svg" class="beat-controls-image">
+            </div>
+
+            <!-- These key tips below need to be removed and the script rewired to the new ones above. -->
+            
+            <div class="controls-row">
+                <span class="controls-keys"><kbd>Drag</kbd></span><span class="ck-text">Pan</span>
+            </div>
+
+            <div class="controls-row">
+                <span class="controls-keys"><kbd id="orbit-keys">Right Drag</kbd></span><span class="ck-text">Orbit</span>
+            </div>
+
+            <div class="controls-row">
+                <span class="controls-keys"><kbd>Mouse Wheel</kbd></span><span class="ck-text">Zoom</span>
+            </div>
+
+            <div class="controls-row">
+                <span class="controls-keys"><kbd>&#8592;</kbd><kbd>&#8593;</kbd><kbd>&#8595;</kbd><kbd>&#8594;</kbd></span><span class="ck-text">Pan</span>
+            </div>
+
+            <div class="controls-row">
+                <span class="controls-keys"><kbd>Click</kbd></span><span class="ck-text">Place marker</span>
+            </div>
+
+            <div class="controls-row">
+                <span class="controls-keys"><kbd>Space</kbd></span><span class="ck-text">Enlarge photo</span>
+            </div>
+
+            <div class="controls-row">
+                <span class="controls-keys"><kbd>Enter</kbd></span><span class="ck-text">Guess / next</span>
+            </div>
+        </div>
 
         <div id="loading-holder">
             <div class="activity-icon"></div>

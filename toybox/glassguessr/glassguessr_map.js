@@ -181,31 +181,65 @@ export function createMap(mount) {
     };
     controls.listenToKeyEvents(window);
 
-    /* Orbit is on ctrl/meta/shift + left, never on the right button. Browsers
-       with mouse
-       gestures (Vivaldi, Opera) withhold right-button events during the drag
-       and replay them on release, so OrbitControls can receive a pointerdown
-       whose pointerup never arrives. Its onPointerDown calls setPointerCapture
-       and _addPointer before it ever looks at the button mapping, so a stranded
-       pointer stays in _pointers permanently - and the next left drag then sees
-       _pointers.length === 2 and is handled as a two-finger touch gesture.
-       That is the unpredictable lock-up, and why it takes an arbitrary number
-       of further right clicks to balance the books. Unmapping the button is
-       not enough because the capture happens first; the event has to be stopped
-       before OrbitControls sees it at all. See rejectRightButton below. */
-    controls.mouseButtons = { LEFT: THREE.MOUSE.PAN, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: null };
+    /* Two orbit schemes, switched with setOrbitWithModifier:
+         default   left drag pans, right drag orbits
+         modifier  left drag pans, shift/ctrl + left drag orbits, and the right
+                   button never reaches the map - an accessibility setting for
+                   browsers that keep the right button for mouse gestures
+       OrbitControls itself swaps pan and rotate while ctrl, meta or shift is
+       held. The modifier scheme is exactly that swap; the default scheme hides
+       the modifiers from it, so they stay free for anything else. Its
+       mouse-down handler reads only the button, the modifiers and the cursor
+       position. */
+    let orbitWithModifier = false;
 
-    /* No modifier handling needed here: with LEFT bound to PAN, OrbitControls
-       already inverts to ROTATE while ctrl, meta or shift is held. */
+    function applyOrbitScheme() {
+        controls.mouseButtons = {
+            LEFT: THREE.MOUSE.PAN,
+            MIDDLE: THREE.MOUSE.DOLLY,
+            RIGHT: orbitWithModifier ? null : THREE.MOUSE.ROTATE
+        };
+    }
+    applyOrbitScheme();
 
-    /* Capture phase on the container, which is an ancestor of the canvas
-       OrbitControls binds to, so this runs first and stopPropagation keeps the
-       right button from reaching it at all. */
-    const rejectRightButton = (e) => {
-        if (e.button === 2 || e.buttons === 2) e.stopPropagation();
+    const handleMouseDown = controls._onMouseDown;
+    controls._onMouseDown = (e) => handleMouseDown({
+        button: e.button,
+        clientX: e.clientX,
+        clientY: e.clientY,
+        pointerId: e.pointerId,
+        pointerType: e.pointerType,
+        ctrlKey: orbitWithModifier && e.ctrlKey,
+        metaKey: orbitWithModifier && e.metaKey,
+        shiftKey: orbitWithModifier && e.shiftKey
+    });
+
+    /* Browsers with mouse gestures on - Vivaldi's rocker gestures, Opera's
+       mouse gestures, both on by default - can swallow a right-button release.
+       OrbitControls then believes the button is still held and ignores every
+       press after it, which locks the camera until enough clicks balance the
+       books. So presses are tracked here, in the capture phase on the
+       container (an ancestor of the canvas, so ahead of OrbitControls): a new
+       press while one is still outstanding means its release was lost, and the
+       missing pointerup is delivered first. In the modifier scheme the right
+       button is stopped here before it reaches the map at all. */
+    const outstanding = new Set();
+    const onPressCapture = (e) => {
+        if (e.pointerType !== "mouse") return;
+        if (orbitWithModifier && e.button === 2) {
+            e.stopPropagation();
+            return;
+        }
+        for (const pointerId of outstanding) {
+            renderer.domElement.ownerDocument.dispatchEvent(new PointerEvent("pointerup", { pointerId, pointerType: "mouse" }));
+        }
+        outstanding.clear();
+        outstanding.add(e.pointerId);
     };
-    mount.addEventListener("pointerdown", rejectRightButton, true);
-    mount.addEventListener("pointerup", rejectRightButton, true);
+    const onReleaseCapture = (e) => { outstanding.delete(e.pointerId); };
+    mount.addEventListener("pointerdown", onPressCapture, true);
+    window.addEventListener("pointerup", onReleaseCapture, true);
+    window.addEventListener("pointercancel", onReleaseCapture, true);
 
     /* OrbitControls suppresses the context menu on the canvas but not on the
        container around it. */
@@ -284,8 +318,8 @@ export function createMap(mount) {
         const moved = Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y);
         const button = downAt.button;
         downAt = null;
-        /* Without the button check a stationary right-click - the exact thing
-           an interrupted orbit produces - would register as a guess. */
+        /* Only the left button places a guess, so a right-click that barely
+           moves - a short orbit - never does. */
         if (button !== 0 || moved > 5) return;
 
         const rect = renderer.domElement.getBoundingClientRect();
@@ -638,6 +672,13 @@ export function createMap(mount) {
 
         onPick(cb) { pickCallback = cb; },
 
+        /* true: orbit with shift/ctrl + left drag and leave the right button
+           alone; false (default): orbit with right drag. */
+        setOrbitWithModifier(on) {
+            orbitWithModifier = !!on;
+            applyOrbitScheme();
+        },
+
         /* Menu backdrop: every input is locked out and the camera drifts
            round the city on its own. OrbitControls keeps auto-rotating
            through update() while disabled, which is exactly the split wanted. */
@@ -830,8 +871,9 @@ export function createMap(mount) {
             resizeObserver.disconnect();
             window.removeEventListener("pointerup", onPointerUp);
             mount.removeEventListener("contextmenu", onContextMenu);
-            mount.removeEventListener("pointerdown", rejectRightButton, true);
-            mount.removeEventListener("pointerup", rejectRightButton, true);
+            mount.removeEventListener("pointerdown", onPressCapture, true);
+            window.removeEventListener("pointerup", onReleaseCapture, true);
+            window.removeEventListener("pointercancel", onReleaseCapture, true);
             controls.dispose();
             while (debugMarkers.length) {
                 const marker = debugMarkers.pop();

@@ -52,17 +52,12 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 16px;
+    gap: 32px;
     height: 48px;
-    padding: 0 48px;
+    padding: 0 32px;
     border-radius: 8px;
     background-color: rgba(0, 0, 0, 0.5);
-    background-image: linear-gradient(
-        rgba(var(--ar-navy), 0.8),
-        rgba(var(--ar-navy), 0) 8px,
-        rgba(var(--ar-navy), 0) calc(100% - 8px),
-        rgba(var(--ar-navy), 0.8)
-    );
+    background-image: url(ui/ar_plate_pattern.png);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     font-family: "Europe Ext", "Lato", sans-serif;
@@ -88,36 +83,36 @@
     bottom: 0;
     width: 8px;
     border: 0 solid rgba(255, 255, 255, 0.7);
-    border-top-width: 0.5px;
-    border-bottom-width: 0.5px;
+    border-top-width: 2px;
+    border-bottom-width: 2px;
     pointer-events: none;
-    transition: transform 0.15s ease;
-    animation: ar-limiter-in 0.6s linear both;
+    /* transition: transform 0.15s ease; */
+    /* animation: ar-limiter-in 0.6s linear both; */
 }
 
 .ar-plate::before {
-    left: 0.5px;
-    border-left-width: 1px;
+    left: 0px;
+    border-left-width: 2px;
     border-radius: 8px 0 0 8px;
-    --limiter-from: -8px;
+    /* --limiter-from: -8px; */
 }
 
 .ar-plate::after {
-    right: 0.5px;
-    border-right-width: 1px;
+    right: 0px;
+    border-right-width: 2px;
     border-radius: 0 8px 8px 0;
-    --limiter-from: 8px;
+    /* --limiter-from: 8px; */
 }
 
 /* AR_title's timeline: the brackets wait 0.2s, then slide in from 8px outside
    while fading from 0 to their resting 0.7 (the 0.85 stored on the element is
    overwritten by the timeline). Runs whenever a plate is shown, since showing
    it restarts the animation. Uses translate so the hover nudge below, on
-   transform, never fights it. */
+   transform, never fights it.
 @keyframes ar-limiter-in {
     0%, 33% { translate: var(--limiter-from) 0; opacity: 0; }
     100%    { translate: 0 0; opacity: 1; }
-}
+} */
 
 .ar-label {
     font-size: 13px;
@@ -171,29 +166,88 @@
    (PamUIScrollPanelWidgetData) over a bitmap colorized rgb(141, 221, 255) at
    0.8 alpha. The screenshot keeps its own colours, since tinting it would
    bury the clues, so the tint goes into the frame and scanlines instead. */
-.lens-panel {
+.ar-photo {
+    background-color: rgba(0, 0, 0, 0.5);
+    background-image: url(ui/ar_plate_pattern.png);
     position: relative;
     display: block;
     width: 384px;
     aspect-ratio: 16 / 9;
-    padding: 0;
+    padding: 8px;
     overflow: hidden;
     border-radius: 8px;
-    background-color: rgba(var(--lens-tint), 0.15);
-    box-shadow: 0 0 0 1px rgba(var(--lens-tint), 0.8), 0 0 24px rgba(var(--lens-tint), 0.25);
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
 }
 
-.lens-panel img {
+.ar-photo::before,
+.ar-photo::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 8px;
+    border: 0 solid rgba(255, 255, 255, 0.7);
+    border-left-width: 2px;
+    border-right-width: 2px;
+    pointer-events: none;
+    z-index: 2;
+}
+
+.ar-photo::before {
+    top: 0px;
+    border-top-width: 2px;
+    border-radius: 8px 8px 0 0;
+}
+
+.ar-photo::after {
+    bottom: 0px;
+    border-bottom-width: 2px;
+    border-radius: 0 0 8px 8px;
+}
+
+.ar-photo img {
+    background-image: url(ui/ar_plate_pattern_mask.png);
     display: block;
     width: 100%;
     height: 100%;
     object-fit: cover;
+    border-radius: 6px;
 }
 
-.lens-panel::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: repeating-linear-gradient(rgba(var(--lens-tint), 0.07) 0 1px, transparent 1px 3px);
+.beat-controls {
+    position: fixed;
+    right: 24px;
+    bottom: 24px;
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    align-items: end;
     pointer-events: none;
+    user-select: none;
+    z-index: 50;
+    filter: drop-shadow(0px 0px 1px black);
+}
+
+.beat-controls-row {
+    display: flex;
+    flex-direction: row;
+    gap: 0px;
+}
+
+.beat-controls-image {
+    height: 32px;
+}
+
+.beat-controls-text {
+    color: white;
+    font-family: "Europe Ext", "Lato", sans-serif;
+    font-size: 18px; font-weight: 600;
+    text-transform: uppercase;
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
