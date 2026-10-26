@@ -17,13 +17,19 @@ function pd_blocks_valid_path(string $src, string $extensions): bool {
 
 /**
  * Whether a (valid) site path points at a real file. Content must never reference missing
- * files: each one is a 404 on every page view, and php/pd_log.php bans any IP that hits
- * 4 of those in 4 seconds, which would ban visitors just for opening the page.
+ * files: each one is a broken image or sound, and a 404, on every page view.
+ *
+ * Staging (/staging_html) doesn't have the live site's files, such as the uploads made there,
+ * so it accepts missing files rather than refusing posts it can't see the images of. It shares
+ * the live database, though: a mistyped path saved on staging is a broken image on live too.
  */
 function pd_blocks_file_exists(string $src): bool {
     $decoded = rawurldecode($src);
-    return strpos($decoded, '..') === false
-        && is_file(dirname(__DIR__) . '/' . ltrim($decoded, '/'));
+    if (strpos($decoded, '..') !== false) {
+        return false;
+    }
+    return basename(dirname(__DIR__)) === 'staging_html'
+        || is_file(dirname(__DIR__) . '/' . ltrim($decoded, '/'));
 }
 
 /** Validate an editor's block list and return it JSON-encoded for the DB, or respond 422 and exit. */
