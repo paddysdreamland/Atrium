@@ -483,15 +483,15 @@
 }
 
 .misc-flag.pan {
-    background-image: url("../images/flags/pan.svg");
+    background-image: url("../images/pride/pan.svg");
 }
 
 .misc-flag.trans {
-    background-image: url("../images/flags/trans.svg");
+    background-image: url("../images/pride/trans.svg");
 }
 
 .misc-flag.transpan {
-    background-image: url("../images/flags/transpan_mix.png");
+    background-image: url("../images/pride/transpan_mix.png");
 }
 
 /* ─── Toast Widget ──────────────────────────────────────────────────── */

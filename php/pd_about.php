@@ -21,12 +21,14 @@ $rows = $pdo->query(
 )->fetchAll(PDO::FETCH_ASSOC);
 
 $members = array_map(static function (array $row): array {
+    $flags = pd_about_flags($row['flags']);
     return [
-        'name'  => $row['name'],
-        'image' => $row['image'],
-        'role'  => pd_about_role($row['site_roles']),
-        'flags' => pd_about_flags($row['flags']),
-        'body'  => json_decode($row['body'], true) ?? [],
+        'name'      => $row['name'],
+        'image'     => $row['image'],
+        'role'      => pd_about_role($row['site_roles']),
+        'pride'     => $flags['pride'],
+        'languages' => $flags['languages'],
+        'body'      => json_decode($row['body'], true) ?? [],
     ];
 }, $rows);
 

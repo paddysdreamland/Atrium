@@ -96,7 +96,8 @@ function amOpenEditor(block) {
             name: amHasOwnBlock() ? "" : am.displayName,
             image: "",
             role: null, // from the owner's Discord roles; the server fills it in on save
-            flags: [],
+            pride: [],
+            languages: [],
             sortOrder: am.blocks.reduce((max, b) => Math.max(max, b.sortOrder), 0) + 1,
             hidden: true, // new blocks start as drafts
             body: [{ type: "paragraph", content: "" }]
@@ -112,7 +113,8 @@ function amOpenEditor(block) {
     document.getElementById("am-hidden").checked = am.draft.hidden;
     document.getElementById("am-delete").style.display = am.isNew ? "none" : "";
 
-    amRenderFlags();
+    amRenderFlags("pride");
+    amRenderFlags("languages");
     pmRenderBlocks(document.getElementById("am-blocks"), am.draft.body, AM_EDITOR);
     amRenderPreview();
     pmStatus("", "", "am-status");
@@ -129,53 +131,48 @@ function amCloseEditor() {
 
 /* Flags */
 
-const AM_MAX_FLAGS = 8; // same limit as pd_about_admin.php
-const amRegionNames = "DisplayNames" in Intl ? new Intl.DisplayNames(["en"], { type: "region" }) : null;
+const AM_MAX_FLAGS = 3; // per kind, same limit as pd_about_admin.php
 
-// "de" -> "Germany (de)", "pride/trans" -> "Pride: trans"; the name itself when unsure.
+// Flag names starting "pride/" are pride flags (kind "pride"), the rest language flags ("languages").
+function amFlagKind(name) {
+    return name.startsWith("pride/") ? "pride" : "languages";
+}
+
+// Picker text: "Germany (de)", so codes can be typed to jump to them; "Gay men" for pride flags.
 function amFlagLabel(name) {
-    if (name.startsWith("pride/")) return `Pride: ${name.slice(6).replace(/_/g, " ")}`;
-    let region = "";
-    try {
-        region = /^[a-z]{2}$/.test(name) && amRegionNames ? amRegionNames.of(name.toUpperCase()) : "";
-    } catch (err) {
-        region = ""; // not a region code the browser knows
-    }
-    return region && region.toLowerCase() !== name ? `${region} (${name})` : name.replace(/_/g, " ");
+    const label = aboutFlagName(name);
+    return amFlagKind(name) === "languages" && label.toLowerCase() !== name ? `${label} (${name})` : label;
 }
 
-function amFlagName(path) {
-    return Object.keys(am.flagOptions).find(name => am.flagOptions[name] === path) || path;
-}
-
-// The chosen flags as removable chips, and a picker with the rest.
-function amRenderFlags() {
-    const list = document.getElementById("am-flags");
+// One kind's chosen flags as removable chips, and its picker with the rest of that kind.
+function amRenderFlags(kind) {
+    const chosen = am.draft[kind];
+    const list = document.getElementById(`am-${kind}`);
     list.replaceChildren();
-    am.draft.flags.forEach((path, i) => {
+    chosen.forEach((path, i) => {
         const chip = pmEl("button", "pm-badge am-flag-chip");
         chip.title = "Remove";
         const img = pmEl("img");
         img.src = path;
         img.alt = "";
-        chip.append(img, amFlagLabel(amFlagName(path)));
+        chip.append(img, aboutFlagName(path));
         chip.addEventListener("click", () => {
-            am.draft.flags.splice(i, 1);
-            amRenderFlags();
+            chosen.splice(i, 1);
+            amRenderFlags(kind);
             amRenderPreview();
         });
         list.append(chip);
     });
 
-    const picker = document.getElementById("am-flag-pick");
-    const full = am.draft.flags.length >= AM_MAX_FLAGS;
-    const placeholder = pmEl("option", "", full ? `That's ${AM_MAX_FLAGS} flags, the most a card can show.` : "Add a flag…");
+    const picker = document.getElementById(`am-${kind}-pick`);
+    const full = chosen.length >= AM_MAX_FLAGS;
+    const placeholder = pmEl("option", "", full ? `That's ${AM_MAX_FLAGS}, the most a card can show.` : "Add a flag…");
     placeholder.value = "";
     picker.replaceChildren(placeholder);
     picker.disabled = full;
 
     Object.keys(am.flagOptions)
-        .filter(name => !am.draft.flags.includes(am.flagOptions[name]))
+        .filter(name => amFlagKind(name) === kind && !chosen.includes(am.flagOptions[name]))
         .map(name => ({ name, label: amFlagLabel(name) }))
         .sort((a, b) => a.label.localeCompare(b.label))
         .forEach(({ name, label }) => {
@@ -203,7 +200,8 @@ function amRenderPreview() {
         name: am.draft.name,
         image: pmValidPath(am.draft.image, "png|jpe?g|gif|webp") ? am.draft.image : "",
         role: am.draft.role,
-        flags: am.draft.flags,
+        pride: am.draft.pride,
+        languages: am.draft.languages,
         body: pmPreviewBody(am.draft.body)
     };
     const card = pmEl("div", "app-buttons-wrapper");
@@ -295,12 +293,14 @@ document.addEventListener("DOMContentLoaded", function () {
     document.getElementById("am-hidden").addEventListener("change", (e) => {
         am.draft.hidden = e.target.checked;
     });
-    document.getElementById("am-flag-pick").addEventListener("change", (e) => {
-        const path = am.flagOptions[e.target.value];
-        if (!path) return;
-        am.draft.flags.push(path);
-        amRenderFlags();
-        amRenderPreview();
+    ["pride", "languages"].forEach(kind => {
+        document.getElementById(`am-${kind}-pick`).addEventListener("change", (e) => {
+            const path = am.flagOptions[e.target.value];
+            if (!path) return;
+            am.draft[kind].push(path);
+            amRenderFlags(kind);
+            amRenderPreview();
+        });
     });
 
     const picker = document.getElementById("am-image-file");

@@ -16,20 +16,20 @@ function pd_about_role(?string $siteRoles): ?string {
 }
 
 /**
- * Every flag a card may show, as name => site path: images/flags/<code>.png and
- * images/flags/pride/<name>.(png|svg), e.g. "de" => "images/flags/de.png".
+ * Every flag a card may show, as name => site path: the silk flags in images/flags/<code>.png
+ * and images/flags/pride/<name>.png (made with Silk Flag Maker, outside the repo),
+ * e.g. "de" => "images/flags/de.png".
  */
 function pd_about_flag_options(): array {
     $root    = dirname(__DIR__);
     $options = [];
     $files   = array_merge(
         glob($root . '/images/flags/*.png') ?: [],
-        glob($root . '/images/flags/pride/*.png') ?: [],
-        glob($root . '/images/flags/pride/*.svg') ?: []
+        glob($root . '/images/flags/pride/*.png') ?: []
     );
     foreach ($files as $file) {
         $path = substr($file, strlen($root) + 1);
-        $name = preg_replace('#^images/flags/|\.(png|svg)$#', '', $path);
+        $name = preg_replace('#^images/flags/|\.png$#', '', $path);
         if ($name !== 'template') {
             $options[$name] = $path;
         }
@@ -37,8 +37,17 @@ function pd_about_flag_options(): array {
     return $options;
 }
 
-/** A stored flags column -> its list of paths. */
+/** Whether a flag path is a pride flag; every other flag stands for a language the person speaks. */
+function pd_about_is_pride_flag(string $path): bool {
+    return strpos($path, 'images/flags/pride/') === 0;
+}
+
+/** A stored flags column (one JSON list of paths) -> ['pride' => [...], 'languages' => [...]]. */
 function pd_about_flags(?string $json): array {
-    $flags = json_decode((string) $json, true);
-    return is_array($flags) ? $flags : [];
+    $flags  = json_decode((string) $json, true);
+    $groups = ['pride' => [], 'languages' => []];
+    foreach (is_array($flags) ? $flags : [] as $path) {
+        $groups[pd_about_is_pride_flag($path) ? 'pride' : 'languages'][] = $path;
+    }
+    return $groups;
 }

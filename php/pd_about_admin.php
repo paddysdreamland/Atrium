@@ -5,6 +5,7 @@ declare(strict_types=1);
 // account: Moderators and up (about.edit) write their own, the Founder (about.manage) anyone's.
 //
 // GET  -> {"ok": true, "ownId": "...", "blocks": [...], "flagOptions": {"de": "images/flags/de.png", ...}}
+//         (flag names starting "pride/" are pride flags, the rest language flags)
 //         (just your own block without about.manage)
 // POST -> {"action": "create" | "update", "block": {...}}
 //         {"action": "delete", "discordId": "..."}
@@ -126,13 +127,15 @@ function pd_about_rows(PDO $pdo, ?string $id = null): array {
 
 /** DB row -> the editor's shape. Same keys pd_about.php uses, plus the management fields. */
 function pd_about_admin_row(array $row): array {
+    $flags = pd_about_flags($row['flags']);
     return [
         'discordId' => (string) $row['discord_id'],
         'ownerName' => $row['owner_name'],
         'name'      => $row['name'],
         'image'     => $row['image'],
         'role'      => pd_about_role($row['site_roles']), // read-only, for the preview
-        'flags'     => pd_about_flags($row['flags']),
+        'pride'     => $flags['pride'],
+        'languages' => $flags['languages'],
         'body'      => json_decode((string) $row['body'], true) ?? [],
         'sortOrder' => (int) $row['sort_order'],
         'hidden'    => (bool) $row['hidden'],
@@ -169,18 +172,24 @@ function pd_about_clean($b): array {
         }
     }
 
-    // Only flags that exist (see pd_about_flag_options), so a card never asks for a missing file.
-    $flagsIn = $b['flags'] ?? [];
-    if (!is_array($flagsIn) || count($flagsIn) > 8) {
-        pd_json_error(422, 'invalid', 'Pick at most 8 flags.');
-    }
+    // Up to 3 pride and 3 language flags, stored as one list (pride first). Only flags that exist
+    // (see pd_about_flag_options), so a card never asks for a missing file.
     $flagPaths = pd_about_flag_options();
     $flags     = [];
-    foreach ($flagsIn as $flag) {
-        if (!in_array($flag, $flagPaths, true)) {
-            pd_json_error(422, 'invalid', 'One of the flags no longer exists on the site.');
+    foreach (['pride' => 'pride', 'languages' => 'language'] as $key => $label) {
+        $list = $b[$key] ?? [];
+        if (!is_array($list) || count($list) > 3) {
+            pd_json_error(422, 'invalid', "Pick at most 3 {$label} flags.");
         }
-        $flags[] = $flag;
+        foreach ($list as $flag) {
+            if (!in_array($flag, $flagPaths, true)) {
+                pd_json_error(422, 'invalid', 'One of the flags no longer exists on the site.');
+            }
+            if (pd_about_is_pride_flag($flag) !== ($key === 'pride')) {
+                pd_json_error(422, 'invalid', "A flag was picked as the wrong kind ({$label}).");
+            }
+            $flags[] = $flag;
+        }
     }
     $flags = array_values(array_unique($flags));
 

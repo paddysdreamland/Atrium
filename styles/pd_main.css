@@ -1311,6 +1311,15 @@ li > a {
     justify-content: flex-end;
 }
 
+/* Pride flags | language flags, split by a line like the card's top and bottom borders. */
+.app-title-flag-group {
+    display: flex; gap: 2px;
+    height: 11px;
+} .app-title-flag-group + .app-title-flag-group {
+    border-left: var(--holder-border-thickness) solid rgba(255, 255, 255, 0.4);
+    margin-left: 2px; padding-left: 4px;
+}
+
 .app-title-flag {
     width: 16px; height: 11px;
     image-rendering: pixelated;

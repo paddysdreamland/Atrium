@@ -32,6 +32,22 @@ function aboutSummary(member) {
     return new DOMParser().parseFromString(first.content, "text/html").body.textContent.trim();
 }
 
+const aboutRegionNames = "DisplayNames" in Intl ? new Intl.DisplayNames(["en"], { type: "region" }) : null;
+
+// A flag's name, from its path or flag name: "images/flags/de.png" -> "Germany",
+// "pride/gay_men" -> "Gay men", "england" -> "England". Top-level for the editor's pickers.
+function aboutFlagName(flag) {
+    const name = flag.replace(/^images\/flags\/|\.png$/g, "");
+    let region = "";
+    try {
+        region = /^[a-z]{2}$/.test(name) && aboutRegionNames ? aboutRegionNames.of(name.toUpperCase()) : "";
+    } catch (err) {
+        region = ""; // not a region code the browser knows
+    }
+    const label = region && region.toLowerCase() !== name ? region : name.replace(/^pride\//, "").replace(/_/g, " ");
+    return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
 // Same markup as the toybox buttons, plus the picture as background, role tag, flags and
 // "Read more"; the description is clamped by .about-card-desc. Top-level for the editor preview.
 function renderAboutCard(member) {
@@ -70,15 +86,23 @@ function renderAboutCard(member) {
         titleWrap.appendChild(tag);
     }
 
-    if (member.flags && member.flags.length) {
+    // Pride flags, then the languages they speak (one country flag each); CSS draws the line
+    // between the groups, and an empty group isn't drawn at all.
+    const flagGroups = [member.pride, member.languages].filter(group => group && group.length);
+    if (flagGroups.length) {
         const flags = document.createElement("div");
         flags.className = "app-title-flags";
-        member.flags.forEach(src => {
-            const flag = document.createElement("img");
-            flag.className = "app-title-flag";
-            flag.src = src;
-            flag.alt = "";
-            flags.appendChild(flag);
+        flagGroups.forEach(paths => {
+            const group = document.createElement("div");
+            group.className = "app-title-flag-group";
+            paths.forEach(src => {
+                const flag = document.createElement("img");
+                flag.className = "app-title-flag";
+                flag.src = src;
+                flag.alt = flag.title = aboutFlagName(src);
+                group.appendChild(flag);
+            });
+            flags.appendChild(group);
         });
         titleWrap.appendChild(flags);
     }
