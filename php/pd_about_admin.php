@@ -4,7 +4,8 @@ declare(strict_types=1);
 // php/pd_about_admin.php  —  About Us block management. Each block belongs to one Discord
 // account: Moderators and up (about.edit) write their own, the Founder (about.manage) anyone's.
 //
-// GET  -> {"ok": true, "ownId": "...", "blocks": [...]}  (just your own block without about.manage)
+// GET  -> {"ok": true, "ownId": "...", "blocks": [...], "flagOptions": {"de": "images/flags/de.png", ...}}
+//         (just your own block without about.manage)
 // POST -> {"action": "create" | "update", "block": {...}}
 //         {"action": "delete", "discordId": "..."}
 // Call it as /php/pd_about_admin (no .php): see pd_posts_admin.php for why.
@@ -12,6 +13,7 @@ declare(strict_types=1);
 $config = require dirname(__DIR__, 2) . '/private/pd_config.php';
 require dirname(__DIR__, 2) . '/private/pd_lib.php';
 require __DIR__ . '/pd_blocks.php';
+require __DIR__ . '/pd_about_lib.php';
 
 header('Content-Type: application/json');
 
@@ -23,7 +25,12 @@ if ($method === 'GET') {
     $rows = pd_user_can($user, 'about.manage')
         ? pd_about_rows($pdo)
         : pd_about_rows($pdo, (string) $user['discord_id']);
-    echo json_encode(['ok' => true, 'ownId' => (string) $user['discord_id'], 'blocks' => array_map('pd_about_admin_row', $rows)]);
+    echo json_encode([
+        'ok'          => true,
+        'ownId'       => (string) $user['discord_id'],
+        'blocks'      => array_map('pd_about_admin_row', $rows),
+        'flagOptions' => pd_about_flag_options(),
+    ]);
     exit;
 }
 
@@ -54,10 +61,10 @@ switch ($input['action'] ?? '') {
             : (int) $pdo->query('SELECT COALESCE(MAX(sort_order), 0) + 1 FROM pd_about')->fetchColumn();
 
         $stmt = $pdo->prepare(
-            'INSERT INTO pd_about (discord_id, name, image, body, sort_order, hidden, updated_by, updated_at)
-                  VALUES (?, ?, ?, ?, ?, ?, ?, NOW())'
+            'INSERT INTO pd_about (discord_id, name, image, flags, body, sort_order, hidden, updated_by, updated_at)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())'
         );
-        $stmt->execute([$id, $block['name'], $block['image'], $block['body'], $order, $block['hidden'], $ownId]);
+        $stmt->execute([$id, $block['name'], $block['image'], $block['flags'], $block['body'], $order, $block['hidden'], $ownId]);
         echo json_encode(['ok' => true, 'block' => pd_about_admin_row(pd_about_rows($pdo, $id)[0])]);
         exit;
 
@@ -74,12 +81,12 @@ switch ($input['action'] ?? '') {
         // sort_order is the Founder's to change.
         $stmt = $pdo->prepare(
             'UPDATE pd_about
-                SET name = ?, image = ?, body = ?, hidden = ?, sort_order = IF(?, ?, sort_order),
+                SET name = ?, image = ?, flags = ?, body = ?, hidden = ?, sort_order = IF(?, ?, sort_order),
                     updated_by = ?, updated_at = NOW()
               WHERE discord_id = ?'
         );
         $stmt->execute([
-            $block['name'], $block['image'], $block['body'], $block['hidden'],
+            $block['name'], $block['image'], $block['flags'], $block['body'], $block['hidden'],
             $canManage ? 1 : 0, $block['sortOrder'], $ownId, $id,
         ]);
         echo json_encode(['ok' => true, 'block' => pd_about_admin_row(pd_about_rows($pdo, $id)[0])]);
@@ -106,8 +113,8 @@ switch ($input['action'] ?? '') {
 
 /** Every block in page order, or just one account's. Joined to pd_users for the owner's name. */
 function pd_about_rows(PDO $pdo, ?string $id = null): array {
-    $sql = 'SELECT a.discord_id, a.name, a.image, a.body, a.sort_order, a.hidden, a.updated_at, a.updated_by,
-                   COALESCE(NULLIF(u.global_name, \'\'), u.username) AS owner_name
+    $sql = 'SELECT a.discord_id, a.name, a.image, a.flags, a.body, a.sort_order, a.hidden, a.updated_at, a.updated_by,
+                   COALESCE(NULLIF(u.global_name, \'\'), u.username) AS owner_name, u.site_roles
               FROM pd_about a
               LEFT JOIN pd_users u ON u.discord_id = a.discord_id'
          . ($id !== null ? ' WHERE a.discord_id = ?' : '')
@@ -124,6 +131,8 @@ function pd_about_admin_row(array $row): array {
         'ownerName' => $row['owner_name'],
         'name'      => $row['name'],
         'image'     => $row['image'],
+        'role'      => pd_about_role($row['site_roles']), // read-only, for the preview
+        'flags'     => pd_about_flags($row['flags']),
         'body'      => json_decode((string) $row['body'], true) ?? [],
         'sortOrder' => (int) $row['sort_order'],
         'hidden'    => (bool) $row['hidden'],
@@ -160,6 +169,21 @@ function pd_about_clean($b): array {
         }
     }
 
+    // Only flags that exist (see pd_about_flag_options), so a card never asks for a missing file.
+    $flagsIn = $b['flags'] ?? [];
+    if (!is_array($flagsIn) || count($flagsIn) > 8) {
+        pd_json_error(422, 'invalid', 'Pick at most 8 flags.');
+    }
+    $flagPaths = pd_about_flag_options();
+    $flags     = [];
+    foreach ($flagsIn as $flag) {
+        if (!in_array($flag, $flagPaths, true)) {
+            pd_json_error(422, 'invalid', 'One of the flags no longer exists on the site.');
+        }
+        $flags[] = $flag;
+    }
+    $flags = array_values(array_unique($flags));
+
     $sortOrder = filter_var($b['sortOrder'] ?? 0, FILTER_VALIDATE_INT, ['options' => ['min_range' => -9999, 'max_range' => 9999]]);
     if ($sortOrder === false) {
         pd_json_error(422, 'invalid', 'Order must be a whole number between -9999 and 9999.');
@@ -169,6 +193,7 @@ function pd_about_clean($b): array {
         'discordId' => $discordId,
         'name'      => $name,
         'image'     => $image !== '' ? $image : null,
+        'flags'     => $flags ? json_encode($flags) : null,
         'body'      => pd_blocks_clean($b['body'] ?? null),
         'sortOrder' => $sortOrder,
         'hidden'    => !empty($b['hidden']) ? 1 : 0,

@@ -11,6 +11,7 @@ const am = {
     ownId: "",
     displayName: "",
     blocks: [],
+    flagOptions: {}, // name => path of every flag the server accepts
     draft: null,  // the block being edited, in the editor/API shape
     isNew: false,
     previewTimer: 0
@@ -43,6 +44,7 @@ async function amLoad() {
         const data = await pmApi(AM_API);
         am.ownId = data.ownId;
         am.blocks = data.blocks;
+        am.flagOptions = data.flagOptions || {};
         amRenderList();
     } catch (err) {
         pmError(err, "am-status");
@@ -93,6 +95,8 @@ function amOpenEditor(block) {
             discordId: amHasOwnBlock() ? "" : am.ownId,
             name: amHasOwnBlock() ? "" : am.displayName,
             image: "",
+            role: null, // from the owner's Discord roles; the server fills it in on save
+            flags: [],
             sortOrder: am.blocks.reduce((max, b) => Math.max(max, b.sortOrder), 0) + 1,
             hidden: true, // new blocks start as drafts
             body: [{ type: "paragraph", content: "" }]
@@ -108,6 +112,7 @@ function amOpenEditor(block) {
     document.getElementById("am-hidden").checked = am.draft.hidden;
     document.getElementById("am-delete").style.display = am.isNew ? "none" : "";
 
+    amRenderFlags();
     pmRenderBlocks(document.getElementById("am-blocks"), am.draft.body, AM_EDITOR);
     amRenderPreview();
     pmStatus("", "", "am-status");
@@ -122,6 +127,64 @@ function amCloseEditor() {
     document.getElementById("am-editor").style.display = "none";
 }
 
+/* Flags */
+
+const AM_MAX_FLAGS = 8; // same limit as pd_about_admin.php
+const amRegionNames = "DisplayNames" in Intl ? new Intl.DisplayNames(["en"], { type: "region" }) : null;
+
+// "de" -> "Germany (de)", "pride/trans" -> "Pride: trans"; the name itself when unsure.
+function amFlagLabel(name) {
+    if (name.startsWith("pride/")) return `Pride: ${name.slice(6).replace(/_/g, " ")}`;
+    let region = "";
+    try {
+        region = /^[a-z]{2}$/.test(name) && amRegionNames ? amRegionNames.of(name.toUpperCase()) : "";
+    } catch (err) {
+        region = ""; // not a region code the browser knows
+    }
+    return region && region.toLowerCase() !== name ? `${region} (${name})` : name.replace(/_/g, " ");
+}
+
+function amFlagName(path) {
+    return Object.keys(am.flagOptions).find(name => am.flagOptions[name] === path) || path;
+}
+
+// The chosen flags as removable chips, and a picker with the rest.
+function amRenderFlags() {
+    const list = document.getElementById("am-flags");
+    list.replaceChildren();
+    am.draft.flags.forEach((path, i) => {
+        const chip = pmEl("button", "pm-badge am-flag-chip");
+        chip.title = "Remove";
+        const img = pmEl("img");
+        img.src = path;
+        img.alt = "";
+        chip.append(img, amFlagLabel(amFlagName(path)));
+        chip.addEventListener("click", () => {
+            am.draft.flags.splice(i, 1);
+            amRenderFlags();
+            amRenderPreview();
+        });
+        list.append(chip);
+    });
+
+    const picker = document.getElementById("am-flag-pick");
+    const full = am.draft.flags.length >= AM_MAX_FLAGS;
+    const placeholder = pmEl("option", "", full ? `That's ${AM_MAX_FLAGS} flags, the most a card can show.` : "Add a flag…");
+    placeholder.value = "";
+    picker.replaceChildren(placeholder);
+    picker.disabled = full;
+
+    Object.keys(am.flagOptions)
+        .filter(name => !am.draft.flags.includes(am.flagOptions[name]))
+        .map(name => ({ name, label: amFlagLabel(name) }))
+        .sort((a, b) => a.label.localeCompare(b.label))
+        .forEach(({ name, label }) => {
+            const option = pmEl("option", "", label);
+            option.value = name;
+            picker.append(option);
+        });
+}
+
 function amAddBlock(type) {
     am.draft.body.push(pmNewBlock(type));
     pmRenderBlocks(document.getElementById("am-blocks"), am.draft.body, AM_EDITOR);
@@ -134,12 +197,18 @@ function amRenderPreview() {
     holder.replaceChildren();
     if (!am.draft) return;
 
-    // Same renderer as the public About Us page (pd_about.js); see pmRenderPreview.
-    holder.append(renderAboutBlock({
+    // Same renderers as the public About Us page (pd_about.js): the card, then the block it opens.
+    // See pmRenderPreview. Flags are always ones the server listed, so they exist.
+    const member = {
         name: am.draft.name,
         image: pmValidPath(am.draft.image, "png|jpe?g|gif|webp") ? am.draft.image : "",
+        role: am.draft.role,
+        flags: am.draft.flags,
         body: pmPreviewBody(am.draft.body)
-    }));
+    };
+    const card = pmEl("div", "app-buttons-wrapper");
+    card.append(renderAboutCard(member));
+    holder.append(card, renderAboutBlock(member));
     pmWatchMissing(holder, "am-status", amRenderPreviewSoon);
 }
 
@@ -225,6 +294,13 @@ document.addEventListener("DOMContentLoaded", function () {
     });
     document.getElementById("am-hidden").addEventListener("change", (e) => {
         am.draft.hidden = e.target.checked;
+    });
+    document.getElementById("am-flag-pick").addEventListener("change", (e) => {
+        const path = am.flagOptions[e.target.value];
+        if (!path) return;
+        am.draft.flags.push(path);
+        amRenderFlags();
+        amRenderPreview();
     });
 
     const picker = document.getElementById("am-image-file");

@@ -32,10 +32,18 @@ function aboutSummary(member) {
     return new DOMParser().parseFromString(first.content, "text/html").body.textContent.trim();
 }
 
-// Same markup as the toybox buttons; the description is clamped by .about-card-desc.
+// Same markup as the toybox buttons, plus the picture as background, role tag, flags and
+// "Read more"; the description is clamped by .about-card-desc. Top-level for the editor preview.
 function renderAboutCard(member) {
     const button = document.createElement("button");
     button.className = "app-button-wrapper";
+
+    if (member.image) {
+        const background = document.createElement("div");
+        background.className = "app-background";
+        background.style.backgroundImage = `url("${member.image}")`;
+        button.appendChild(background);
+    }
 
     const iconWrap = document.createElement("div");
     iconWrap.className = "app-icon-wrapper";
@@ -54,6 +62,27 @@ function renderAboutCard(member) {
     title.className = "app-title-text";
     title.textContent = member.name;
     titleWrap.appendChild(title);
+
+    if (member.role) {
+        const tag = document.createElement("div");
+        tag.className = "app-title-tag";
+        tag.textContent = member.role;
+        titleWrap.appendChild(tag);
+    }
+
+    if (member.flags && member.flags.length) {
+        const flags = document.createElement("div");
+        flags.className = "app-title-flags";
+        member.flags.forEach(src => {
+            const flag = document.createElement("img");
+            flag.className = "app-title-flag";
+            flag.src = src;
+            flag.alt = "";
+            flags.appendChild(flag);
+        });
+        titleWrap.appendChild(flags);
+    }
+
     text.appendChild(titleWrap);
 
     const descWrap = document.createElement("div");
@@ -63,6 +92,11 @@ function renderAboutCard(member) {
     desc.textContent = aboutSummary(member);
     descWrap.appendChild(desc);
     text.appendChild(descWrap);
+
+    const more = document.createElement("div");
+    more.className = "app-readmore";
+    more.textContent = "Read more";
+    text.appendChild(more);
 
     button.appendChild(text);
     return button;
