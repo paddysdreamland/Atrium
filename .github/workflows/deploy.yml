@@ -93,6 +93,19 @@ jobs:
               return {"version": version, "date": c["date"], "subject": c["subject"], "body": c["body"],
                       "claude": c["claude"], "hash": c["hash"], "author_name": c["author_name"]}
 
+          # One entry for a whole release: every commit's description in order (a commit without
+          # one shows its summary as a bullet), led by the pull request's description if merged.
+          # Bullet lists from different commits run together as one list. Signed by whoever made
+          # the newest commit, "with Claude" if Claude helped with any of them.
+          def release_entry(version, merge, commits):
+              parts = [merge["body"]] if merge and merge["body"] else []
+              parts += [c["body"] or f"- {c['subject']}" for c in commits]
+              body = re.sub(r"^([-*•][ \t].*)\n[ \t]*\n(?=[-*•][ \t])", r"\1\n", "\n\n".join(parts), flags=re.MULTILINE)
+              last = merge or commits[-1]
+              return {"version": version, "date": last["date"], "subject": last["subject"], "body": body,
+                      "claude": any(c["claude"] for c in commits + ([merge] if merge else [])),
+                      "hash": last["hash"], "author_name": last["author_name"]}
+
           # Looks up who made a commit on GitHub, so the changelog can show the same name and
           # profile link as the Discord messages. Results are remembered, so each commit and each
           # person is only asked about once. If GitHub can't be reached, the name from git is used.
@@ -187,24 +200,20 @@ jobs:
               version = f"{short(ym)}-{counts[ym]}"
               release_version = version
 
-              # Every commit a release brought in is listed as 26.10-17-1, -2, ... (the same numbers
-              # staging showed for them), so people can see what happened between two releases.
+              # A release is ONE entry (26.10-17) with the changes of every commit it brought in,
+              # oldest first. A merged pull request's title and description lead, when there is one.
               is_merge = len(end["parents"]) > 1
               base = start["parents"][0] if start["parents"] else None
               range_args = [f"{base}..{end['hash']}"] if base else [end["hash"]]
               brought_in = git_log(["--no-merges"] + range_args)
-              for i, sub in enumerate(brought_in, start=1):
-                  entries.append(entry(f"{version}-{i}", sub))
-
-              # A merged pull request also gets an entry of its own with the pull request's title
-              # and description. A fast-forward or a direct push has no such commit, so the release
-              # is just its list of changes.
-              if is_merge:
-                  entries.append(entry(version, end))
+              if not brought_in and not is_merge:
+                  brought_in = [end]
+              entries.append(release_entry(version, end if is_merge else None, brought_in))
 
           if BRANCH == "staging":
-              # Staging shows what the NEXT release will contain, with the same numbers it will get
-              # there: 26.10-18-1, 26.10-18-2, ... (as long as it's released in the same month).
+              # Staging also shows what the NEXT release will contain, one entry per change, numbered
+              # within the number that release will get: 26.10-18-1, 26.10-18-2, ... (as long as
+              # it's released in the same month). Once released, they become the one 26.10-18 entry.
               this_month = datetime.now(ZoneInfo("Europe/Berlin")).strftime("%Y-%m")
               upcoming = f"{short(this_month)}-{counts.get(this_month, 0) + 1}"
 
