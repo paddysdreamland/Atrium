@@ -217,13 +217,15 @@
     border-radius: 6px;
 }
 
+/* Experimenting with new designs, leave on column. */
+
 .beat-controls {
     position: fixed;
     right: 24px;
     bottom: 24px;
     display: flex;
-    flex-direction: row;
-    gap: 10px;
+    flex-direction: column;
+    gap: 0px;
     align-items: end;
     pointer-events: none;
     user-select: none;
