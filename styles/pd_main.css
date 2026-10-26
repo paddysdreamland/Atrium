@@ -1323,6 +1323,22 @@ li > a {
     font-size: 12px;
 }
 
+/* About Us cards (pd_about.js): the blurb stops after three lines. */
+.about-card-desc {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    overflow: hidden;
+}
+
+/* Members without a picture get the silk user icon, kept small and sharp. */
+.about-card-noimage {
+    background-size: 32px;
+    background-position: center;
+    image-rendering: pixelated;
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar {
     width: 4px;

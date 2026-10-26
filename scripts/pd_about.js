@@ -54,6 +54,49 @@ function renderAboutBlock(member) {
     return container;
 }
 
+// The card's blurb: the body's first paragraph as plain text. DOMParser keeps the markup inert.
+function aboutSummary(member) {
+    const first = member.body.find(block => block.type === "paragraph");
+    if (!first) return "";
+    return new DOMParser().parseFromString(first.content, "text/html").body.textContent.trim();
+}
+
+// Same markup as the toybox buttons; the description is clamped by .about-card-desc.
+function renderAboutCard(member) {
+    const button = document.createElement("button");
+    button.className = "app-button-wrapper";
+
+    const iconWrap = document.createElement("div");
+    iconWrap.className = "app-icon-wrapper";
+    const icon = document.createElement("div");
+    icon.className = member.image ? "app-icon-image" : "app-icon-image about-card-noimage";
+    icon.style.backgroundImage = `url("${member.image || "images/silk/user.png"}")`;
+    iconWrap.appendChild(icon);
+    button.appendChild(iconWrap);
+
+    const text = document.createElement("div");
+    text.className = "app-text-wrapper column-4";
+
+    const titleWrap = document.createElement("div");
+    titleWrap.className = "app-title-wrapper";
+    const title = document.createElement("div");
+    title.className = "app-title-text";
+    title.textContent = member.name;
+    titleWrap.appendChild(title);
+    text.appendChild(titleWrap);
+
+    const descWrap = document.createElement("div");
+    descWrap.className = "app-desc-wrapper";
+    const desc = document.createElement("div");
+    desc.className = "app-desc-text about-card-desc";
+    desc.textContent = aboutSummary(member);
+    descWrap.appendChild(desc);
+    text.appendChild(descWrap);
+
+    button.appendChild(text);
+    return button;
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
     let members;
     try {
@@ -65,10 +108,51 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
     }
 
-    // The endpoint already returns visible blocks, in page order.
     const wrapper = document.querySelector("#about-section .section-wrapper");
+    if (!wrapper) return;
 
-    if (wrapper) {
-        members.forEach(member => wrapper.appendChild(renderAboutBlock(member)));
+    // Two views: everyone as cards, or one member's block on its own.
+    const list = document.createElement("div");
+    list.className = "app-buttons-wrapper";
+    const detail = document.createElement("div");
+    detail.style.display = "none";
+    wrapper.append(list, detail);
+
+    function showList() {
+        detail.replaceChildren();
+        detail.style.display = "none";
+        list.style.display = "";
     }
+
+    // Rendered fresh each time so the block starts collapsed again, and measures while visible.
+    function showMember(member) {
+        const back = document.createElement("a");
+        back.className = "section-signature lore-button";
+        back.textContent = "Back to everyone";
+        back.addEventListener("click", () => {
+            playSound("ME_Sound/UI/ME_ProgressionTree_Nav.wav", 0.125);
+            showList();
+        });
+
+        const block = renderAboutBlock(member);
+        block.appendChild(back);
+        detail.replaceChildren(block);
+        list.style.display = "none";
+        detail.style.display = "";
+        document.querySelector("#main-holder .main-scrollable")?.scrollTo(0, 0);
+    }
+
+    // The endpoint already returns visible blocks, in page order.
+    members.forEach(member => {
+        const card = renderAboutCard(member);
+        // pd_default.js only gives the click sound to buttons that existed at load.
+        card.addEventListener("click", () => {
+            playSound("ME_Sound/UI/ME_ProgressionTree_Nav.wav", 0.125);
+            showMember(member);
+        });
+        list.appendChild(card);
+    });
+
+    // The nav button always lands on the list, even when a member is open.
+    document.getElementById("about-button")?.addEventListener("click", showList);
 });
