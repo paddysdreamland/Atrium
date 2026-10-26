@@ -820,24 +820,6 @@ button {
     display: flow-root;
 }
 
-/* About Us blocks start cut off at the picture's height (see pd_about.js). */
-.section-float-collapsed {
-    max-height: var(--float-image-size);
-    overflow: hidden;
-}
-
-/* Fade the cut-off text; the first layer keeps the picture's column (image + gap) solid. */
-.section-float-clipped {
-    -webkit-mask-image: linear-gradient(#000, #000), linear-gradient(to bottom, #000 calc(100% - 32px), transparent);
-    mask-image: linear-gradient(#000, #000), linear-gradient(to bottom, #000 calc(100% - 32px), transparent);
-    -webkit-mask-size: calc(var(--float-image-size) + var(--float-image-gap)) 100%, 100% 100%;
-    mask-size: calc(var(--float-image-size) + var(--float-image-gap)) 100%, 100% 100%;
-    -webkit-mask-position: right top, left top;
-    mask-position: right top, left top;
-    -webkit-mask-repeat: no-repeat;
-    mask-repeat: no-repeat;
-}
-
 .section-float-wrap > * + * {
     margin-top: 10px;
 } .section-float-wrap > .section-float-image + * {
@@ -1213,6 +1195,14 @@ li > a {
     padding: 0 10px;
     display: flex; gap: 10px;
     flex-direction: column;
+}
+
+/* Two buttons per row; section headers still span the full width. One column on phones. */
+.app-buttons-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+} .app-buttons-grid > .section-header {
+    grid-column: 1 / -1;
 }
 
 .app-button-wrapper {
@@ -2092,6 +2082,10 @@ li > a {
     .pm-field-row {
         flex-direction: column;
         gap: 0px;
+    }
+
+    .app-buttons-grid {
+        grid-template-columns: 1fr;
     }
 
     .characters-wrapper {
