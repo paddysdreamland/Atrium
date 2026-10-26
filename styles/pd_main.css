@@ -1343,16 +1343,13 @@ li > a {
 .app-background {
     background-position: center center;
     background-size: cover;
-    position: absolute; inset: 0;
+    position: absolute; inset: -16px;
     z-index: -1; /* behind the content, kept inside the card by its isolation */
     transform: scaleX(-1); /* Flip the image for less repetition! */
     pointer-events: none;
-} .app-background::after {
-    content: "";
-    position: absolute; inset: 0;
-    background: var(--app-button-background);
-    -webkit-backdrop-filter: blur(8px);
-    backdrop-filter: blur(8px);
+    
+    filter: blur(16px);
+    opacity: 0.5;
 }
 
 /* About Us cards (pd_about.js): the blurb stops after three lines. */

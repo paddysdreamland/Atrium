@@ -2,6 +2,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const subtitles = [
         `Some people like to call this place an atrium, which makes sense considering its nature.`,
         `You can be discoverable and miserable, or obscure and authentic.`,
+        `If you have to lie, at least say half of the truth.`,
         `Welcome to the inner workings of my mind.`,
     ];
 
