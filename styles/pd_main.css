@@ -1206,8 +1206,11 @@ li > a {
 }
 
 .app-button-wrapper {
-    background-color: rgba(255, 255, 255, 0.25);
-    background-image: var(--holder-background-image);
+    background: linear-gradient(
+        180deg,
+        rgb(255, 255, 255, 0.4) 0%,
+        rgb(255, 255, 255, 0.2) 100%
+    ), url("../images/patterns/grid1110_25.png");
 
     width: auto; min-height: 96px;
     border-radius: var(--custom-border-radius);
@@ -1228,9 +1231,9 @@ li > a {
     pointer-events: none;
     z-index: 50;
     top: 0;
-    border-right: var(--holder-border-thickness) solid rgba(255, 255, 255, 0.25);
-    border-top: var(--holder-border-thickness) solid rgba(255, 255, 255, 0.25);
-    border-left: var(--holder-border-thickness) solid rgba(255, 255, 255, 0.25);
+    border-right: var(--holder-border-thickness) solid rgba(255, 255, 255, 0.4);
+    border-top: var(--holder-border-thickness) solid rgba(255, 255, 255, 0.4);
+    border-left: var(--holder-border-thickness) solid rgba(255, 255, 255, 0.4);
     border-radius: var(--custom-border-radius) var(--custom-border-radius) 0 0;
 } .app-button-wrapper::after {
     content: "";
@@ -1243,9 +1246,9 @@ li > a {
     pointer-events: none;
     z-index: 50;
     bottom: 0;
-    border-right: var(--holder-border-thickness) solid rgba(255, 255, 255, 0.25);
-    border-bottom: var(--holder-border-thickness) solid rgba(255, 255, 255, 0.25);
-    border-left: var(--holder-border-thickness) solid rgba(255, 255, 255, 0.25);
+    border-right: var(--holder-border-thickness) solid rgba(255, 255, 255, 0.2);
+    border-bottom: var(--holder-border-thickness) solid rgba(255, 255, 255, 0.2);
+    border-left: var(--holder-border-thickness) solid rgba(255, 255, 255, 0.2);
     border-radius: 0 0 var(--custom-border-radius) var(--custom-border-radius);
 }
 
@@ -2082,10 +2085,6 @@ li > a {
     .pm-field-row {
         flex-direction: column;
         gap: 0px;
-    }
-
-    .app-buttons-grid {
-        grid-template-columns: 1fr;
     }
 
     .characters-wrapper {
