@@ -25,9 +25,10 @@ function renderAboutBlock(member) {
     return container;
 }
 
-// The card's blurb: the body's first paragraph as plain text. DOMParser keeps the markup inert.
+// The card's blurb: the body's first paragraph (also inside a conditional block) as plain text.
+// DOMParser keeps the markup inert.
 function aboutSummary(member) {
-    const first = member.body.find(block => block.type === "paragraph");
+    const first = flattenBlocks(member.body).find(block => block.type === "paragraph");
     if (!first) return "";
     return new DOMParser().parseFromString(first.content, "text/html").body.textContent.trim();
 }

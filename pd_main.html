@@ -25,6 +25,7 @@
         <script src="scripts/pd_about_manage.js" defer></script>
         <script src="scripts/pd_supporter_manage.js" defer></script>
         <script src="scripts/pd_imageviewer.js" defer></script>
+        <script src="scripts/pd_tags.js" defer></script>
 
         <script src="scripts/pd_customization.js" defer></script>
         <script src="scripts/pd_discordauth.js"></script>
@@ -762,12 +763,18 @@
                             <div class="section-container">
                                 <div class="setting-container">
                                     <div class="setting-label">Staging</div>
-                                    <div class="setting-label-small">Observe work-in-progress changes and see new features before they get released to the public domain. This is also a great way to spot and report potential bugs!</div>
-                                    <div class="setting-label-small">Staging is a private branch and requires a connected Discord account and you to be part of the Dreamland.</div>
+                                    <release-branch>
+                                        <div class="setting-label-small">Observe work-in-progress changes and see new features before they get released to the public domain. This is also a great way to spot and report potential bugs!</div>
+                                        <div class="setting-label-small">Staging is a private branch and requires a connected Discord account and you to be part of the Dreamland.</div>
+                                    </release-branch>
+                                    <staging-branch>
+                                        <div class="setting-label-small">You're on Staging right now: work-in-progress changes that haven't been released yet. Spotted a bug? Let us know in the Discord!</div>
+                                    </staging-branch>
                                     <div class="horizontal-break"></div>
-                                    
+
                                     <div class="setting-input-holder">
-                                        <button id="staging-button" class="setting-button">Switch to Staging</button>
+                                        <release-branch><button id="staging-button" class="setting-button">Switch to Staging</button></release-branch>
+                                        <staging-branch><button id="release-button" class="setting-button">Switch to Release</button></staging-branch>
                                     </div>
                                 </div>
                             </div>
@@ -1063,6 +1070,7 @@
                                             <button id="am-add-bulletList" class="setting-button">+ Bullet List</button>
                                             <button id="am-add-audio" class="setting-button">+ Audio</button>
                                             <button id="am-add-gallery" class="setting-button">+ Gallery</button>
+                                            <button id="am-add-conditional" class="setting-button">+ Conditional</button>
                                         </div>
                                     </div>
 
@@ -1153,6 +1161,7 @@
                                             <button id="pm-add-bulletList" class="setting-button">+ Bullet List</button>
                                             <button id="pm-add-audio" class="setting-button">+ Audio</button>
                                             <button id="pm-add-gallery" class="setting-button">+ Gallery</button>
+                                            <button id="pm-add-conditional" class="setting-button">+ Conditional</button>
                                         </div>
                                     </div>
 
@@ -1189,24 +1198,31 @@
         </div>
 
         <!-- Image viewer: opened by gallery blocks in news posts (scripts/pd_imageviewer.js). -->
-        <div id="iv-holder1" style="display: none;">
-            <div id="iv-holder2">
-                <div class="iv-topbar">
-                    <div id="iv-caption"></div>
-                    <div id="iv-counter"></div>
-                    <a id="iv-original" target="_blank" rel="noopener" title="Open original"></a>
-                    <button id="iv-close" title="Close"></button>
+        <div id="iv-holder" role="dialog" aria-modal="true" aria-label="Image viewer">
+            <div id="iv-backdrop"></div>
+
+            <div class="iv-topbar iv-bar">
+                <div id="iv-counter" class="iv-pill"></div>
+
+                <div class="iv-actions iv-pill">
+                    <button id="iv-zoom" class="iv-action" title="Zoom in"></button>
+                    <a id="iv-original" class="iv-action" target="_blank" rel="noopener" title="Open original"></a>
+                    <button id="iv-close" class="iv-action" title="Close"></button>
+                </div>
+            </div>
+
+            <div class="iv-middle">
+                <div id="iv-stage">
+                    <img id="iv-image" alt="" draggable="false">
                 </div>
 
-                <div class="iv-viewport">
-                    <img id="iv-image" alt="">
-                    <button id="iv-prev" class="iv-arrow" title="Previous">‹</button>
-                    <button id="iv-next" class="iv-arrow" title="Next">›</button>
-                </div>
+                <button id="iv-prev" class="iv-arrow iv-pill" title="Previous"></button>
+                <button id="iv-next" class="iv-arrow iv-pill" title="Next"></button>
+            </div>
 
-                <div class="iv-nav1">
-                    <div id="iv-nav" class="iv-nav2"></div>
-                </div>
+            <div class="iv-bottombar iv-bar">
+                <div id="iv-caption" class="iv-pill"></div>
+                <div id="iv-nav" class="iv-pill"></div>
             </div>
         </div>
 

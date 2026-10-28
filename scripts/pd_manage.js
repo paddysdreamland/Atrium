@@ -14,7 +14,8 @@ const PM_BLOCK_LABELS = {
     heading: "Heading",
     bulletList: "Bullet List (one item per line)",
     audio: "Audio (.mp3 path on this site)",
-    gallery: "Gallery (one image per line: path | optional caption)"
+    gallery: "Gallery (one image per line: path | optional caption)",
+    conditional: "Conditional (the blocks inside only show on one branch and/or at certain times)"
 };
 
 const pm = {
@@ -228,6 +229,8 @@ function pmRenderBlocks(holder, blocks, editor) {
                 block.content = input.value;
                 editor.onChange();
             });
+        } else if (block.type === "conditional") {
+            input = pmConditionalEditor(block, editor);
         } else if (block.type === "bulletList") {
             input = pmEl("textarea", "input-field pm-input pm-textarea");
             input.value = (block.content || []).join("\n");
@@ -248,6 +251,67 @@ function pmRenderBlocks(holder, blocks, editor) {
 
         holder.append(wrapper);
     });
+}
+
+// A conditional block's settings (same rules as the page tags, see php/pd_tags.php), then the
+// blocks inside it, edited like the outer list. Conditional blocks don't go inside each other.
+function pmConditionalEditor(block, editor) {
+    const holder = pmEl("div", "column-5");
+
+    const branch = pmEl("select", "input-field pm-input");
+    [["", "On both branches"], ["staging", "On staging only"], ["release", "On the main site only"]].forEach(([value, label]) => {
+        const option = pmEl("option", "", label);
+        option.value = value;
+        branch.append(option);
+    });
+    branch.value = block.branch || "";
+    branch.addEventListener("change", () => {
+        block.branch = branch.value;
+        editor.onChange();
+    });
+    holder.append(branch);
+
+    const times = pmEl("div", "pm-field-row");
+    [
+        ["from", "From", "Right away, or 2026-12-24 18:00, or ****-12-24"],
+        ["until", "Until", "For good, or 2026-12-27, or ****-12-27"]
+    ].forEach(([key, label, placeholder]) => {
+        const field = pmEl("div");
+        const input = pmEl("input", "input-field pm-input");
+        input.type = "text";
+        input.maxLength = 64;
+        input.placeholder = placeholder;
+        input.value = block[key] || "";
+        input.addEventListener("input", () => {
+            block[key] = input.value.trim();
+            editor.onChange(true);
+        });
+        field.append(pmEl("div", "setting-label-small", label), input);
+        times.append(field);
+    });
+    holder.append(times);
+    holder.append(pmEl("div", "setting-label-small",
+        "Times are each visitor's own, unless you add a timezone (\"2026-12-24 18:00 Europe/Berlin\"). " +
+        "Stars repeat it: ****-12-24 every year, ****-**-01 every month, ****-**-** 18:00 every day."));
+
+    block.blocks = block.blocks || [];
+    const inner = pmEl("div", "column-5 pm-conditional-blocks");
+    pmRenderBlocks(inner, block.blocks, editor);
+    holder.append(inner);
+
+    const add = pmEl("div", "setting-input-holder pm-add-row");
+    Object.keys(PM_BLOCK_LABELS).filter(type => type !== "conditional").forEach(type => {
+        const button = pmEl("button", "setting-button", `+ ${PM_BLOCK_LABELS[type].replace(/ \(.*$/, "")}`);
+        button.addEventListener("click", () => {
+            block.blocks.push(pmNewBlock(type));
+            pmRenderBlocks(inner, block.blocks, editor);
+            editor.onChange();
+        });
+        add.append(button);
+    });
+    holder.append(add);
+
+    return holder;
 }
 
 // "Upload Images" button for a gallery block: uploads each picked file, then appends it.
@@ -294,6 +358,7 @@ function pmGalleryUploader(block, redraw, statusId) {
 function pmNewBlock(type) {
     return type === "audio" ? { type, src: "" }
         : type === "gallery" ? { type, images: [] }
+        : type === "conditional" ? { type, branch: "", from: "", until: "", blocks: [{ type: "paragraph", content: "" }] }
         : type === "bulletList" ? { type, content: [] }
         : { type, content: "" };
 }
@@ -314,6 +379,8 @@ function pmPreviewBody(blocks) {
     return blocks
         .map(block => block.type === "gallery"
             ? { ...block, images: (block.images || []).filter(image => pmValidPath(image.src, "png|jpe?g|gif|webp")) }
+            : block.type === "conditional"
+            ? { ...block, blocks: pmPreviewBody(block.blocks || []) }
             : block)
         .filter(block => !(block.type === "audio" && !pmValidPath(block.src, "mp3")))
         .filter(block => !(block.type === "gallery" && block.images.length === 0));

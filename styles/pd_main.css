@@ -1830,6 +1830,12 @@ li > a {
     margin-top: 5px;
 }
 
+/* The blocks inside a conditional block, indented under its settings. */
+.pm-conditional-blocks {
+    padding-left: 10px;
+    border-left: 2px solid rgba(var(--custom-color), 0.25);
+}
+
 /* About Us Editor: the card's flags, in order (pd_about_manage.js). */
 .am-flag-list {
     display: flex; flex-wrap: wrap; gap: 5px;
@@ -1925,74 +1931,114 @@ li > a {
 }
 
 /* Image Viewer */
-#iv-holder1 {
-    background-color: rgba(0, 0, 0, 0.5);
-    width: 100vw;
-    height: 100vh;
+#iv-holder {
+    --iv-glass: rgba(16, 16, 16, 0.6);
+    --iv-edge: rgba(255, 255, 255, 0.1);
+
+    background-color: rgba(0, 0, 0, 0.85);
     position: fixed;
-    left: 0;
-    top: 0;
-    -webkit-backdrop-filter: blur(4px);
-    backdrop-filter: blur(4px);
-    padding: 64px;
+    inset: 0;
+    padding: 16px;
     z-index: 1000;
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr); /* a zoomed picture scrolls instead of widening the grid */
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    gap: 10px;
+
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.2s, visibility 0s 0.2s; /* stays visible while it fades out */
+} #iv-holder.iv-open {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transition: opacity 0.2s;
 }
 
-#iv-holder2 {
-    background-color: rgba(255, 255, 255, 0.5);
+/* The current picture, blurred to fill the screen with its colours, under the site's grid. */
+#iv-backdrop {
     background-position: center;
-    background-repeat: no-repeat;
-    background-size: 100%;
-    width: 100%;
-    height: 100%;
-    border-radius: var(--custom-border-radius) 0 var(--custom-border-radius) 0;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
+    background-size: cover;
+    position: absolute;
+    inset: -64px;
+    z-index: -2;
+    filter: blur(48px) saturate(1.5);
+    opacity: 0.4;
+    pointer-events: none;
+} #iv-holder::before {
+    content: "";
+    background-image:
+        radial-gradient(ellipse at center, rgba(0, 0, 0, 0) 40%, rgba(0, 0, 0, 0.75) 100%),
+        var(--holder-background-image);
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+}
+
+.iv-pill {
+    background-color: var(--iv-glass);
+    background-image: var(--holder-background-image);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--iv-edge);
+    border-radius: var(--custom-border-radius);
+    box-shadow: 0px 4px 16px rgba(0, 0, 0, 0.5);
 }
 
 .iv-topbar {
-    background-image: var(--holder-background-image);
-    background-color: var(--holder-background-color);
-    min-width: 100%;
-    max-width: 100%;
-    min-height: 40px;
-    max-height: 40px;
-    padding-left: 10px;
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 10px;
-}
-
-#iv-caption {
-    font-family: "Lato";
-    font-weight: 600;
-    font-size: 14px;
-    flex: 1 1 auto;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
 }
 
 #iv-counter {
     font-family: "Lato";
-    font-size: 12px;
-    opacity: 0.75;
-    flex: 0 0 auto;
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: 1px;
+    padding: 8px 12px;
 }
 
-#iv-original, #iv-close {
+.iv-counter-current {
+    color: rgb(var(--custom-color));
+}
+
+.iv-actions {
+    margin-left: auto;
+    padding: 3px;
+    display: flex;
+    gap: 3px;
+}
+
+.iv-action {
+    background-color: transparent;
     background-position: center;
     background-repeat: no-repeat;
     image-rendering: pixelated;
-    height: 100%;
-    aspect-ratio: 1/1;
-    flex: 0 0 auto;
+    width: 32px;
+    height: 32px;
+    border-radius: calc(var(--custom-border-radius) / 2);
+    display: block;
+    cursor: pointer;
     transition: 0.0625s;
-} #iv-original:hover, #iv-close:hover {
-    opacity: 0.75;
+} .iv-action:hover {
+    background-color: rgba(255, 255, 255, 0.15);
     transition: 0.0625s;
+} .iv-action:active {
+    opacity: 0.5;
+}
+
+#iv-zoom {
+    background-image: url(../images/silk/zoom_in.png);
+    display: none;
+} .iv-zoomable #iv-zoom {
+    display: block;
+} .iv-zoomed #iv-zoom {
+    background-image: url(../images/silk/zoom_out.png);
 }
 
 #iv-original {
@@ -2000,90 +2046,226 @@ li > a {
 }
 
 #iv-close {
-    background-color: rgb(var(--custom-color));
     background-image: url(../images/silk/cross.png);
+} #iv-close:hover {
+    background-color: rgba(var(--custom-color), 0.5);
 }
 
-.iv-viewport {
-    width: 100%;
-    flex: 1 1 auto;
+/* Middle row: the picture, with the arrows over its sides. */
+.iv-middle {
     min-height: 0;
-    padding: 10px;
     display: flex;
-    align-items: center;
-    justify-content: center;
+}
+
+#iv-stage {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 0 64px; /* room for the arrows */
+    display: flex;
+    touch-action: none; /* swipes are handled in pd_imageviewer.js */
 }
 
 #iv-image {
     max-width: 100%;
     max-height: 100%;
-    object-fit: contain;
+    margin: auto; /* centres it, but never pushes a zoomed picture off the top or left */
+    border-radius: var(--custom-border-radius);
+    box-shadow: 0px 0px 0px 1px var(--iv-edge), 0px 16px 48px rgba(0, 0, 0, 0.75);
+    -webkit-user-drag: none;
+    transition: opacity 0.2s, transform 0.2s;
+} #iv-holder:not(.iv-open) #iv-image,
+.iv-loading #iv-image,
+.iv-error #iv-image {
+    opacity: 0;
+    transform: scale(0.96);
+}
+
+.iv-zoomable #iv-image {
+    cursor: zoom-in;
+}
+
+.iv-zoomed #iv-stage {
+    padding: 0;
+    overflow: auto;
+    touch-action: pan-x pan-y;
+} .iv-zoomed #iv-image {
+    max-width: none;
+    max-height: none;
+    border-radius: 0;
+    cursor: grab;
+    transition: none;
+} .iv-dragging #iv-image {
+    cursor: grabbing;
+}
+
+/* Spinner, only if loading takes a moment. */
+@keyframes iv-spin {
+    100% {
+        transform: rotate(360deg);
+    }
+}
+#iv-stage::after {
+    content: "";
+    width: 32px;
+    height: 32px;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    margin: -16px 0 0 -16px;
+    border: 3px solid rgba(var(--custom-color), 0.25);
+    border-top-color: rgb(var(--custom-color));
+    border-radius: 50%;
+    animation: iv-spin 0.8s linear infinite;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+} #iv-stage.iv-loading::after {
+    opacity: 1;
+    transition-delay: 0.25s;
+}
+
+#iv-stage.iv-error::before {
+    content: "This image couldn't be loaded.";
+    font-family: "Lato";
+    font-weight: 700;
+    font-size: 14px;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0.5;
 }
 
 .iv-arrow {
-    background-image: var(--holder-background-image);
-    background-color: var(--holder-background-color);
-    width: 40px;
-    height: 64px;
+    width: 44px;
+    height: 44px;
     position: absolute;
     top: 50%;
-    transform: translateY(-50%);
-    font-family: "Lato";
-    font-size: 32px;
-    text-align: center;
-    border-radius: var(--custom-border-radius);
-    transition: 0.0625s;
+    margin-top: -22px;
+    cursor: pointer;
+    transition: 0.125s;
 } .iv-arrow:hover {
-    background-color: rgba(var(--custom-color), 0.5);
-    transition: 0.0625s;
+    background-color: rgba(var(--custom-color), 0.35);
+    box-shadow: 0px 0px 16px rgba(var(--custom-color), 0.5);
+    transition: 0.125s;
+} .iv-arrow:active {
+    opacity: 0.5;
+} .iv-arrow::before {
+    content: "";
+    width: 10px;
+    height: 10px;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    border-top: 2px solid var(--white);
+    border-left: 2px solid var(--white);
 }
 
 #iv-prev {
-    left: 10px;
+    left: 0;
+} #iv-prev::before {
+    transform: translate(-25%, -50%) rotate(-45deg);
 }
 
 #iv-next {
-    right: 10px;
+    right: 0;
+} #iv-next::before {
+    transform: translate(-75%, -50%) rotate(135deg);
 }
 
-.iv-nav1 {
-    background-image: var(--holder-background-image);
-    background-color: var(--holder-background-color);
-    min-width: 100%;
+.iv-bottombar {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+#iv-caption {
+    font-family: "Lato";
+    font-weight: 600;
+    font-size: 15px;
+    text-align: center;
+    max-width: min(100%, 720px);
+    padding: 6px 12px;
+    user-select: text;
+} #iv-caption:empty {
+    display: none;
+}
+
+#iv-nav {
     max-width: 100%;
-    min-height: 128px;
-    max-height: 128px;
-    padding: 10px;
-}
-
-.iv-nav2 {
-    background-color: rgba(0, 0, 0, 0);
-    width: 100%;
-    height: 100%;
-    border-radius: 0 0 var(--custom-border-radius) 0;
+    padding: 6px;
     overflow-x: auto;
     display: flex;
-    gap: 10px;
+    gap: 6px;
 }
 
 .iv-nav-image {
     background-color: rgba(var(--custom-color), 0.125);
     background-position: center;
-    background-size: 100%;
+    background-size: cover;
     background-repeat: no-repeat;
-    min-width: 192px;
-    min-height: 108px;
-    border-radius: var(--custom-border-radius);
-    transition: 0.1s;
-}
-.iv-nav-image:hover {
-    background-color: rgba(var(--custom-color), 0.25);
-    background-size: 125%;
-    transition: 0.1s;
+    flex: 0 0 auto;
+    width: 80px;
+    height: 50px;
+    border-radius: calc(var(--custom-border-radius) * 0.75);
+    opacity: 0.4;
+    cursor: pointer;
+    transition: 0.125s;
+} .iv-nav-image:hover {
+    opacity: 0.8;
+    transition: 0.125s;
 }
 
-.iv-nav-image-active {
-    box-shadow: inset 0 0 0 2px rgb(var(--custom-color));
+.iv-nav-image-active,
+.iv-nav-image-active:hover {
+    box-shadow: inset 0px 0px 0px 2px rgb(var(--custom-color));
+    opacity: 1;
+}
+
+.iv-single .iv-arrow,
+.iv-single #iv-nav,
+.iv-single #iv-counter {
+    display: none;
+}
+
+#iv-holder button:focus-visible,
+#iv-holder a:focus-visible {
+    outline: 2px solid rgb(var(--custom-color));
+    outline-offset: 1px;
+}
+
+/* Page Tags (php/pd_tags.php) */
+pd-temporary {
+    display: contents; /* only a marker for pd_tags.js, so it mustn't change the layout */
+}
+
+/* Conditional blocks in the editors' previews (renderBlocks): framed, and labelled with when they show. */
+.conditional-preview {
+    padding: 10px;
+    border: 1px dashed rgba(var(--custom-color), 0.5);
+    border-radius: var(--custom-border-radius);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.conditional-preview-label {
+    color: rgb(var(--custom-color));
+    font-family: Consolas;
+    font-size: 12px;
+}
+
+pd-tag-error {
+    color: rgb(255, 128, 128);
+    background-color: rgba(255, 64, 64, 0.25);
+    font-family: Consolas;
+    font-size: 12px;
+    padding: 2px 6px;
+    border: 1px solid rgb(255, 64, 64);
+    border-radius: 4px;
+    display: block;
 }
 
 /* Loading Screen */
@@ -2169,8 +2351,23 @@ li > a {
 }
 
 @media screen and (max-width: 600px) {
-    #iv-holder1 {
+    #iv-holder {
         padding: 10px;
+    }
+
+    #iv-stage {
+        padding: 0;
+    }
+
+    .iv-arrow {
+        width: 36px;
+        height: 36px;
+        margin-top: -18px;
+    }
+
+    .iv-nav-image {
+        width: 56px;
+        height: 36px;
     }
 
     .pm-field-row {

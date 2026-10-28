@@ -2,12 +2,12 @@
 // draw content blocks with the exact same code. Validated by php/pd_blocks.php.
 function renderBlocks(container, blocks) {
     // Every gallery image in the blocks, in order, so the viewer can page through all of them.
-    const viewerImages = blocks
+    const viewerImages = flattenBlocks(blocks)
         .filter(block => block.type === "gallery")
         .flatMap(block => block.images || []);
     let viewerIndex = 0;
 
-    blocks.forEach(block => {
+    const draw = (container, blocks) => blocks.forEach(block => {
         if (block.type === "paragraph") {
             const p = document.createElement("p");
             p.className = "section-paragraph";
@@ -51,8 +51,44 @@ function renderBlocks(container, blocks) {
                 gallery.appendChild(img);
             });
             container.appendChild(gallery);
+        } else if (block.type === "conditional") {
+            container.appendChild(renderConditional(block, inside => draw(inside, block.blocks || [])));
         }
     });
+
+    draw(container, blocks);
+}
+
+// The blocks inside conditional blocks, in their place.
+function flattenBlocks(blocks) {
+    return blocks.flatMap(block => block.type === "conditional" ? (block.blocks || []) : [block]);
+}
+
+// A conditional block. Visitors only ever get the ones that apply, with just their blocks
+// (php/pd_blocks.php); one that ends later becomes a <pd-temporary> that pd_tags.js removes
+// in time. The editors' previews get every one with its settings, drawn framed and labelled.
+function renderConditional(block, drawInside) {
+    const editing = "branch" in block || "from" in block || "until" in block;
+
+    if (!editing) {
+        const wrap = document.createElement("pd-temporary");
+        if (block.endsIn !== undefined) wrap.dataset.endsAt = Date.now() + block.endsIn * 1000;
+        drawInside(wrap);
+        return wrap;
+    }
+
+    const frame = document.createElement("div");
+    frame.className = "conditional-preview";
+
+    const branch = { staging: "on staging", release: "on the main site" }[block.branch] || "";
+    const times = [block.from && `from ${block.from}`, block.until && `until ${block.until}`].filter(Boolean).join(" ");
+    const label = document.createElement("div");
+    label.className = "conditional-preview-label";
+    label.textContent = branch || times ? ["Only shown", branch, times].filter(Boolean).join(" ") : "Pick when this shows";
+    frame.appendChild(label);
+
+    drawInside(frame);
+    return frame;
 }
 
 // Top-level so the management post editor can preview posts with the exact same renderer.

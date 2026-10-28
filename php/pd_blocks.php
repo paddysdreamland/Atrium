@@ -2,8 +2,13 @@
 declare(strict_types=1);
 
 // php/pd_blocks.php  —  validation for the content blocks news posts and About Us blocks are
-// built from (rendered by renderBlocks() in scripts/pd_post_manager.js).
-// Included by pd_posts_admin.php and pd_about_admin.php; does nothing on its own.
+// built from (rendered by renderBlocks() in scripts/pd_post_manager.js), and what of them a
+// visitor gets to see. Included by the admin endpoints and the public ones; does nothing on its own.
+//
+// A "conditional" block holds other blocks, only shown on one branch and/or between two times,
+// with the same rules as the page tags in pd_tags.php: {type, branch?, from?, until?, blocks}.
+
+require_once __DIR__ . '/pd_tags.php';
 
 /**
  * A relative path to a file on this site with one of the given extensions (regex alternation).
@@ -34,13 +39,30 @@ function pd_blocks_file_exists(string $src): bool {
 
 /** Validate an editor's block list and return it JSON-encoded for the DB, or respond 422 and exit. */
 function pd_blocks_clean($blocksIn): string {
-    if (!is_array($blocksIn) || count($blocksIn) === 0 || count($blocksIn) > 50) {
+    if (!is_array($blocksIn) || count($blocksIn) === 0) {
         pd_json_error(422, 'invalid', 'Add between 1 and 50 blocks.');
     }
+    $total  = 0;
+    $blocks = pd_blocks_clean_list($blocksIn, '', $total);
+    if ($total > 50) {
+        pd_json_error(422, 'invalid', 'Add between 1 and 50 blocks (blocks inside conditional blocks count too).');
+    }
+
+    return json_encode($blocks, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+}
+
+/**
+ * Validate a list of blocks; $prefix numbers the ones inside a conditional block ("Block 3.2")
+ * and is "" at the top. Conditional blocks don't go inside each other. $total counts every block.
+ */
+function pd_blocks_clean_list(array $blocksIn, string $prefix, int &$total): array {
     $blocks = [];
     foreach (array_values($blocksIn) as $i => $block) {
-        $n    = $i + 1;
+        $n    = $prefix . ($i + 1);
         $type = is_array($block) ? ($block['type'] ?? '') : '';
+        if (++$total > 50) {
+            return $blocks; // pd_blocks_clean reports it; no need to check the rest
+        }
 
         if ($type === 'paragraph') {
             $content = pd_sanitize_html((string) ($block['content'] ?? ''));
@@ -98,10 +120,76 @@ function pd_blocks_clean($blocksIn): string {
                 pd_json_error(422, 'invalid', "Block {$n}: a gallery needs between 1 and 50 images.");
             }
             $blocks[] = ['type' => 'gallery', 'images' => $images];
+        } elseif ($type === 'conditional' && $prefix === '') {
+            $branch = (string) ($block['branch'] ?? '');
+            if (!in_array($branch, ['', 'staging', 'release'], true)) {
+                pd_json_error(422, 'invalid', "Block {$n}: unknown branch.");
+            }
+            $times = [];
+            foreach (['from', 'until'] as $name) {
+                $value = trim((string) ($block[$name] ?? ''));
+                if (strlen($value) > 64) {
+                    pd_json_error(422, 'invalid', "Block {$n}: the {$name} time is limited to 64 characters.");
+                }
+                $times[$name] = $value === '' ? null : $value;
+            }
+            if ($branch === '' && $times['from'] === null && $times['until'] === null) {
+                pd_json_error(422, 'invalid', "Block {$n}: pick a branch, a from time or an until time, or it's not conditional.");
+            }
+            $problem = pd_tags_times_problem($times['from'], $times['until']);
+            if ($problem !== null) {
+                pd_json_error(422, 'invalid', "Block {$n}: this conditional block {$problem}.");
+            }
+
+            $inner = $block['blocks'] ?? null;
+            if (!is_array($inner) || count($inner) === 0) {
+                pd_json_error(422, 'invalid', "Block {$n}: add at least one block inside.");
+            }
+
+            // Only the settings in use, so the stored block reads like what it does.
+            $clean = ['type' => 'conditional'];
+            if ($branch !== '') $clean['branch'] = $branch;
+            if ($times['from'] !== null) $clean['from'] = $times['from'];
+            if ($times['until'] !== null) $clean['until'] = $times['until'];
+            $clean['blocks'] = pd_blocks_clean_list($inner, "{$n}.", $total);
+            $blocks[] = $clean;
+        } elseif ($type === 'conditional') {
+            pd_json_error(422, 'invalid', "Block {$n}: conditional blocks can't go inside each other.");
         } else {
             pd_json_error(422, 'invalid', "Block {$n}: unknown block type.");
         }
     }
 
-    return json_encode($blocks, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    return $blocks;
+}
+
+/**
+ * The blocks as a visitor sees them right now ($ctx from pd_tags_context()). A conditional block
+ * that applies goes out with only its blocks, plus endsIn (seconds) when it ends later, so
+ * renderBlocks() can take it down on a page that's still open. One that doesn't apply is left
+ * out, so it never reaches the browser.
+ */
+function pd_blocks_for_visitor(array $blocks, array $ctx): array {
+    $visible = [];
+    foreach ($blocks as $block) {
+        if (($block['type'] ?? '') !== 'conditional') {
+            $visible[] = $block;
+            continue;
+        }
+
+        if (!pd_tags_branch_shows($ctx, (string) ($block['branch'] ?? ''))) {
+            continue;
+        }
+        $when = pd_tags_when($ctx, $block['from'] ?? null, $block['until'] ?? null);
+        if (!$when['show']) {
+            continue;
+        }
+
+        $shown = ['type' => 'conditional', 'blocks' => $block['blocks'] ?? []];
+        if ($when['endsIn'] !== null) {
+            $shown['endsIn'] = $when['endsIn'];
+        }
+        $visible[] = $shown;
+    }
+    return $visible;
 }

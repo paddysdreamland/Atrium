@@ -9,10 +9,13 @@ declare(strict_types=1);
 $config = require dirname(__DIR__, 2) . '/private/pd_config.php';
 require dirname(__DIR__, 2) . '/private/pd_lib.php';
 require __DIR__ . '/pd_about_lib.php';
+require __DIR__ . '/pd_staging.php';
+require __DIR__ . '/pd_blocks.php';
 
 header('Content-Type: application/json');
 
 $pdo = pd_db($config);
+$ctx = pd_tags_context(); // conditional blocks show per branch, time and timezone
 
 // The owner's picture and roles come from their last login, for the card's picture and tags.
 // a.image is the Founder's picture for owners who haven't logged in here yet.
@@ -25,7 +28,7 @@ $rows = $pdo->query(
       ORDER BY a.sort_order, a.name'
 )->fetchAll(PDO::FETCH_ASSOC);
 
-$staff = array_map(static function (array $row): array {
+$staff = array_map(static function (array $row) use ($ctx): array {
     $flags = pd_about_flags($row['flags']);
     return [
         'name'      => $row['name'],
@@ -34,7 +37,7 @@ $staff = array_map(static function (array $row): array {
         'supporter' => pd_about_is_supporter($row['site_roles']),
         'pride'     => $flags['pride'],
         'languages' => $flags['languages'],
-        'body'      => json_decode($row['body'], true) ?? [],
+        'body'      => pd_blocks_for_visitor(json_decode($row['body'], true) ?? [], $ctx),
     ];
 }, $rows);
 

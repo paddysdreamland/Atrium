@@ -99,7 +99,8 @@ var socialLinks = {
     "ost-button": "/toybox/catalyst_soundtrack_player/",
     "glg-button": "/toybox/glassguessr/",
     "soundscape-button": "/toybox/source_soundscape_player/",
-    "staging-button": "https://staging.paddysdreamland.com"
+    "staging-button": "https://staging.paddysdreamland.com",
+    "release-button": "https://paddysdreamland.com"
 };
 
 Object.keys(socialLinks).forEach(function (id) {
