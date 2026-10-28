@@ -5,9 +5,10 @@ declare(strict_types=1);
 //
 // Everyone with the Supporter role (supporter.edit) has a card automatically, named and pictured
 // from their Discord profile; they only choose its tagline and flags, or hide it. The Founder
-// (supporter.manage) can edit anyone's, say how they support ("Artist"), take a card down (its
-// owner can't undo that), and add cards by hand for people who support without boosting: a name
-// and picture to show until they log in with Discord, if they ever do.
+// (supporter.manage) can edit anyone's, say how they support ("Artist") and since when, take a
+// card down (its owner can't undo that), and add cards by hand for people who support without
+// boosting. The Founder's name, picture and date are stand-ins: logging in with Discord (and, for
+// the date, boosting) replaces them.
 //
 // GET  -> {"ok": true, "ownId": "...", "cards": [...], "flagOptions": {...}}
 //         (just your own card without supporter.manage; see pd_about_admin.php for flagOptions)
@@ -58,11 +59,11 @@ switch ($input['action'] ?? '') {
         }
 
         $stmt = $pdo->prepare(
-            'INSERT INTO pd_supporters (discord_id, manual, name, image, support, tagline, flags, hidden, removed, updated_by, updated_at)
-                  VALUES (?, 1, ?, ?, ?, ?, ?, ?, ?, ?, NOW())'
+            'INSERT INTO pd_supporters (discord_id, manual, name, image, support, since, tagline, flags, hidden, removed, updated_by, updated_at)
+                  VALUES (?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())'
         );
         $stmt->execute([
-            $card['discord_id'], $card['name'], $card['image'], $card['support'], $card['tagline'],
+            $card['discord_id'], $card['name'], $card['image'], $card['support'], $card['since'], $card['tagline'],
             $card['flags'], $card['hidden'], $card['removed'], $ownId,
         ]);
         pd_supporter_respond($pdo, (int) $pdo->lastInsertId());
@@ -149,6 +150,7 @@ function pd_supporter_admin_row(array $row): array {
         'manual'        => (bool) $row['manual'],
         'fallbackName'  => (string) $row['fallback_name'],
         'fallbackImage' => (string) $row['fallback_image'],
+        'fallbackSince' => $row['fallback_since'] !== null ? substr($row['fallback_since'], 0, 7) : '', // the Founder's date
         'hasLogin'      => (bool) $row['has_login'],
         'boosting'      => (bool) $row['boosting'],
         'hidden'        => (bool) $row['hidden'],
@@ -173,7 +175,8 @@ function pd_supporter_text($value, int $max, string $label): ?string {
 /**
  * Validate an editor payload into column => value, or respond 422 and exit. Only the columns
  * this editor may change: supporters their tagline, flags and hiding it; the Founder also how
- * they support and taking it down; and on cards added by hand, its name, picture and account.
+ * and since when they support, and taking it down; and on cards added by hand, its name, picture
+ * and account.
  */
 function pd_supporter_clean($c, bool $canManage, bool $manual): array {
     if (!is_array($c)) {
@@ -191,6 +194,14 @@ function pd_supporter_clean($c, bool $canManage, bool $manual): array {
 
     $clean['support'] = pd_supporter_text($c['support'] ?? '', 64, 'How they support');
     $clean['removed'] = !empty($c['removed']) ? 1 : 0;
+
+    // "2023-03" from the month picker, stored as the 1st; shown until Discord has a boosting date.
+    $since = trim((string) ($c['fallbackSince'] ?? ''));
+    if ($since !== '' && (!preg_match('/^(\d{4})-(0[1-9]|1[0-2])$/', $since, $m)
+        || (int) $m[1] < 2000 || $since > gmdate('Y-m'))) {
+        pd_json_error(422, 'invalid', 'Supporting since must be a month between 2000 and now.');
+    }
+    $clean['since'] = $since !== '' ? "{$since}-01" : null;
     if (!$manual) {
         return $clean;
     }

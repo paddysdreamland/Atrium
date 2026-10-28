@@ -146,9 +146,17 @@ function renderAboutCard(member) {
     return card;
 }
 
-// A supporter card is all there is, so it doesn't click: their tagline, and where staff cards
-// say "Read more", how they support ("Artist", from the Founder) or else how long they've been
-// boosting. Top-level for the Supporter Card Editor preview.
+// The corner of a supporter card: how they support ("Artist", from the Founder) and since when,
+// Discord's boosting date or else the Founder's: "Artist · Since March 2023", "Boosting since…".
+function supporterCorner(member) {
+    const date = member.boostingSince || member.since;
+    if (!date) return member.support || "";
+    if (member.support) return `${member.support} · Since ${aboutMonth(date)}`;
+    return `${member.boostingSince ? "Boosting" : "Supporting"} since ${aboutMonth(date)}`;
+}
+
+// A supporter card is all there is, so it doesn't click: their tagline, and supporterCorner where
+// staff cards say "Read more". Top-level for the Supporter Card Editor preview.
 function renderSupporterCard(member) {
     const { card, text } = aboutCardBase("div", member);
     card.classList.add("about-card-static");
@@ -157,7 +165,7 @@ function renderSupporterCard(member) {
         member.tagline || (member.boostingSince
             ? "Supporting Paddy's Dreamland by boosting our Discord server."
             : "Supporting Paddy's Dreamland."),
-        member.support || (member.boostingSince ? `Boosting since ${aboutMonth(member.boostingSince)}` : "")
+        supporterCorner(member)
     );
     return card;
 }

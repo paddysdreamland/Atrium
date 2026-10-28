@@ -110,21 +110,22 @@ function pd_about_clean_flags($pride, $languages): ?string {
 /* Supporters */
 
 /**
- * Every supporter card: everyone whose last login found the Supporter role (longest-boosting
- * first), then the cards added by hand for people who aren't boosting (by name). Or just one card,
- * by its pd_supporters id or by Discord account ($by = 'id' | 'discord_id').
+ * Every supporter card: everyone whose last login found the Supporter role, and the cards added
+ * by hand for people who aren't boosting, longest-supporting first (see pd_supporter_since), then
+ * undated ones by name. Or just one card, by its pd_supporters id or by Discord account
+ * ($by = 'id' | 'discord_id').
  *
  * Anyone who has logged in is named and pictured from pd_users, so that follows every login;
- * pd_supporters adds what they wrote, and for cards added by hand, the name and picture to show
- * until then. id is null for a booster who hasn't changed anything yet. inStaff: they have a
- * staff block, which shows them instead.
+ * pd_supporters adds what they wrote, and the Founder's stand-ins until they log in: the name,
+ * picture and date. id is null for a booster who hasn't changed anything yet. inStaff: they have
+ * a staff block, which shows them instead.
  */
 function pd_supporter_rows(PDO $pdo, ?string $by = null, $value = null): array {
     $boosting = 'COALESCE(FIND_IN_SET(\'supporter\', u.site_roles) > 0
                           AND u.roles_checked_at > DATE_SUB(NOW(), INTERVAL ? DAY), 0)';
     $columns  = 's.id, COALESCE(u.discord_id, s.discord_id) AS discord_id, COALESCE(s.manual, 0) AS manual,
                  COALESCE(NULLIF(u.global_name, \'\'), u.username, s.name) AS name,
-                 s.name AS fallback_name, s.image AS fallback_image, s.support,
+                 s.name AS fallback_name, s.image AS fallback_image, s.support, s.since AS fallback_since,
                  (u.discord_id IS NOT NULL) AS has_login, u.avatar_hash, u.avatar_file, u.site_roles,
                  s.tagline, s.flags, COALESCE(s.hidden, 0) AS hidden, COALESCE(s.removed, 0) AS removed,
                  s.updated_at, (a.discord_id IS NOT NULL) AS in_staff';
@@ -143,7 +144,7 @@ function pd_supporter_rows(PDO $pdo, ?string $by = null, $value = null): array {
                  WHERE s.manual = 1 AND NOT {$boosting}
             ) c"
          . ($by === 'id' ? ' WHERE c.id = ?' : ($by === 'discord_id' ? ' WHERE c.discord_id = ?' : ''))
-         . ' ORDER BY c.boosting DESC, c.boosting_since IS NULL, c.boosting_since, c.name';
+         . ' ORDER BY COALESCE(c.boosting_since, c.fallback_since) IS NULL, COALESCE(c.boosting_since, c.fallback_since), c.name';
     $params = [PD_SUPPORTER_MAX_AGE_DAYS, PD_SUPPORTER_MAX_AGE_DAYS];
     if ($by !== null) {
         $params[] = $value;
@@ -156,13 +157,16 @@ function pd_supporter_rows(PDO $pdo, ?string $by = null, $value = null): array {
 /** A supporter row -> what the public page draws (renderSupporterCard in pd_about.js). */
 function pd_supporter_card(array $row): array {
     $flags = pd_about_flags($row['flags']);
+    // Discord's date while they boost, else the Founder's: at most one is set, as "2025-03".
+    $discordDate = $row['boosting'] && $row['boosting_since'] !== null;
     return [
         'name'          => $row['name'],
         'image'         => pd_about_avatar($row) ?? $row['fallback_image'],
         'role'          => pd_about_role($row['site_roles']), // staff without a block of their own
         'supporter'     => true,
-        'boostingSince' => $row['boosting'] && $row['boosting_since'] !== null ? substr($row['boosting_since'], 0, 7) : null, // "2025-03"
-        'support'       => (string) $row['support'], // shown in place of boostingSince
+        'boostingSince' => $discordDate ? substr($row['boosting_since'], 0, 7) : null,
+        'since'         => !$discordDate && $row['fallback_since'] !== null ? substr($row['fallback_since'], 0, 7) : null,
+        'support'       => (string) $row['support'], // "Artist", beside the date
         'tagline'       => (string) $row['tagline'],
         'pride'         => $flags['pride'],
         'languages'     => $flags['languages'],

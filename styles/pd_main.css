@@ -808,6 +808,20 @@ button {
     gap: 10px;
 }
 
+/* Sections side by side, in equal columns; stacked on phones. */
+.section-container-rowed {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+}
+
+.rowed-flex {
+    flex: 1 1 0; min-width: 0; /* equal shares, whatever the text length */
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
 #lore-continuation {
     flex-direction: column;
     gap: 10px;
@@ -1282,6 +1296,7 @@ li > a {
 
 .app-icon-image {
     background-repeat: no-repeat;
+    background-position: center;
     background-size: cover;
     position: relative; left: 8px; top: 8px;
     width: calc(96px - 16px); aspect-ratio: 1 / 1;
@@ -2161,6 +2176,11 @@ li > a {
     .pm-field-row {
         flex-direction: column;
         gap: 0px;
+    }
+
+    .section-container-rowed {
+        flex-direction: column;
+        gap: 10px;
     }
 
     .characters-wrapper {

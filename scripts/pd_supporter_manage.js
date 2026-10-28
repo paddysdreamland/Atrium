@@ -84,6 +84,7 @@ function smOpenEditor(card) {
             manual: true,
             fallbackName: "",
             fallbackImage: "",
+            fallbackSince: "",
             support: "",
             tagline: "",
             pride: [],
@@ -96,7 +97,8 @@ function smOpenEditor(card) {
             image: null,
             role: null,
             supporter: true,
-            boostingSince: null
+            boostingSince: null,
+            since: null
         };
     const own = !sm.isNew && card.discordId === sm.ownId;
 
@@ -104,8 +106,11 @@ function smOpenEditor(card) {
     document.getElementById("sm-tagline").value = sm.draft.tagline;
     document.getElementById("sm-hidden").checked = sm.draft.hidden;
 
-    // The Founder's fields: how they support, and on cards added by hand, who they are.
+    // The Founder's fields: how and since when they support, and on cards added by hand, who they are.
     const byHand = sm.canManage && sm.draft.manual;
+    const since = document.getElementById("sm-since");
+    since.max = new Date().toISOString().slice(0, 7);
+    since.value = sm.draft.fallbackSince;
     document.getElementById("sm-support-field").style.display = sm.canManage ? "" : "none";
     document.getElementById("sm-support").value = sm.draft.support;
     document.getElementById("sm-manual-fields").style.display = byHand ? "" : "none";
@@ -140,6 +145,9 @@ function smExplain() {
     if (draft.manual && draft.hasLogin && sm.canManage) {
         notes.push("They've logged in with Discord, so the card shows their Discord name and picture instead of the ones below.");
     }
+    if (draft.boostingSince && draft.fallbackSince && sm.canManage) {
+        notes.push(`Discord says they've been boosting since ${aboutMonth(draft.boostingSince)}, so the card shows that instead of your date.`);
+    }
     pmStatus(notes.join(" "), "", "sm-status");
 }
 
@@ -164,6 +172,7 @@ function smRenderPreview() {
         ...draft,
         name: draft.hasLogin ? draft.name : draft.fallbackName.trim(),
         image: draft.hasLogin ? draft.image : fallbackImage,
+        since: draft.boostingSince ? null : draft.fallbackSince || null, // Discord's date wins, as on the server
         support: draft.support.trim(),
         tagline: draft.tagline.trim()
     }));
@@ -234,7 +243,7 @@ document.addEventListener("DOMContentLoaded", function () {
     document.getElementById("sm-delete").addEventListener("click", smDelete);
 
     // Text fields: [id, draft key, redraw the preview soon (a path being typed)?]
-    [["sm-tagline", "tagline"], ["sm-support", "support"], ["sm-name", "fallbackName"],
+    [["sm-tagline", "tagline"], ["sm-support", "support"], ["sm-since", "fallbackSince"], ["sm-name", "fallbackName"],
      ["sm-discord-id", "discordId"], ["sm-image", "fallbackImage", true]].forEach(([id, key, soon]) => {
         document.getElementById(id).addEventListener("input", (e) => {
             sm.draft[key] = key === "discordId" || key === "fallbackImage" ? e.target.value.trim() : e.target.value;
