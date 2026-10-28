@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 // php/pd_about_admin.php  —  About Us block management. Each block belongs to one Discord
 // account: Moderators and up (about.edit) write their own, the Founder (about.manage) anyone's.
+// The picture is the owner's Discord avatar (see pd_about_avatar); the Founder can set one to
+// show until they've logged in here (fallbackImage, the image column).
 //
 // GET  -> {"ok": true, "ownId": "...", "blocks": [...], "flagOptions": {"de": "images/flags/de.png", ...}}
 //         (flag names starting "pride/" are pride flags, the rest language flags)
@@ -65,7 +67,10 @@ switch ($input['action'] ?? '') {
             'INSERT INTO pd_about (discord_id, name, image, flags, body, sort_order, hidden, updated_by, updated_at)
                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())'
         );
-        $stmt->execute([$id, $block['name'], $block['image'], $block['flags'], $block['body'], $order, $block['hidden'], $ownId]);
+        $stmt->execute([
+            $id, $block['name'], $canManage ? $block['image'] : null, $block['flags'], $block['body'], $order,
+            $block['hidden'], $ownId,
+        ]);
         echo json_encode(['ok' => true, 'block' => pd_about_admin_row(pd_about_rows($pdo, $id)[0])]);
         exit;
 
@@ -79,16 +84,17 @@ switch ($input['action'] ?? '') {
             pd_json_error(404, 'not_found', 'That block no longer exists.');
         }
 
-        // sort_order is the Founder's to change.
+        // sort_order and the picture are the Founder's to change.
         $stmt = $pdo->prepare(
             'UPDATE pd_about
-                SET name = ?, image = ?, flags = ?, body = ?, hidden = ?, sort_order = IF(?, ?, sort_order),
+                SET name = ?, flags = ?, body = ?, hidden = ?,
+                    sort_order = IF(?, ?, sort_order), image = IF(?, ?, image),
                     updated_by = ?, updated_at = NOW()
               WHERE discord_id = ?'
         );
         $stmt->execute([
-            $block['name'], $block['image'], $block['flags'], $block['body'], $block['hidden'],
-            $canManage ? 1 : 0, $block['sortOrder'], $ownId, $id,
+            $block['name'], $block['flags'], $block['body'], $block['hidden'],
+            $canManage ? 1 : 0, $block['sortOrder'], $canManage ? 1 : 0, $block['image'], $ownId, $id,
         ]);
         echo json_encode(['ok' => true, 'block' => pd_about_admin_row(pd_about_rows($pdo, $id)[0])]);
         exit;
@@ -115,7 +121,8 @@ switch ($input['action'] ?? '') {
 /** Every block in page order, or just one account's. Joined to pd_users for the owner's name. */
 function pd_about_rows(PDO $pdo, ?string $id = null): array {
     $sql = 'SELECT a.discord_id, a.name, a.image, a.flags, a.body, a.sort_order, a.hidden, a.updated_at, a.updated_by,
-                   COALESCE(NULLIF(u.global_name, \'\'), u.username) AS owner_name, u.site_roles
+                   COALESCE(NULLIF(u.global_name, \'\'), u.username) AS owner_name, u.site_roles, u.avatar_hash,
+                   u.avatar_file, (u.discord_id IS NOT NULL) AS has_login
               FROM pd_about a
               LEFT JOIN pd_users u ON u.discord_id = a.discord_id'
          . ($id !== null ? ' WHERE a.discord_id = ?' : '')
@@ -129,19 +136,21 @@ function pd_about_rows(PDO $pdo, ?string $id = null): array {
 function pd_about_admin_row(array $row): array {
     $flags = pd_about_flags($row['flags']);
     return [
-        'discordId' => (string) $row['discord_id'],
-        'ownerName' => $row['owner_name'],
-        'name'      => $row['name'],
-        'image'     => $row['image'],
-        'role'      => pd_about_role($row['site_roles']), // read-only, for the preview
-        'supporter' => pd_about_is_supporter($row['site_roles']),
-        'pride'     => $flags['pride'],
-        'languages' => $flags['languages'],
-        'body'      => json_decode((string) $row['body'], true) ?? [],
-        'sortOrder' => (int) $row['sort_order'],
-        'hidden'    => (bool) $row['hidden'],
-        'updatedAt' => $row['updated_at'],
-        'updatedBy' => $row['updated_by'] !== null ? (string) $row['updated_by'] : null,
+        'discordId'     => (string) $row['discord_id'],
+        'ownerName'     => $row['owner_name'],
+        'name'          => $row['name'],
+        'image'         => pd_about_avatar($row) ?? $row['image'], // read-only, like the three below, for the preview
+        'hasLogin'      => (bool) $row['has_login'],
+        'role'          => pd_about_role($row['site_roles']),
+        'supporter'     => pd_about_is_supporter($row['site_roles']),
+        'fallbackImage' => (string) $row['image'],                 // the Founder's, until they log in
+        'pride'         => $flags['pride'],
+        'languages'     => $flags['languages'],
+        'body'          => json_decode((string) $row['body'], true) ?? [],
+        'sortOrder'     => (int) $row['sort_order'],
+        'hidden'        => (bool) $row['hidden'],
+        'updatedAt'     => $row['updated_at'],
+        'updatedBy'     => $row['updated_by'] !== null ? (string) $row['updated_by'] : null,
     ];
 }
 
@@ -163,19 +172,20 @@ function pd_about_clean($b): array {
         pd_json_error(422, 'invalid', 'Name is required (max 255 characters).');
     }
 
-    $image = trim((string) ($b['image'] ?? ''));
-    if ($image !== '') {
-        if (!pd_blocks_valid_path($image, 'png|jpe?g|gif|webp')) {
-            pd_json_error(422, 'invalid', 'Image must be a .png, .jpg, .gif or .webp path on this site.');
-        }
-        if (!pd_blocks_file_exists($image)) {
-            pd_json_error(422, 'invalid', "Image \"{$image}\" does not exist on the site.");
-        }
-    }
-
     $sortOrder = filter_var($b['sortOrder'] ?? 0, FILTER_VALIDATE_INT, ['options' => ['min_range' => -9999, 'max_range' => 9999]]);
     if ($sortOrder === false) {
         pd_json_error(422, 'invalid', 'Order must be a whole number between -9999 and 9999.');
+    }
+
+    // The Founder's picture, until they log in; the caller ignores it for everyone else.
+    $image = trim((string) ($b['fallbackImage'] ?? ''));
+    if ($image !== '') {
+        if (!pd_blocks_valid_path($image, 'png|jpe?g|gif|webp')) {
+            pd_json_error(422, 'invalid', 'The picture must be a .png, .jpg, .gif or .webp path on this site.');
+        }
+        if (!pd_blocks_file_exists($image)) {
+            pd_json_error(422, 'invalid', "The picture \"{$image}\" does not exist on the site.");
+        }
     }
 
     return [

@@ -369,8 +369,8 @@
                                 <!-- Staff cards go here; edited in Management > About Us Editor. -->
 
                                 <h4 id="about-supporters-header" class="section-header">Our Supporters</h4>
-                                <p class="section-paragraph">Everyone boosting our Discord server. Boost it and connect Discord here to get your own card.</p>
-                                <!-- Supporter cards go here: everyone with the Supporter role, edited in Management > Supporter Card Editor. -->
+                                <p class="section-paragraph">Everyone boosting our Discord server, and others who help out. Boost it and connect Discord here to get your own card.</p>
+                                <!-- Supporter cards go here: everyone with the Supporter role, then cards added by hand; edited in Management > Supporter Card Editor. -->
                             </div>
 
                             <div id="about-detail" style="display: none;"></div>
@@ -864,7 +864,10 @@
                                 <div id="sm-status" class="pm-status" style="display: none;"></div>
 
                                 <div class="setting-container">
-                                    <div class="setting-label">Cards</div>
+                                    <div class="spaced-out">
+                                        <div class="setting-label">Cards</div>
+                                        <button id="sm-new" class="setting-button" style="display: none;">New Card</button>
+                                    </div>
                                     <div class="setting-label-small">Everyone boosting the Discord server gets a card on the About Us page. Its name and picture come from their Discord profile and update whenever they log in here.</div>
                                     <div class="horizontal-break"></div>
 
@@ -876,6 +879,38 @@
                                 <h3 id="sm-editor-title" class="main-header">Editor</h3>
 
                                 <div class="section-container">
+                                    <!-- Cards added by hand only (the Founder): who they are until they log in with Discord. -->
+                                    <div id="sm-manual-fields" class="column-5" style="display: none;">
+                                        <div class="pm-field-row">
+                                            <div class="setting-container">
+                                                <div class="setting-label">Name</div>
+                                                <input id="sm-name" class="input-field pm-input" type="text" maxlength="64" placeholder="Paddy-V">
+                                            </div>
+
+                                            <div class="setting-container">
+                                                <div class="setting-label">Discord ID</div>
+                                                <input id="sm-discord-id" class="input-field pm-input" type="text" inputmode="numeric" maxlength="20" placeholder="Optional">
+                                            </div>
+                                        </div>
+                                        <div class="setting-label-small">With a Discord ID, their own name and picture replace these once they log in here.</div>
+
+                                        <div class="setting-container">
+                                            <div class="setting-label">Picture</div>
+                                            <div class="setting-label-small">Optional. Square images look best.</div>
+                                            <input id="sm-image" class="input-field pm-input" type="text" placeholder="images/uploads/example.png">
+                                            <div class="setting-input-holder pm-add-row">
+                                                <button id="sm-image-upload" class="setting-button">Upload Image</button>
+                                                <input id="sm-image-file" type="file" accept="image/png,image/jpeg,image/gif,image/webp" style="display: none;">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div id="sm-support-field" class="setting-container" style="display: none;">
+                                        <div class="setting-label">How They Support</div>
+                                        <div class="setting-label-small">Optional, like "Artist". Shown in the card's corner instead of how long they've been boosting.</div>
+                                        <input id="sm-support" class="input-field pm-input" type="text" maxlength="64" placeholder="Artist">
+                                    </div>
+
                                     <div class="setting-container">
                                         <div class="setting-label">Tagline</div>
                                         <div class="setting-label-small">Optional, one line of plain text (up to 140 characters). Leave it empty for the default.</div>
@@ -909,7 +944,9 @@
                                     <div class="horizontal-break"></div>
 
                                     <div class="spaced-out">
-                                        <div></div>
+                                        <div>
+                                            <button id="sm-delete" class="setting-button-danger" style="display: none;">Delete</button>
+                                        </div>
 
                                         <div>
                                             <button id="sm-cancel" class="setting-button">Cancel</button>
@@ -954,12 +991,17 @@
                                     </div>
 
                                     <div class="setting-container">
-                                        <div class="setting-label">Image</div>
-                                        <div class="setting-label-small">Optional. Shown beside your text; square images look best.</div>
-                                        <input id="am-image" class="input-field pm-input" type="text" placeholder="images/about/example.png">
-                                        <div class="setting-input-holder pm-add-row">
-                                            <button id="am-image-upload" class="setting-button">Upload Image</button>
-                                            <input id="am-image-file" type="file" accept="image/png,image/jpeg,image/gif,image/webp" style="display: none;">
+                                        <div class="setting-label">Picture</div>
+                                        <div class="setting-label-small">Your Discord profile picture, shown on your card and beside your text. It updates whenever you log in here.</div>
+
+                                        <!-- The Founder only (about.manage): for blocks whose owner hasn't logged in here yet. -->
+                                        <div id="am-image-fields" style="display: none;">
+                                            <div class="setting-label-small">Until they log in, the block shows this picture instead. Optional; square images look best.</div>
+                                            <input id="am-image" class="input-field pm-input" type="text" placeholder="images/uploads/example.png">
+                                            <div class="setting-input-holder pm-add-row">
+                                                <button id="am-image-upload" class="setting-button">Upload Image</button>
+                                                <input id="am-image-file" type="file" accept="image/png,image/jpeg,image/gif,image/webp" style="display: none;">
+                                            </div>
                                         </div>
                                     </div>
 

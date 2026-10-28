@@ -146,15 +146,18 @@ function renderAboutCard(member) {
     return card;
 }
 
-// A supporter card is all there is, so it doesn't click: their tagline, and how long they've
-// been boosting where staff cards say "Read more". Top-level for the Supporter Card Editor preview.
+// A supporter card is all there is, so it doesn't click: their tagline, and where staff cards
+// say "Read more", how they support ("Artist", from the Founder) or else how long they've been
+// boosting. Top-level for the Supporter Card Editor preview.
 function renderSupporterCard(member) {
     const { card, text } = aboutCardBase("div", member);
     card.classList.add("about-card-static");
     aboutCardText(
         text,
-        member.tagline || "Supporting Paddy's Dreamland by boosting our Discord server.",
-        member.boostingSince ? `Boosting since ${aboutMonth(member.boostingSince)}` : ""
+        member.tagline || (member.boostingSince
+            ? "Supporting Paddy's Dreamland by boosting our Discord server."
+            : "Supporting Paddy's Dreamland."),
+        member.support || (member.boostingSince ? `Boosting since ${aboutMonth(member.boostingSince)}` : "")
     );
     return card;
 }

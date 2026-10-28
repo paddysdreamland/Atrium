@@ -10,6 +10,24 @@ const PD_SUPPORTER_MAX_AGE_DAYS = 60;
 
 const PD_SUPPORTER_TAGLINE_MAX = 140; // characters; the card shows about three lines
 
+/**
+ * A card's picture: the owner's Discord avatar, which follows every login, or null if they've
+ * never logged in here (cards then use the picture the Founder set, if any). The site's own copy
+ * when there is one (see pd_save_avatar in auth/callback.php), else Discord's link; 256px, so
+ * the 128px picture beside a staff block stays sharp.
+ *
+ * The copies are saved on the main site, where every login lands, so they're linked there in
+ * full: staging doesn't have them. $row needs discord_id, has_login, avatar_hash and avatar_file.
+ */
+function pd_about_avatar(array $row): ?string {
+    if (!$row['has_login']) {
+        return null;
+    }
+    return $row['avatar_file']
+        ? 'https://' . PD_SITE_HOSTS[0] . '/' . $row['avatar_file']
+        : pd_avatar_url((string) $row['discord_id'], $row['avatar_hash'], 256);
+}
+
 /** The card's tag: the highest PD staff role in a site_roles snapshot ("founder,moderator" -> "Founder"). */
 function pd_about_role(?string $siteRoles): ?string {
     $held = explode(',', (string) $siteRoles);
@@ -92,24 +110,46 @@ function pd_about_clean_flags($pride, $languages): ?string {
 /* Supporters */
 
 /**
- * Everyone whose last login found the Supporter role, longest-boosting first, or just one account.
- * Their name and picture come straight from pd_users, so they follow every login; pd_supporters
- * only adds what they wrote. inStaff: they have a staff block, which shows them instead.
+ * Every supporter card: everyone whose last login found the Supporter role (longest-boosting
+ * first), then the cards added by hand for people who aren't boosting (by name). Or just one card,
+ * by its pd_supporters id or by Discord account ($by = 'id' | 'discord_id').
+ *
+ * Anyone who has logged in is named and pictured from pd_users, so that follows every login;
+ * pd_supporters adds what they wrote, and for cards added by hand, the name and picture to show
+ * until then. id is null for a booster who hasn't changed anything yet. inStaff: they have a
+ * staff block, which shows them instead.
  */
-function pd_supporter_rows(PDO $pdo, ?string $id = null): array {
-    $sql = 'SELECT u.discord_id, COALESCE(NULLIF(u.global_name, \'\'), u.username) AS name, u.avatar_hash,
-                   u.site_roles, u.boosting_since, s.tagline, s.flags,
-                   COALESCE(s.hidden, 0) AS hidden, COALESCE(s.removed, 0) AS removed, s.updated_at,
-                   (a.discord_id IS NOT NULL) AS in_staff
-              FROM pd_users u
-              LEFT JOIN pd_supporters s ON s.discord_id = u.discord_id
-              LEFT JOIN pd_about a ON a.discord_id = u.discord_id
-             WHERE FIND_IN_SET(\'supporter\', u.site_roles)
-               AND u.roles_checked_at > DATE_SUB(NOW(), INTERVAL ? DAY)'
-         . ($id !== null ? ' AND u.discord_id = ?' : '')
-         . ' ORDER BY u.boosting_since IS NULL, u.boosting_since, name';
+function pd_supporter_rows(PDO $pdo, ?string $by = null, $value = null): array {
+    $boosting = 'COALESCE(FIND_IN_SET(\'supporter\', u.site_roles) > 0
+                          AND u.roles_checked_at > DATE_SUB(NOW(), INTERVAL ? DAY), 0)';
+    $columns  = 's.id, COALESCE(u.discord_id, s.discord_id) AS discord_id, COALESCE(s.manual, 0) AS manual,
+                 COALESCE(NULLIF(u.global_name, \'\'), u.username, s.name) AS name,
+                 s.name AS fallback_name, s.image AS fallback_image, s.support,
+                 (u.discord_id IS NOT NULL) AS has_login, u.avatar_hash, u.avatar_file, u.site_roles,
+                 s.tagline, s.flags, COALESCE(s.hidden, 0) AS hidden, COALESCE(s.removed, 0) AS removed,
+                 s.updated_at, (a.discord_id IS NOT NULL) AS in_staff';
+
+    $sql = "SELECT * FROM (
+                SELECT {$columns}, 1 AS boosting, u.boosting_since
+                  FROM pd_users u
+                  LEFT JOIN pd_supporters s ON s.discord_id = u.discord_id
+                  LEFT JOIN pd_about a ON a.discord_id = u.discord_id
+                 WHERE {$boosting}
+                UNION ALL
+                SELECT {$columns}, 0 AS boosting, NULL AS boosting_since
+                  FROM pd_supporters s
+                  LEFT JOIN pd_users u ON u.discord_id = s.discord_id
+                  LEFT JOIN pd_about a ON a.discord_id = s.discord_id
+                 WHERE s.manual = 1 AND NOT {$boosting}
+            ) c"
+         . ($by === 'id' ? ' WHERE c.id = ?' : ($by === 'discord_id' ? ' WHERE c.discord_id = ?' : ''))
+         . ' ORDER BY c.boosting DESC, c.boosting_since IS NULL, c.boosting_since, c.name';
+    $params = [PD_SUPPORTER_MAX_AGE_DAYS, PD_SUPPORTER_MAX_AGE_DAYS];
+    if ($by !== null) {
+        $params[] = $value;
+    }
     $stmt = $pdo->prepare($sql);
-    $stmt->execute($id !== null ? [PD_SUPPORTER_MAX_AGE_DAYS, $id] : [PD_SUPPORTER_MAX_AGE_DAYS]);
+    $stmt->execute($params);
     return $stmt->fetchAll();
 }
 
@@ -118,10 +158,11 @@ function pd_supporter_card(array $row): array {
     $flags = pd_about_flags($row['flags']);
     return [
         'name'          => $row['name'],
-        'image'         => pd_avatar_url((string) $row['discord_id'], $row['avatar_hash']),
+        'image'         => pd_about_avatar($row) ?? $row['fallback_image'],
         'role'          => pd_about_role($row['site_roles']), // staff without a block of their own
         'supporter'     => true,
-        'boostingSince' => $row['boosting_since'] !== null ? substr($row['boosting_since'], 0, 7) : null, // "2025-03"
+        'boostingSince' => $row['boosting'] && $row['boosting_since'] !== null ? substr($row['boosting_since'], 0, 7) : null, // "2025-03"
+        'support'       => (string) $row['support'], // shown in place of boostingSince
         'tagline'       => (string) $row['tagline'],
         'pride'         => $flags['pride'],
         'languages'     => $flags['languages'],

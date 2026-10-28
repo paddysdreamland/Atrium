@@ -82,6 +82,14 @@ $stmt->execute([
     ':checked'     => $siteRoles === null ? 0 : 1,
 ]);
 
+// 5b) Keep the site's own copy of their avatar for About Us cards. Never blocks the login:
+//     without a copy, cards use Discord's link instead.
+try {
+    pd_save_avatar($pdo, (string) $me['id'], $me['avatar'] ?? null);
+} catch (Throwable $e) {
+    // no copy this time
+}
+
 // 6) Create OUR session: store only the hash, hand the raw token to the cookie.
 $sessionToken = bin2hex(random_bytes(32));
 $tokenHash    = hash('sha256', $sessionToken);
@@ -102,3 +110,66 @@ pd_clear_cookie('pd_oauth_return');
 $target = pd_safe_return_url($return, $appUrl) ?? ($appUrl . '/');
 header('Location: ' . $target);
 exit;
+
+/**
+ * Save the user's Discord avatar (256px; GIFs stay animated) to images/uploads/<id>/ and point
+ * pd_users.avatar_file at it, so cards don't depend on Discord keeping old avatars or being up.
+ * Discord always sends logins to the main site, so the copies live there (see pd_about_avatar).
+ * Downloads only when the avatar changed, and deletes the old copy. No avatar, or a failed
+ * download: no copy, and cards use Discord's link.
+ */
+function pd_save_avatar(PDO $pdo, string $id, ?string $hash): void {
+    $stmt = $pdo->prepare('SELECT avatar_file FROM pd_users WHERE discord_id = ?');
+    $stmt->execute([$id]);
+    $old  = $stmt->fetchColumn() ?: null;
+    $root = dirname(__DIR__);
+    $new  = null;
+
+    if ($hash !== null && ctype_digit($id) && preg_match('/^(a_)?[a-f0-9]{32}$/', $hash)) {
+        $ext  = strpos($hash, 'a_') === 0 ? 'gif' : 'png';
+        // Named after the avatar, so an unchanged one is already here. 24 hex characters: the
+        // only names images/uploads/.htaccess serves.
+        $file = "images/uploads/{$id}/" . substr(hash('sha256', $hash), 0, 24) . ".{$ext}";
+        $new  = is_file("{$root}/{$file}") || pd_download_avatar("https://cdn.discordapp.com/avatars/{$id}/{$hash}.{$ext}?size=256", "{$root}/{$file}", $ext)
+            ? $file
+            : null;
+    }
+
+    if ($new === $old) {
+        return;
+    }
+    $pdo->prepare('UPDATE pd_users SET avatar_file = ? WHERE discord_id = ?')->execute([$new, $id]);
+    if ($old !== null && preg_match('#^images/uploads/\d+/[a-f0-9]{24}\.(png|gif)$#', $old)) {
+        @unlink("{$root}/{$old}");
+    }
+}
+
+/** Download one avatar to $dest, only if it really is a PNG/GIF (by $ext) under 8 MB. */
+function pd_download_avatar(string $url, string $dest, string $ext): bool {
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 5, CURLOPT_FOLLOWLOCATION => false]);
+    $data   = curl_exec($ch);
+    $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if (!is_string($data) || $status !== 200 || strlen($data) > 8 * 1024 * 1024) {
+        return false;
+    }
+    $info = @getimagesizefromstring($data);
+    if (!$info || $info[2] !== ($ext === 'gif' ? IMAGETYPE_GIF : IMAGETYPE_PNG)) {
+        return false;
+    }
+
+    $dir = dirname($dest);
+    if (!is_dir($dir) && !@mkdir($dir, 0755, true) && !is_dir($dir)) {
+        return false;
+    }
+    // Written under a temporary name first, so a half-written file is never served.
+    $tmp = $dest . '.tmp';
+    if (file_put_contents($tmp, $data) !== strlen($data) || !rename($tmp, $dest)) {
+        @unlink($tmp);
+        return false;
+    }
+    @chmod($dest, 0644);
+    return true;
+}

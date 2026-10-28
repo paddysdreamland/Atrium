@@ -10,6 +10,7 @@ const am = {
     canManage: false,
     ownId: "",
     displayName: "",
+    avatarUrl: "", // your Discord avatar, for your new block's preview
     blocks: [],
     flagOptions: {}, // name => path of every flag the server accepts
     draft: null,  // the block being edited, in the editor/API shape
@@ -33,6 +34,7 @@ function amOnAuth(data) {
     const permissions = (data && data.authenticated && data.permissions) || [];
     am.canManage = permissions.includes("about.manage");
     am.displayName = (data && data.user && data.user.displayName) || "";
+    am.avatarUrl = (data && data.user && data.user.avatarUrl) || "";
 
     if (permissions.includes("about.edit")) amLoad();
 }
@@ -94,9 +96,11 @@ function amOpenEditor(block) {
             // Your own block first; after that, a new one is the Founder adding someone else's.
             discordId: amHasOwnBlock() ? "" : am.ownId,
             name: amHasOwnBlock() ? "" : am.displayName,
-            image: "",
-            role: null, // from the owner's Discord roles; the server fills these two in on save
+            image: amHasOwnBlock() ? "" : am.avatarUrl, // their Discord avatar; the server fills these four in on save
+            hasLogin: !amHasOwnBlock(),
+            role: null, // from the owner's Discord roles
             supporter: false,
+            fallbackImage: "", // the Founder's picture, until they log in
             pride: [],
             languages: [],
             sortOrder: am.blocks.reduce((max, b) => Math.max(max, b.sortOrder), 0) + 1,
@@ -106,11 +110,12 @@ function amOpenEditor(block) {
 
     document.getElementById("am-editor-title").textContent = am.isNew ? "New Block" : "Edit Block";
     document.getElementById("am-name").value = am.draft.name;
-    document.getElementById("am-image").value = am.draft.image || "";
     document.getElementById("am-discord-id").value = am.draft.discordId;
     document.getElementById("am-discord-id").disabled = !am.isNew; // the account a block belongs to is fixed once created
     document.getElementById("am-order").value = am.draft.sortOrder;
     document.getElementById("am-manager-fields").style.display = am.canManage ? "" : "none";
+    document.getElementById("am-image-fields").style.display = am.canManage ? "" : "none";
+    document.getElementById("am-image").value = am.draft.fallbackImage;
     document.getElementById("am-hidden").checked = am.draft.hidden;
     document.getElementById("am-delete").style.display = am.isNew ? "none" : "";
 
@@ -207,10 +212,14 @@ function amRenderPreview() {
     if (!am.draft) return;
 
     // Same renderers as the public About Us page (pd_about.js): the card, then the block it opens.
-    // See pmRenderPreview. Flags are always ones the server listed, so they exist.
+    // See pmRenderPreview. Flags are always ones the server listed, so they exist. Once the owner
+    // has logged in, the picture is their Discord avatar from the server; until then, the
+    // Founder's, but only a path the server would accept (see pmPreviewBody).
     const member = {
         name: am.draft.name,
-        image: pmValidPath(am.draft.image, "png|jpe?g|gif|webp") ? am.draft.image : "",
+        image: am.draft.hasLogin
+            ? am.draft.image || ""
+            : pmValidPath(am.draft.fallbackImage, "png|jpe?g|gif|webp") ? am.draft.fallbackImage : "",
         role: am.draft.role,
         supporter: am.draft.supporter,
         pride: am.draft.pride,
@@ -235,8 +244,8 @@ async function amUploadImage(file) {
 
     try {
         pmStatus("Uploading…", "", "am-status");
-        am.draft.image = await pmUploadImage(file);
-        document.getElementById("am-image").value = am.draft.image;
+        am.draft.fallbackImage = await pmUploadImage(file);
+        document.getElementById("am-image").value = am.draft.fallbackImage;
         amRenderPreview();
         pmStatus("Uploaded. Remember to save.", "", "am-status");
     } catch (err) {
@@ -293,10 +302,6 @@ document.addEventListener("DOMContentLoaded", function () {
         am.draft.name = e.target.value;
         amRenderPreview();
     });
-    document.getElementById("am-image").addEventListener("input", (e) => {
-        am.draft.image = e.target.value.trim();
-        amRenderPreviewSoon();
-    });
     document.getElementById("am-discord-id").addEventListener("input", (e) => {
         am.draft.discordId = e.target.value.trim();
     });
@@ -305,6 +310,10 @@ document.addEventListener("DOMContentLoaded", function () {
     });
     document.getElementById("am-hidden").addEventListener("change", (e) => {
         am.draft.hidden = e.target.checked;
+    });
+    document.getElementById("am-image").addEventListener("input", (e) => {
+        am.draft.fallbackImage = e.target.value.trim();
+        amRenderPreviewSoon();
     });
 
     const picker = document.getElementById("am-image-file");
