@@ -1,7 +1,10 @@
 <?php
 declare(strict_types=1);
 
-// php/pd_about.php  —  the visible About Us blocks, in page order (written in pd_about_admin.php).
+// php/pd_about.php  —  the About Us page: {"staff": [...], "supporters": [...]}.
+// Staff are the visible blocks in page order (written in pd_about_admin.php); supporters are
+// everyone with the Supporter role (see pd_supporter_rows), minus hidden cards and anyone
+// already shown as staff.
 
 $config = require dirname(__DIR__, 2) . '/private/pd_config.php';
 require dirname(__DIR__, 2) . '/private/pd_lib.php';
@@ -11,7 +14,7 @@ header('Content-Type: application/json');
 
 $pdo = pd_db($config);
 
-// The owner's roles come from their last login, for the card's tag.
+// The owner's roles come from their last login, for the card's tags.
 $rows = $pdo->query(
     'SELECT a.name, a.image, a.flags, a.body, u.site_roles
        FROM pd_about a
@@ -20,16 +23,25 @@ $rows = $pdo->query(
       ORDER BY a.sort_order, a.name'
 )->fetchAll(PDO::FETCH_ASSOC);
 
-$members = array_map(static function (array $row): array {
+$staff = array_map(static function (array $row): array {
     $flags = pd_about_flags($row['flags']);
     return [
         'name'      => $row['name'],
         'image'     => $row['image'],
         'role'      => pd_about_role($row['site_roles']),
+        'supporter' => pd_about_is_supporter($row['site_roles']),
         'pride'     => $flags['pride'],
         'languages' => $flags['languages'],
         'body'      => json_decode($row['body'], true) ?? [],
     ];
 }, $rows);
 
-echo json_encode($members);
+$supporters = array_values(array_filter(
+    pd_supporter_rows($pdo),
+    static fn (array $row): bool => !$row['in_staff'] && !$row['hidden'] && !$row['removed']
+));
+
+echo json_encode([
+    'staff'      => $staff,
+    'supporters' => array_map('pd_supporter_card', $supporters),
+]);

@@ -134,6 +134,7 @@ function pd_about_admin_row(array $row): array {
         'name'      => $row['name'],
         'image'     => $row['image'],
         'role'      => pd_about_role($row['site_roles']), // read-only, for the preview
+        'supporter' => pd_about_is_supporter($row['site_roles']),
         'pride'     => $flags['pride'],
         'languages' => $flags['languages'],
         'body'      => json_decode((string) $row['body'], true) ?? [],
@@ -172,27 +173,6 @@ function pd_about_clean($b): array {
         }
     }
 
-    // Up to 3 pride and 3 language flags, stored as one list (pride first). Only flags that exist
-    // (see pd_about_flag_options), so a card never asks for a missing file.
-    $flagPaths = pd_about_flag_options();
-    $flags     = [];
-    foreach (['pride' => 'pride', 'languages' => 'language'] as $key => $label) {
-        $list = $b[$key] ?? [];
-        if (!is_array($list) || count($list) > 3) {
-            pd_json_error(422, 'invalid', "Pick at most 3 {$label} flags.");
-        }
-        foreach ($list as $flag) {
-            if (!in_array($flag, $flagPaths, true)) {
-                pd_json_error(422, 'invalid', 'One of the flags no longer exists on the site.');
-            }
-            if (pd_about_is_pride_flag($flag) !== ($key === 'pride')) {
-                pd_json_error(422, 'invalid', "A flag was picked as the wrong kind ({$label}).");
-            }
-            $flags[] = $flag;
-        }
-    }
-    $flags = array_values(array_unique($flags));
-
     $sortOrder = filter_var($b['sortOrder'] ?? 0, FILTER_VALIDATE_INT, ['options' => ['min_range' => -9999, 'max_range' => 9999]]);
     if ($sortOrder === false) {
         pd_json_error(422, 'invalid', 'Order must be a whole number between -9999 and 9999.');
@@ -202,7 +182,7 @@ function pd_about_clean($b): array {
         'discordId' => $discordId,
         'name'      => $name,
         'image'     => $image !== '' ? $image : null,
-        'flags'     => $flags ? json_encode($flags) : null,
+        'flags'     => pd_about_clean_flags($b['pride'] ?? [], $b['languages'] ?? []),
         'body'      => pd_blocks_clean($b['body'] ?? null),
         'sortOrder' => $sortOrder,
         'hidden'    => !empty($b['hidden']) ? 1 : 0,

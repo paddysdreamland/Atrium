@@ -23,6 +23,7 @@
         <script src="scripts/pd_about.js" defer></script>
         <script src="scripts/pd_manage.js" defer></script>
         <script src="scripts/pd_about_manage.js" defer></script>
+        <script src="scripts/pd_supporter_manage.js" defer></script>
         <script src="scripts/pd_imageviewer.js" defer></script>
 
         <script src="scripts/pd_customization.js" defer></script>
@@ -362,7 +363,17 @@
                         <div class="section-wrapper">
                             <h3 class="main-header">About Us</h3>
 
-                            <!-- Filled from the database by pd_about.js; edited in Management > About Us Editor. -->
+                            <!-- Both lists are filled from the database by pd_about.js. -->
+                            <div id="about-list" class="app-buttons-wrapper app-buttons-grid">
+                                <h4 class="section-header">Our Staff</h4>
+                                <!-- Staff cards go here; edited in Management > About Us Editor. -->
+
+                                <h4 id="about-supporters-header" class="section-header">Our Supporters</h4>
+                                <p class="section-paragraph">Everyone boosting our Discord server. Boost it and connect Discord here to get your own card.</p>
+                                <!-- Supporter cards go here: everyone with the Supporter role, edited in Management > Supporter Card Editor. -->
+                            </div>
+
+                            <div id="about-detail" style="display: none;"></div>
                         </div>
                     </section>
     
@@ -777,7 +788,7 @@
                         </div>
                     </section>
 
-                    <!-- Management: only revealed by pd_manage.js for Moderators and up; the server enforces it regardless. -->
+                    <!-- Management: only revealed by pd_manage.js for Supporters and Moderators and up; the server enforces it regardless. -->
                     <section id="manage-section" style="display: none;">
                         <div class="section-wrapper">
                             <h3 class="main-header">Management</h3>
@@ -785,7 +796,7 @@
                             <div class="section-container">
                                 <h4 class="section-header">Information</h4>
 
-                                <p class="section-paragraph">Tools for the staff of Paddy's Dreamland. Access comes from your roles on the Discord server, which are re-checked whenever you log in.</p>
+                                <p class="section-paragraph">Tools for the staff and supporters of Paddy's Dreamland. Access comes from your roles on the Discord server, which are re-checked whenever you log in.</p>
 
                                 <h4 class="section-header">Tools</h4>
                             </div>
@@ -824,6 +835,92 @@
                                         </div>
                                     </div>
                                 </button>
+
+                                <button id="supportercard-button" class="app-button-wrapper" style="display: none;" title="Supporter Card Editor: Add a tagline and flags to your card on the About Us page.">
+                                    <div class="app-icon-wrapper">
+                                        <div class="app-icon-image" style="background-image: url(images/silk/heart.png);"></div>
+                                    </div>
+
+                                    <div class="app-text-wrapper column-4">
+                                        <div class="app-title-wrapper">
+                                            <div class="app-title-text">Supporter Card Editor</div>
+                                            <div class="app-title-tag about-tag-supporter">SUPPORTER</div>
+                                        </div>
+
+                                        <div class="app-desc-wrapper">
+                                            <div class="app-desc-text">Add a tagline and flags to your card on the About Us page.</div>
+                                        </div>
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section id="supportercard-section" style="display: none;">
+                        <div class="section-wrapper">
+                            <h3 class="main-header">Supporter Card Editor</h3>
+
+                            <div class="section-container">
+                                <div id="sm-status" class="pm-status" style="display: none;"></div>
+
+                                <div class="setting-container">
+                                    <div class="setting-label">Cards</div>
+                                    <div class="setting-label-small">Everyone boosting the Discord server gets a card on the About Us page. Its name and picture come from their Discord profile and update whenever they log in here.</div>
+                                    <div class="horizontal-break"></div>
+
+                                    <div id="sm-list" class="pm-list"></div>
+                                </div>
+                            </div>
+
+                            <div id="sm-editor" class="section-wrapper" style="display: none;">
+                                <h3 id="sm-editor-title" class="main-header">Editor</h3>
+
+                                <div class="section-container">
+                                    <div class="setting-container">
+                                        <div class="setting-label">Tagline</div>
+                                        <div class="setting-label-small">Optional, one line of plain text (up to 140 characters). Leave it empty for the default.</div>
+                                        <input id="sm-tagline" class="input-field pm-input" type="text" maxlength="140" placeholder="Supporting Paddy's Dreamland by boosting our Discord server.">
+                                    </div>
+
+                                    <div class="pm-field-row">
+                                        <div class="setting-container">
+                                            <div class="setting-label">Pride Flags</div>
+                                            <div class="setting-label-small">Optional, up to 3. Click a flag to remove it.</div>
+                                            <div id="sm-pride" class="am-flag-list"></div>
+                                            <select id="sm-pride-pick" class="input-field pm-input"></select>
+                                        </div>
+
+                                        <div class="setting-container">
+                                            <div class="setting-label">Languages</div>
+                                            <div class="setting-label-small">Optional, up to 3: a country flag for each language you speak.</div>
+                                            <div id="sm-languages" class="am-flag-list"></div>
+                                            <select id="sm-languages-pick" class="input-field pm-input"></select>
+                                        </div>
+                                    </div>
+
+                                    <div class="setting-container">
+                                        <div class="setting-label">Visibility</div>
+                                        <div class="music-label-list">
+                                            <label class="music-label"><input id="sm-hidden" type="checkbox"> Hide this card</label>
+                                            <label id="sm-removed-label" class="music-label" style="display: none;"><input id="sm-removed" type="checkbox"> Taken down (only the Founder can undo this)</label>
+                                        </div>
+                                    </div>
+
+                                    <div class="horizontal-break"></div>
+
+                                    <div class="spaced-out">
+                                        <div></div>
+
+                                        <div>
+                                            <button id="sm-cancel" class="setting-button">Cancel</button>
+                                            <button id="sm-save" class="setting-button">Save</button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <h3 class="main-header">Preview</h3>
+
+                                <div id="sm-preview"></div>
                             </div>
                         </div>
                     </section>

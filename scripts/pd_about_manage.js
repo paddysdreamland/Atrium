@@ -95,7 +95,8 @@ function amOpenEditor(block) {
             discordId: amHasOwnBlock() ? "" : am.ownId,
             name: amHasOwnBlock() ? "" : am.displayName,
             image: "",
-            role: null, // from the owner's Discord roles; the server fills it in on save
+            role: null, // from the owner's Discord roles; the server fills these two in on save
+            supporter: false,
             pride: [],
             languages: [],
             sortOrder: am.blocks.reduce((max, b) => Math.max(max, b.sortOrder), 0) + 1,
@@ -113,8 +114,7 @@ function amOpenEditor(block) {
     document.getElementById("am-hidden").checked = am.draft.hidden;
     document.getElementById("am-delete").style.display = am.isNew ? "none" : "";
 
-    amRenderFlags("pride");
-    amRenderFlags("languages");
+    ["pride", "languages"].forEach(kind => amRenderFlags("am", am.draft, kind, am.flagOptions, amRenderPreview));
     pmRenderBlocks(document.getElementById("am-blocks"), am.draft.body, AM_EDITOR);
     amRenderPreview();
     pmStatus("", "", "am-status");
@@ -144,10 +144,17 @@ function amFlagLabel(name) {
     return amFlagKind(name) === "languages" && label.toLowerCase() !== name ? `${label} (${name})` : label;
 }
 
-// One kind's chosen flags as removable chips, and its picker with the rest of that kind.
-function amRenderFlags(kind) {
-    const chosen = am.draft[kind];
-    const list = document.getElementById(`am-${kind}`);
+// One kind's chosen flags (draft[kind]) as removable chips in #<prefix>-<kind>, and its picker
+// #<prefix>-<kind>-pick with the rest of that kind; onChange runs after either changes them.
+// Shared with the Supporter Card Editor (pd_supporter_manage.js).
+function amRenderFlags(prefix, draft, kind, flagOptions, onChange) {
+    const chosen = draft[kind];
+    const redraw = () => {
+        amRenderFlags(prefix, draft, kind, flagOptions, onChange);
+        onChange();
+    };
+
+    const list = document.getElementById(`${prefix}-${kind}`);
     list.replaceChildren();
     chosen.forEach((path, i) => {
         const chip = pmEl("button", "pm-badge am-flag-chip");
@@ -158,21 +165,26 @@ function amRenderFlags(kind) {
         chip.append(img, aboutFlagName(path));
         chip.addEventListener("click", () => {
             chosen.splice(i, 1);
-            amRenderFlags(kind);
-            amRenderPreview();
+            redraw();
         });
         list.append(chip);
     });
 
-    const picker = document.getElementById(`am-${kind}-pick`);
+    const picker = document.getElementById(`${prefix}-${kind}-pick`);
+    picker.onchange = () => {
+        const path = flagOptions[picker.value];
+        if (!path) return;
+        chosen.push(path);
+        redraw();
+    };
     const full = chosen.length >= AM_MAX_FLAGS;
     const placeholder = pmEl("option", "", full ? `That's ${AM_MAX_FLAGS}, the most a card can show.` : "Add a flag…");
     placeholder.value = "";
     picker.replaceChildren(placeholder);
     picker.disabled = full;
 
-    Object.keys(am.flagOptions)
-        .filter(name => amFlagKind(name) === kind && !chosen.includes(am.flagOptions[name]))
+    Object.keys(flagOptions)
+        .filter(name => amFlagKind(name) === kind && !chosen.includes(flagOptions[name]))
         .map(name => ({ name, label: amFlagLabel(name) }))
         .sort((a, b) => a.label.localeCompare(b.label))
         .forEach(({ name, label }) => {
@@ -200,6 +212,7 @@ function amRenderPreview() {
         name: am.draft.name,
         image: pmValidPath(am.draft.image, "png|jpe?g|gif|webp") ? am.draft.image : "",
         role: am.draft.role,
+        supporter: am.draft.supporter,
         pride: am.draft.pride,
         languages: am.draft.languages,
         body: pmPreviewBody(am.draft.body)
@@ -292,15 +305,6 @@ document.addEventListener("DOMContentLoaded", function () {
     });
     document.getElementById("am-hidden").addEventListener("change", (e) => {
         am.draft.hidden = e.target.checked;
-    });
-    ["pride", "languages"].forEach(kind => {
-        document.getElementById(`am-${kind}-pick`).addEventListener("change", (e) => {
-            const path = am.flagOptions[e.target.value];
-            if (!path) return;
-            am.draft[kind].push(path);
-            amRenderFlags(kind);
-            amRenderPreview();
-        });
     });
 
     const picker = document.getElementById("am-image-file");

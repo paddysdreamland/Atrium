@@ -55,17 +55,19 @@ $membership = pd_fetch_membership($token['access_token']);
 $siteRoles  = $membership['roles']  ?? null;
 $isMember   = $membership['member'] ?? false;
 
-// 5) Insert or update the user record (keyed on the stable Discord ID).
+// 5) Insert or update the user record (keyed on the stable Discord ID). The name and avatar
+//    are what Supporter cards on the About Us page show, so they stay current with each login.
 $pdo = pd_db($config);
 $stmt = $pdo->prepare(
-    'INSERT INTO pd_users (discord_id, username, global_name, avatar_hash, site_roles, is_member, roles_checked_at, last_login_at)
-          VALUES (:id, :username, :global_name, :avatar, :roles, :member, IF(:checked, NOW(), NULL), NOW())
+    'INSERT INTO pd_users (discord_id, username, global_name, avatar_hash, site_roles, is_member, boosting_since, roles_checked_at, last_login_at)
+          VALUES (:id, :username, :global_name, :avatar, :roles, :member, :boosting, IF(:checked, NOW(), NULL), NOW())
      ON DUPLICATE KEY UPDATE
           username         = VALUES(username),
           global_name      = VALUES(global_name),
           avatar_hash      = VALUES(avatar_hash),
           site_roles       = VALUES(site_roles),
           is_member        = VALUES(is_member),
+          boosting_since   = VALUES(boosting_since),
           roles_checked_at = VALUES(roles_checked_at),
           last_login_at    = NOW()'
 );
@@ -76,6 +78,7 @@ $stmt->execute([
     ':avatar'      => $me['avatar'] ?? null,
     ':roles'       => $siteRoles ?? '',
     ':member'      => $isMember ? 1 : 0,
+    ':boosting'    => $membership['boostingSince'] ?? null,
     ':checked'     => $siteRoles === null ? 0 : 1,
 ]);
 

@@ -1201,7 +1201,8 @@ li > a {
 .app-buttons-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-} .app-buttons-grid > .section-header {
+} .app-buttons-grid > .section-header,
+.app-buttons-grid > .section-paragraph {
     grid-column: 1 / -1;
 }
 
@@ -1368,6 +1369,19 @@ li > a {
     -webkit-line-clamp: 3;
     line-clamp: 3;
     overflow: hidden;
+}
+
+/* The Supporter tag, in Discord's server booster pink; staff who boost get it beside their role. */
+.about-tag-supporter {
+    background-color: rgba(224, 96, 224, 0.75);
+}
+
+/* Supporter cards don't open anything (pd_about.js), so they're a div that doesn't glow on hover.
+   The font size is a button's default, so their tags match the staff cards'. */
+.about-card-static {
+    font-size: 13.333px;
+} .about-card-static:hover {
+    filter: drop-shadow(0px 0px 8px rgba(255, 255, 255, 0.0));
 }
 
 /* Members without a picture get the silk user icon, kept small and sharp. */

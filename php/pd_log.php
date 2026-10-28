@@ -23,9 +23,10 @@ function pd_log_hit(): void {
 }
 
 /**
- * Whether this request comes from a logged-in Founder or Manager. Same database as the
+ * Whether this request comes from logged-in PD staff. Same database as the
  * Discord login: the pd_session cookie is a random token checked against its stored
- * hash, so it can't be forged. site_roles is only ever filled with PD staff roles.
+ * hash, so it can't be forged. site_roles holds PD staff roles plus "supporter"
+ * (server boosters), which doesn't count as staff here.
  */
 function pd_is_staff(PDO $pdo): bool {
     static $staff = null;
@@ -36,12 +37,13 @@ function pd_is_staff(PDO $pdo): bool {
 
     try {
         $stmt = $pdo->prepare(
-            "SELECT 1 FROM pd_sessions s
+            "SELECT u.site_roles FROM pd_sessions s
                JOIN pd_users u ON u.discord_id = s.discord_id
               WHERE s.token_hash = ? AND s.expires_at > NOW() AND u.site_roles <> ''
               LIMIT 1");
         $stmt->execute([hash('sha256', $token)]);
-        return $staff = (bool) $stmt->fetchColumn();
+        $roles = $stmt->fetchColumn();
+        return $staff = $roles !== false && array_diff(explode(',', (string) $roles), ['supporter']) !== [];
     } catch (Throwable $e) {
         return $staff = false;
     }

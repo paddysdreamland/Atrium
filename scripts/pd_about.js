@@ -48,17 +48,23 @@ function aboutFlagName(flag) {
     return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
-// Same markup as the toybox buttons, plus the picture as background, role tag, flags and
-// "Read more"; the description is clamped by .about-card-desc. Top-level for the editor preview.
-function renderAboutCard(member) {
-    const button = document.createElement("button");
-    button.className = "app-button-wrapper";
+// "2025-03" -> "March 2025".
+function aboutMonth(value) {
+    const [year, month] = value.split("-").map(Number);
+    return new Date(year, month - 1, 1).toLocaleString("en-GB", { month: "long", year: "numeric" });
+}
+
+// What every About Us card shares, in the toybox buttons' markup: the picture as background
+// and icon, then the name, tags and flags. Returns the card and its text column to finish.
+function aboutCardBase(tagName, member) {
+    const card = document.createElement(tagName);
+    card.className = "app-button-wrapper";
 
     if (member.image) {
         const background = document.createElement("div");
         background.className = "app-background";
         background.style.backgroundImage = `url("${member.image}")`;
-        button.appendChild(background);
+        card.appendChild(background);
     }
 
     const iconWrap = document.createElement("div");
@@ -67,7 +73,7 @@ function renderAboutCard(member) {
     icon.className = member.image ? "app-icon-image" : "app-icon-image about-card-noimage";
     icon.style.backgroundImage = `url("${member.image || "images/silk/user.png"}")`;
     iconWrap.appendChild(icon);
-    button.appendChild(iconWrap);
+    card.appendChild(iconWrap);
 
     const text = document.createElement("div");
     text.className = "app-text-wrapper column-4";
@@ -79,12 +85,15 @@ function renderAboutCard(member) {
     title.textContent = member.name;
     titleWrap.appendChild(title);
 
-    if (member.role) {
-        const tag = document.createElement("div");
-        tag.className = "app-title-tag";
-        tag.textContent = member.role;
-        titleWrap.appendChild(tag);
-    }
+    // Their staff role, then Supporter as a second tag if they boost the server too.
+    [[member.role, "app-title-tag"], [member.supporter && "Supporter", "app-title-tag about-tag-supporter"]]
+        .filter(([label]) => label)
+        .forEach(([label, className]) => {
+            const tag = document.createElement("div");
+            tag.className = className;
+            tag.textContent = label;
+            titleWrap.appendChild(tag);
+        });
 
     // Pride flags, then the languages they speak (one country flag each); CSS draws the line
     // between the groups, and an empty group isn't drawn at all.
@@ -108,44 +117,64 @@ function renderAboutCard(member) {
     }
 
     text.appendChild(titleWrap);
+    card.appendChild(text);
+    return { card, text };
+}
 
+// The description, clamped by .about-card-desc, and the corner note.
+function aboutCardText(text, description, corner) {
     const descWrap = document.createElement("div");
     descWrap.className = "app-desc-wrapper";
     const desc = document.createElement("div");
     desc.className = "app-desc-text about-card-desc";
-    desc.textContent = aboutSummary(member);
+    desc.textContent = description;
     descWrap.appendChild(desc);
     text.appendChild(descWrap);
 
-    const more = document.createElement("div");
-    more.className = "app-readmore";
-    more.textContent = "Read more";
-    text.appendChild(more);
+    if (corner) {
+        const note = document.createElement("div");
+        note.className = "app-readmore";
+        note.textContent = corner;
+        text.appendChild(note);
+    }
+}
 
-    button.appendChild(text);
-    return button;
+// A staff card: opens their block, so it's a button with "Read more". Top-level for the editor preview.
+function renderAboutCard(member) {
+    const { card, text } = aboutCardBase("button", member);
+    aboutCardText(text, aboutSummary(member), "Read more");
+    return card;
+}
+
+// A supporter card is all there is, so it doesn't click: their tagline, and how long they've
+// been boosting where staff cards say "Read more". Top-level for the Supporter Card Editor preview.
+function renderSupporterCard(member) {
+    const { card, text } = aboutCardBase("div", member);
+    card.classList.add("about-card-static");
+    aboutCardText(
+        text,
+        member.tagline || "Supporting Paddy's Dreamland by boosting our Discord server.",
+        member.boostingSince ? `Boosting since ${aboutMonth(member.boostingSince)}` : ""
+    );
+    return card;
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
-    let members;
+    let about;
     try {
         const response = await fetch("/php/pd_about");
         if (!response.ok) throw new Error(`Request failed: ${response.status}`);
-        members = await response.json();
+        about = await response.json();
     } catch (err) {
         console.error("Failed to load About Us:", err);
         return;
     }
 
-    const wrapper = document.querySelector("#about-section .section-wrapper");
-    if (!wrapper) return;
-
-    // Two views: everyone as cards, or one member's block on its own.
-    const list = document.createElement("div");
-    list.className = "app-buttons-wrapper app-buttons-grid";
-    const detail = document.createElement("div");
-    detail.style.display = "none";
-    wrapper.append(list, detail);
+    // Two views: everyone as cards under the two headers, or one staff member's block on its own.
+    const list = document.getElementById("about-list");
+    const detail = document.getElementById("about-detail");
+    const supportersHeader = document.getElementById("about-supporters-header");
+    if (!list || !detail || !supportersHeader) return;
 
     function showList() {
         detail.replaceChildren();
@@ -170,16 +199,17 @@ document.addEventListener("DOMContentLoaded", async () => {
         document.querySelector("#main-holder .main-scrollable")?.scrollTo(0, 0);
     }
 
-    // The endpoint already returns visible blocks, in page order.
-    members.forEach(member => {
+    // The endpoint already returns visible blocks, in page order, and supporters in theirs.
+    about.staff.forEach(member => {
         const card = renderAboutCard(member);
         // pd_default.js only gives the click sound to buttons that existed at load.
         card.addEventListener("click", () => {
             playSound("ME_Sound/UI/ME_ProgressionTree_Nav.wav", 0.125);
             showMember(member);
         });
-        list.appendChild(card);
+        supportersHeader.before(card);
     });
+    about.supporters.forEach(member => list.appendChild(renderSupporterCard(member)));
 
     // The nav button always lands on the list, even when a member is open.
     document.getElementById("about-button")?.addEventListener("click", showList);

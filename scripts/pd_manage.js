@@ -53,15 +53,18 @@ function pmOnAuth(data) {
 
     const canNews = pmCan("news.manage");
     const canAbout = pmCan("about.edit");
+    const canSupporter = pmCan("supporter.edit") || pmCan("supporter.manage");
     const access = {
-        "manage-section": canNews || canAbout,
+        "manage-section": canNews || canAbout || canSupporter,
         "newsmanager-section": canNews,
-        "aboutmanager-section": canAbout
+        "aboutmanager-section": canAbout,
+        "supportercard-section": canSupporter
     };
 
     document.getElementById("manage-holder").style.display = access["manage-section"] ? "" : "none";
     document.getElementById("newsmanager-button").style.display = canNews ? "" : "none";
     document.getElementById("aboutmanager-button").style.display = canAbout ? "" : "none";
+    document.getElementById("supportercard-button").style.display = canSupporter ? "" : "none";
 
     // Don't leave someone parked on a tool they can't use (e.g. restored from lastVisitedSection).
     const onLockedPage = Object.keys(access)
