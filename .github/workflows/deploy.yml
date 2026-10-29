@@ -304,7 +304,7 @@ jobs:
             subject = parts[0].strip()
             body = parts[1].strip() if len(parts) > 1 else ""
             if claude_pattern.search(body):
-              claude_name = "Claude"
+              claude_name = "A.R.I.A. ASTRAL"
               body = claude_pattern.sub("", body).strip()
             bodies.append(body or subject)
           body = "\n\n".join(b for b in bodies if b)
