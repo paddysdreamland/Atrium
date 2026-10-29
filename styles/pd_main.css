@@ -175,6 +175,24 @@
     font-style: italic;
 }
 
+/* Fonts - Europe Ext */
+@font-face {
+    font-family: "Europe Ext";
+    src: url(../fonts/EuropeExt/europeext.otf);
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Europe Ext";
+    src: url(../fonts/EuropeExt/europeext_bold.otf);
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+
+
 /* Fonts - Misc. */
 @font-face {
     font-family: "Querround";
@@ -268,8 +286,8 @@ button {
 .logo-holder {
     background-image: var(--holder-background-image);
     background-color: var(--holder-background-color);
-    width: 98px;
-    height: 98px;
+    width: 92px;
+    height: 92px;
     border-radius: var(--custom-border-radius);
 } .logo-holder::before {
     content: "";
@@ -340,8 +358,10 @@ button {
 }
 
 .primary-title {
-    font-family: "Querround";
-    font-size: 32px;
+    font-family: "Europe Ext";
+    font-weight: 700;
+    font-size: 40px;
+    text-transform: uppercase;
     border-radius: var(--custom-border-radius);
 } .primary-title::before {
     content: "";
@@ -384,6 +404,7 @@ button {
 }
 
 .secondary-title {
+    width: auto; min-height: 32px;
     font-family: "Lato";
     font-size: 16px;
     font-weight: 300;
@@ -574,8 +595,10 @@ button {
     background-image: var(--holder-background-image);
     background-color: var(--holder-background-color);
     border-radius: var(--custom-border-radius);
-    overflow: hidden;
+    width: auto; height: 32px;
+    padding: 4px;
     display: flex;
+    overflow: hidden;
     z-index: 2;
 } .nav-misc-holder::before {
     content: "";
@@ -613,9 +636,8 @@ button {
     background-color: transparent;
     background-position: center;
     background-repeat: no-repeat;
-    width: 32px;
-    height: 32px;
-    position: relative;
+    width: 24px; height: 24px;
+    border-radius: calc(var(--custom-border-radius) / 2);
     image-rendering: pixelated;
     transition: 0.0625s;
 } .nav-misc-button:hover {
@@ -624,6 +646,15 @@ button {
 } .nav-misc-button:active {
     opacity: 0.5;
     transition: 0.0625s;
+}
+
+.nav-misc-text > #visits {
+    width: auto; height: 24px;
+    font-family: "Europe Ext";
+    font-weight: 700; font-size: 12px;
+    padding: 0 4px;
+    display: flex;
+    align-items: center;
 }
 
 /* Navigation - Login */
@@ -2335,6 +2366,12 @@ pd-tag-error {
 
     .news-irrelevant {
         font-size: 12.4vw;
+    }
+}
+
+@media screen and (max-width: 900px) {
+    .app-buttons-grid {
+        display: flex;
     }
 }
 

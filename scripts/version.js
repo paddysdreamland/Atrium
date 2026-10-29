@@ -70,7 +70,7 @@ function profileLink(name, url) {
 function renderSignature(entry) {
     if (!entry.author || !entry.author.name) return "";
     const person = profileLink(entry.author.name, entry.author.url);
-    const claude = entry.claude ? `${profileLink("Claude", CLAUDE_PROFILE_URL)} with ` : "";
+    const claude = entry.claude ? `${profileLink("A.R.I.A. ASTRAL", CLAUDE_PROFILE_URL)} with ` : "";
     return `<p class="section-signature">— ${claude}${person}</p>`;
 }
 
