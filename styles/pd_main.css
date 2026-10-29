@@ -636,7 +636,7 @@ button {
     background-color: transparent;
     background-position: center;
     background-repeat: no-repeat;
-    width: 24px; height: 24px;
+    min-width: 24px; height: 24px;
     border-radius: calc(var(--custom-border-radius) / 2);
     image-rendering: pixelated;
     transition: 0.0625s;
@@ -648,13 +648,18 @@ button {
     transition: 0.0625s;
 }
 
+.nav-misc-button.text,
 .nav-misc-text > #visits {
     width: auto; height: 24px;
-    font-family: "Europe Ext";
-    font-weight: 700; font-size: 12px;
+    font-family: "Lato";
+    font-weight: 700; font-size: 14px;
     padding: 0 4px;
     display: flex;
     align-items: center;
+}
+
+.nav-misc-text > #visits {
+    font-weight: 900;
 }
 
 /* Navigation - Login */
@@ -724,7 +729,7 @@ button {
     font-family: "Tahoma";
     font-size: 12px;
     font-weight: 600;
-    padding: 0px 5px;
+    padding: 0px 10px;
     align-content: center;
 }
 
