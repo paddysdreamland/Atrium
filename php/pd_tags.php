@@ -6,6 +6,8 @@
 //   <temporary from="…" until="…">…</temporary>
 //                                        only shown from "from" until "until"; leave either out
 //                                        for "until further notice" or "starting now"
+//   <twitch-live>…</twitch-live>         only shown while Paddy is live on Twitch (pd_twitch.php
+//                                        asks Twitch at most once a minute)
 //
 // Times are anything PHP's DateTime reads, e.g. "2026-12-24", "2026-12-24 18:00" or
 // "@1798131600" (a Unix timestamp). Tags can be nested, also inside each other.
@@ -32,7 +34,8 @@
 // are only checked when the page loads.
 //
 // On staging, ?now=2026-12-24T18:00 shows the page as it will look at that time, and
-// ?tz=America/New_York as it looks in another timezone. A mistake (an unreadable time or a
+// ?tz=America/New_York as it looks in another timezone, and ?live=1 or ?live=0 as it looks with
+// the stream on or off (without asking Twitch). A mistake (an unreadable time or a
 // missing closing tag) shows up as a red note on staging, and as an HTML comment on the main site.
 //
 // Only pages served through PHP get this: index.php (pd_main.html). Static .html pages and
@@ -40,6 +43,8 @@
 // rules as "conditional" blocks (pd_blocks.php), using pd_tags_context() and pd_tags_when().
 //
 // Needs pd_staging.php (for pd_is_staging_host) to be loaded first.
+
+require_once __DIR__ . '/pd_twitch.php';
 
 const PD_TAGS_TIMEZONE    = 'Europe/Berlin';   // until the visitor's browser has told us theirs
 const PD_TAGS_ZONE_COOKIE = 'pd_tz';           // set by scripts/pd_tags.js
@@ -64,6 +69,15 @@ function pd_render_tags(string $html): string {
         return $when['endsIn'] === null
             ? $inner
             : '<pd-temporary data-ends-in="' . $when['endsIn'] . '">' . $inner . '</pd-temporary>';
+    });
+
+    // Last, so content another tag already cut out doesn't make us ask Twitch for nothing.
+    $html = pd_tags_resolve($html, 'twitch-live', $ctx['staging'], function (string $attrs, string $inner) use ($ctx) {
+        if ($ctx['livePreview'] !== null) return $ctx['livePreview'] ? $inner : '';
+
+        $twitch = pd_twitch_status();
+        $note   = $twitch['problem'] ? pd_tags_problem($ctx['staging'], "<twitch-live> is hidden, because {$twitch['problem']}") : '';
+        return $note . ($twitch['live'] ? $inner : '');
     });
 
     // Tell pd_tags.js which timezone this page was made for, so it can reload if that's wrong.
@@ -102,12 +116,19 @@ function pd_tags_context(): array {
         }
     }
 
+    // ?live=1 / ?live=0: show <twitch-live> as if the stream were on / off.
+    $livePreview = null;
+    if ($staging && isset($_GET['live']) && is_string($_GET['live'])) {
+        $livePreview = $_GET['live'] !== '0';
+    }
+
     return [
         'staging'     => $staging,
         'zone'        => $zone,
         'zonePreview' => $zonePreview,
         'now'         => $now,
         'preview'     => $preview,
+        'livePreview' => $livePreview,
     ];
 }
 
