@@ -3,8 +3,11 @@ declare(strict_types=1);
 
 // php/pd_upload_image.php  —  image uploads for the post and About Us editors (Moderators and up).
 //
-// POST multipart/form-data with one file field, "image".
+// POST multipart/form-data with one file field, "image", and optionally site=live.
 // -> {"ok": true, "src": "images/uploads/<discord id>/<random>.png", "width": ..., "height": ...}
+//
+// site=live (the Site Manager's banners) saves it on the main site even when uploading on
+// staging, since that's where Discord & co. load embed pictures from.
 //
 // The client's filename and claimed type are ignored: the type is read from the file's
 // bytes, the name is random, and PNG/JPEG/WebP are re-encoded with GD, which throws away
@@ -15,6 +18,7 @@ declare(strict_types=1);
 
 $config = require dirname(__DIR__, 2) . '/private/pd_config.php';
 require dirname(__DIR__, 2) . '/private/pd_lib.php';
+require __DIR__ . '/pd_site_meta.php';
 
 header('Content-Type: application/json');
 
@@ -67,7 +71,7 @@ if (!ctype_digit($discordId)) {
     pd_json_error(500, 'server_error', 'Unexpected account ID.');
 }
 $relDir = 'images/uploads/' . $discordId;
-$absDir = dirname(__DIR__) . '/' . $relDir;
+$absDir = (($_POST['site'] ?? '') === 'live' ? pd_live_root() : dirname(__DIR__)) . '/' . $relDir;
 if (!is_dir($absDir) && !@mkdir($absDir, 0755, true) && !is_dir($absDir)) {
     pd_json_error(500, 'server_error', 'Could not create the upload folder.');
 }

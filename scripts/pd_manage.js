@@ -55,15 +55,18 @@ function pmOnAuth(data) {
     const canNews = pmCan("news.manage");
     const canAbout = pmCan("about.edit");
     const canSupporter = pmCan("supporter.edit") || pmCan("supporter.manage");
+    const canSite = pmCan("site.manage");
     const access = {
-        "manage-section": canNews || canAbout || canSupporter,
+        "manage-section": canNews || canAbout || canSupporter || canSite,
         "newsmanager-section": canNews,
         "aboutmanager-section": canAbout,
-        "supportercard-section": canSupporter
+        "supportercard-section": canSupporter,
+        "sitemanager-section": canSite
     };
 
     document.getElementById("manage-holder").style.display = access["manage-section"] ? "" : "none";
     document.getElementById("newsmanager-button").style.display = canNews ? "" : "none";
+    document.getElementById("sitemanager-button").style.display = canSite ? "" : "none";
     document.getElementById("aboutmanager-button").style.display = canAbout ? "" : "none";
     document.getElementById("supportercard-button").style.display = canSupporter ? "" : "none";
 
@@ -90,13 +93,15 @@ async function pmApi(url, body) {
 }
 
 // Upload one image; resolves to its site path, e.g. "images/uploads/<id>/<random>.png".
-async function pmUploadImage(file) {
+// fields go along with it, like { site: "live" } (see php/pd_upload_image.php).
+async function pmUploadImage(file, fields = {}) {
     if (file.size > PM_UPLOAD_MAX_BYTES) {
         throw new Error(`"${file.name}" is over 8 MB.`);
     }
 
     const form = new FormData();
     form.append("image", file);
+    Object.entries(fields).forEach(([name, value]) => form.append(name, value));
     const data = await pmParse(await fetch(PM_UPLOAD_API, {
         method: "POST",
         headers: { "Accept": "application/json" },

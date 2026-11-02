@@ -1889,6 +1889,70 @@ li > a {
     image-rendering: pixelated;
 }
 
+/* Site Manager previews (pd_site_manage.js): roughly how Discord and search engines show the site. */
+.st-embed {
+    max-width: 432px;
+    background-color: rgb(43, 45, 49);
+    font-family: "Lato";
+    padding: 8px 16px 16px 12px;
+    border-left: 4px solid rgb(92, 192, 160); /* the page's theme-color, which Discord uses */
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.st-embed-site {
+    font-size: 12px;
+    opacity: 0.75;
+}
+
+.st-embed-title {
+    color: rgb(0, 168, 252);
+    font-weight: 600;
+    font-size: 16px;
+}
+
+.st-embed-description {
+    font-size: 14px;
+}
+
+.st-embed-image {
+    width: 100%;
+    border-radius: 4px;
+}
+
+.st-search {
+    max-width: 600px;
+    font-family: "Lato";
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.st-search-url {
+    font-size: 12px;
+    opacity: 0.75;
+}
+
+.st-search-title {
+    color: rgb(138, 180, 248);
+    font-size: 20px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.st-search-description {
+    font-size: 14px;
+    opacity: 0.85;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
 /* Error */
 .error-holder {
     width: auto;

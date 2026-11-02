@@ -24,6 +24,7 @@
         <script src="scripts/pd_manage.js" defer></script>
         <script src="scripts/pd_about_manage.js" defer></script>
         <script src="scripts/pd_supporter_manage.js" defer></script>
+        <script src="scripts/pd_site_manage.js" defer></script>
         <script src="scripts/pd_imageviewer.js" defer></script>
         <script src="scripts/pd_tags.js" defer></script>
 
@@ -853,6 +854,23 @@
                                     </div>
                                 </button>
 
+                                <button id="sitemanager-button" class="app-button-wrapper" style="display: none;" title="Site Manager: Change how the site looks when it's shared or found in search results.">
+                                    <div class="app-icon-wrapper">
+                                        <div class="app-icon-image" style="background-image: url(images/silk/world_edit.png); image-rendering: pixelated;"></div>
+                                    </div>
+
+                                    <div class="app-text-wrapper column-4">
+                                        <div class="app-title-wrapper">
+                                            <div class="app-title-text">Site Manager</div>
+                                            <div class="app-title-tag">MANAGER+</div>
+                                        </div>
+
+                                        <div class="app-desc-wrapper">
+                                            <div class="app-desc-text">Change how the site looks when it's shared or found in search results.</div>
+                                        </div>
+                                    </div>
+                                </button>
+
                                 <button id="aboutmanager-button" class="app-button-wrapper" style="display: none;" title="About Us Editor: Write and update your own block on the About Us page.">
                                     <div class="app-icon-wrapper">
                                         <div class="app-icon-image" style="background-image: url(images/silk/vcard_edit.png); image-rendering: pixelated;"></div>
@@ -1208,6 +1226,75 @@
                                 <h3 class="main-header">Preview</h3>
 
                                 <div id="pm-preview"></div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section id="sitemanager-section" style="display: none;">
+                        <div class="section-wrapper">
+                            <h3 class="main-header">Site Manager</h3>
+
+                            <div class="section-container">
+                                <div id="st-status" class="pm-status" style="display: none;"></div>
+
+                                <div class="setting-container">
+                                    <div class="setting-label">Information</div>
+                                    <div class="setting-label-small">How the site introduces itself when a link to it is shared, and in search results. Leave a field empty to use the page's own text, shown greyed out in it.</div>
+                                    <div class="setting-label-small">Staging and the main site share these, so saving here changes the main site right away.</div>
+                                </div>
+
+                                <div class="horizontal-break"></div>
+
+                                <div class="setting-container">
+                                    <div class="setting-label">Embed Title</div>
+                                    <div class="setting-label-small">The bold line of a shared link. {latest news} becomes the header of the newest news post that isn't hidden or outdated (right now: <span id="st-latest-news"></span>).</div>
+                                    <input id="st-embed-title" class="input-field pm-input" type="text" maxlength="150">
+                                </div>
+
+                                <div class="setting-container">
+                                    <div class="setting-label">Embed Description</div>
+                                    <textarea id="st-embed-description" class="input-field pm-input pm-textarea" maxlength="300"></textarea>
+                                </div>
+
+                                <div class="setting-container">
+                                    <div class="setting-label">Banner</div>
+                                    <div class="setting-label-small">The big picture of a shared link; 1200 × 630 pixels fits everywhere. It always comes from the main site, so uploads here go there, even on staging.</div>
+                                    <input id="st-banner" class="input-field pm-input" type="text" maxlength="255">
+                                    <select id="st-banner-pick" class="input-field pm-input"></select>
+                                    <div class="setting-input-holder pm-add-row">
+                                        <button id="st-banner-upload" class="setting-button">Upload Image</button>
+                                        <input id="st-banner-file" type="file" accept="image/png,image/jpeg,image/gif,image/webp" style="display: none;">
+                                    </div>
+                                </div>
+
+                                <div class="setting-container">
+                                    <div class="setting-label">Page Title</div>
+                                    <div class="setting-label-small">The browser tab, and the headline in search results. About 60 characters fit there. {latest news} works here too.</div>
+                                    <input id="st-title" class="input-field pm-input" type="text" maxlength="100">
+                                </div>
+
+                                <div class="setting-container">
+                                    <div class="setting-label">Search Description</div>
+                                    <div class="setting-label-small">The text under the headline in search results. About 155 characters fit there.</div>
+                                    <textarea id="st-description" class="input-field pm-input pm-textarea" maxlength="300"></textarea>
+                                </div>
+
+                                <div class="horizontal-break"></div>
+
+                                <div class="spaced-out">
+                                    <div></div>
+
+                                    <div>
+                                        <button id="st-revert" class="setting-button">Undo Changes</button>
+                                        <button id="st-save" class="setting-button">Save</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <h3 class="main-header">Preview</h3>
+
+                            <div class="section-container">
+                                <div id="st-preview" class="column-5"></div>
                             </div>
                         </div>
                     </section>
