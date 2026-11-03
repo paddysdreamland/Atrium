@@ -1536,6 +1536,7 @@ li > a {
     background-repeat: no-repeat;
     background-position: left center;
     padding: 0 0 0 22px;
+    overflow-wrap: anywhere; /* the email address, in narrow columns */
     opacity: 0.75;
     transition: 0.1s;
 } .footer-link:hover {
