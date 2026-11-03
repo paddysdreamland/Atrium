@@ -250,8 +250,7 @@ button {
 }
 
 #header-holder,
-#main-holder,
-#footer-holder {
+#main-holder {
     background-image: var(--holder-background-image);
     background-color: var(--holder-background-color);
     border-radius: var(--custom-border-radius);
@@ -1465,68 +1464,34 @@ li > a {
     border-radius: 2px;
 }
 
-/* Footer */
+/* Footer, under the open section's "END OF SECTION" */
 #footer-holder {
-    flex: 0 0 auto;
-    min-height: 40px;
-    max-height: 40px;
-} #footer-holder::before {
-    content: "";
-    width: 100%;
-    height: var(--custom-border-radius);
-    position: absolute;
-    left: 0;
-    box-sizing: border-box;
-    display: block;
-    pointer-events: none;
-    z-index: 50;
-    top: 0;
-    border-top: var(--holder-border-thickness) solid var(--holder-border-color);
-    border-right: var(--holder-border-thickness) solid var(--holder-border-color);
-    border-left: var(--holder-border-thickness) solid var(--holder-border-color);
-    border-radius: var(--custom-border-radius) var(--custom-border-radius) 0 0;
-} #footer-holder::after {
-    content: "";
-    width: 100%;
-    height: var(--custom-border-radius);
-    position: absolute;
-    left: 0;
-    box-sizing: border-box;
-    display: block;
-    pointer-events: none;
-    z-index: 50;
-    bottom: 0;
-    border-right: var(--holder-border-thickness) solid var(--holder-border-color);
-    border-bottom: var(--holder-border-thickness) solid var(--holder-border-color);
-    border-left: var(--holder-border-thickness) solid var(--holder-border-color);
-    border-radius: 0 0 var(--custom-border-radius) var(--custom-border-radius);
+    background-color: rgba(0, 0, 0, 0.25);
+    border-radius: var(--custom-border-radius);
+    margin: var(--main-scrollable-padding) 0 0 0;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 
-.footer-text-left,
-.footer-text-right {
-    color: var(--white);
-    width: 100%;
-    height: auto;
-    position: absolute;
-    padding: 0px 20px;
-    font-family: "Lato";
-    font-weight: 400;
-    font-size: 12px;
-    opacity: 0.5;
+.footer-columns {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
 }
 
-.footer-text-left {
-    text-align: left;
-    left: 0%;
-    top: 50%;
-    transform: translate(0%, -50%);
+.footer-column {
+    flex: 1 1 0; min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
 }
 
-.footer-text-right {
-    text-align: right;
-    right: 0%;
-    top: 50%;
-    transform: translate(0%, -50%);
+.footer-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
 .footer-logo {
@@ -1535,12 +1500,60 @@ li > a {
     background-repeat: no-repeat;
     width: 30px;
     height: 30px;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    position: absolute;
-    opacity: 0.25;
+    flex: 0 0 auto;
+    opacity: 0.5;
     filter: grayscale(1);
+}
+
+.footer-title,
+.footer-heading {
+    font-family: "Lato";
+    font-weight: 900;
+    font-size: 14px;
+}
+
+.footer-heading {
+    color: rgb(var(--custom-color));
+    margin: 0 0 2px 0;
+    border-bottom: 1px solid rgb(var(--custom-color));
+    border-image: linear-gradient(90deg, rgb(var(--custom-color)), transparent) 1;
+}
+
+.footer-text,
+.footer-link {
+    font-family: "Lato";
+    font-weight: 400;
+    font-size: 13px;
+}
+
+.footer-text {
+    opacity: 0.75;
+}
+
+.footer-link {
+    color: var(--white);
+    background-size: 16px;
+    background-repeat: no-repeat;
+    background-position: left center;
+    padding: 0 0 0 22px;
+    opacity: 0.75;
+    transition: 0.1s;
+} .footer-link:hover {
+    color: rgb(var(--custom-color));
+    opacity: 1;
+}
+
+.footer-bottom {
+    padding: 10px 0 0 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.125);
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.footer-bottom .footer-text {
+    font-size: 12px;
+    opacity: 0.5;
 }
 
 /* Music Box */
@@ -2416,11 +2429,6 @@ pd-tag-error {
         width: calc(100% - 10px);
     }
 
-    .footer-text-left,
-    .footer-text-right {
-        display: none;
-    }
-
     .primary-header,
     .secondary-header {
         font-size: 16px;
@@ -2479,6 +2487,10 @@ pd-tag-error {
     .pm-field-row {
         flex-direction: column;
         gap: 0px;
+    }
+
+    .footer-columns {
+        flex-direction: column;
     }
 
     .section-container-rowed {
