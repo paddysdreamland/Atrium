@@ -24,8 +24,3 @@ Beyond being a simple website:
 - stores HTML-based Twitch widgets
 - includes an unused Garry’s Mod HUD experiment
 - and other junk
-
-# License
-
-This project uses the Creative Commons Attribution 4.0 International license:
-> https://creativecommons.org/licenses/by/4.0/
