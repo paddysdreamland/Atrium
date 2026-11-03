@@ -14,6 +14,14 @@ document.addEventListener("DOMContentLoaded", function () {
 
     //---
 
+    // The footer's "for the past X years! (2021-YYYY)", counted from the year the site started.
+    const foundedYear = 2021;
+    const currentYear = new Date().getFullYear();
+    document.getElementById("footer-years").textContent = currentYear - foundedYear;
+    document.getElementById("footer-year").textContent = currentYear;
+
+    //---
+
     const sections = document.querySelectorAll('section');
     sections.forEach(section => {
         const sectionEndHolder = document.createElement('div');

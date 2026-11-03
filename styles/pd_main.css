@@ -1466,10 +1466,26 @@ li > a {
 
 /* Footer, under the open section's "END OF SECTION" */
 #footer-holder {
+    margin: var(--main-scrollable-padding) 0 0 0;
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+}
+
+.footer-cell {
     background-color: rgba(0, 0, 0, 0.25);
     border-radius: var(--custom-border-radius);
-    margin: var(--main-scrollable-padding) 0 0 0;
     padding: 10px;
+}
+
+/* The brand only takes the width its text needs (up to a third); the rest goes to the links and credits. */
+.footer-brand {
+    flex: 0 1 auto;
+    max-width: 35%;
+}
+
+.footer-info {
+    flex: 1 1 0; min-width: 0;
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -1490,18 +1506,29 @@ li > a {
 
 .footer-brand {
     display: flex;
-    align-items: center;
     gap: 10px;
+}
+
+/* Connections and credits side by side: when they don't fit, the next one goes to a new line
+   instead of being squeezed. */
+#footer-holder .footer-list {
+    flex-wrap: wrap;
+    row-gap: 4px; /* over .row-10's gap */
+}
+
+.footer-list > * {
+    flex: 0 0 auto;
+    max-width: 100%;
 }
 
 .footer-logo {
     background-image: url(../images/icon_48.png);
     background-size: 100%;
     background-repeat: no-repeat;
-    width: 30px;
-    height: 30px;
+    width: 32px;
+    height: 32px;
     flex: 0 0 auto;
-    opacity: 0.5;
+    opacity: 1;
     filter: grayscale(1);
 }
 
@@ -1532,6 +1559,8 @@ li > a {
 
 .footer-link {
     color: var(--white);
+    width: fit-content;
+    display: block; /* one per line */
     background-size: 16px;
     background-repeat: no-repeat;
     background-position: left center;
@@ -1689,6 +1718,12 @@ li > a {
     justify-content: space-between;
 }
 
+.spaced-out-column {
+    display: flex;
+    justify-content: space-between;
+    flex-direction: column;
+}
+
 .column-4 {
     display: flex;
     flex-direction: column;
@@ -1711,6 +1746,18 @@ li > a {
     display: flex;
     flex-direction: row;
     gap: 5px;
+}
+
+.column-10 {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.row-10 {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
 }
 
 .column-0 {
@@ -2490,8 +2537,13 @@ pd-tag-error {
         gap: 0px;
     }
 
+    #footer-holder,
     .footer-columns {
         flex-direction: column;
+    }
+
+    .footer-brand {
+        max-width: none;
     }
 
     .section-container-rowed {
