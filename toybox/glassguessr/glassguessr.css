@@ -63,22 +63,22 @@ body[data-screen="menu"] #menu {
 body[data-screen="round"] #hud,
 body[data-screen="reveal"] #hud,
 body[data-screen="result"] #hud,
-body[data-screen="freeroam"] #hud {
+body[data-screen="freemode"] #hud {
     display: block;
 }
 
 body[data-screen="round"] #controls-holder,
 body[data-screen="reveal"] #controls-holder,
 body[data-screen="result"] #controls-holder,
-body[data-screen="freeroam"] #controls-holder {
+body[data-screen="freemode"] #controls-holder {
     display: flex;
 }
 
-/* Free roam keeps the HUD for its Back to Menu button, without the run's
+/* Freemode keeps the HUD for its Back to Menu button, without the run's
    screenshot, clock, or the tips for them. */
-body[data-screen="freeroam"] #round-plate,
-body[data-screen="freeroam"] #photo-panel,
-body[data-screen="freeroam"] .glg-run-only {
+body[data-screen="freemode"] #round-plate,
+body[data-screen="freemode"] #photo-panel,
+body[data-screen="freemode"] .glg-run-only {
     display: none;
 }
 

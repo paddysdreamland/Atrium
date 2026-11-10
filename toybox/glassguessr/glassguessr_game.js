@@ -118,7 +118,7 @@ const ui = {
     menuPages: { main: $("menu-main"), settings: $("menu-settings") },
     menuSubtitle: $("menu-subtitle"),
     start: $("start-button"),
-    freeRoam: $("free-roam-button"),
+    freemode: $("freemode-button"),
     exit: $("exit-button"),
     countHeight: $("count-height-toggle"),
     settingsButton: $("settings-button"),
@@ -273,10 +273,10 @@ function startRun() {
     startRound();
 }
 
-/* Free roam: the city with the camera handed over and none of the game -
+/* Freemode: the city with the camera handed over and none of the game -
    no screenshot, clock, marker or score. Clicks place nothing, and Back to
    Menu (or Escape) is the only way out. */
-function startFreeRoam() {
+function startFreemode() {
     map.clearMarkers();
     map.onPick(null);
     map.release();
@@ -284,7 +284,7 @@ function startFreeRoam() {
     ui.guess.hidden = true;
     ui.next.hidden = true;
     ui.exit.hidden = false;
-    setScreen("freeroam");
+    setScreen("freemode");
 }
 
 function startRound() {
@@ -383,7 +383,7 @@ function showSummary() {
 }
 
 ui.start.addEventListener("click", startRun);
-ui.freeRoam.addEventListener("click", startFreeRoam);
+ui.freemode.addEventListener("click", startFreemode);
 ui.exit.addEventListener("click", showMenu);
 ui.countHeight.addEventListener("click", toggleCountHeight);
 ui.settingsButton.addEventListener("click", () => showMenuPage("settings"));
@@ -411,7 +411,7 @@ window.addEventListener("keydown", (e) => {
         setPhotoExpanded(!ui.photoPanel.classList.contains("expanded"));
     } else if (e.code === "Escape" && inRun) {
         setPhotoExpanded(false);
-    } else if (e.code === "Escape" && screen === "freeroam") {
+    } else if (e.code === "Escape" && screen === "freemode") {
         showMenu();
     } else if (e.code === "Enter" || e.code === "NumpadEnter") {
         if (screen === "round") submitGuess();
