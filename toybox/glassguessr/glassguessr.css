@@ -49,9 +49,15 @@ html, body {
     display: none;
 }
 
-body[data-screen="menu"] #menu,
 body[data-screen="summary"] #summary {
     display: flex;
+}
+
+/* A one-cell grid, so the menu's pages can sit on top of each other while
+   one slides out and the other in. */
+body[data-screen="menu"] #menu {
+    display: grid;
+    justify-items: start;
 }
 
 body[data-screen="round"] #hud,
@@ -100,6 +106,36 @@ body[data-screen="menu"] .version-date {
     align-items: flex-start;
     gap: 10px;
     max-width: 560px;
+}
+
+/* Menu pages, switched like Catalyst's menus: the page being left slides to
+   the left as it fades out while, at the same time, the page being opened
+   slides in towards the right as it fades in. Both directions use the same
+   parked position, so going back plays the same motion. */
+.glg-menu-page {
+    grid-area: 1 / 1;
+    transition:
+        opacity 0.25s ease-out,
+        transform 0.25s ease-out,
+        visibility 0s;
+}
+
+/* visibility waits for the fade, so the page stays seen until it is gone. */
+.glg-menu-page:not(.active) {
+    opacity: 0;
+    transform: translateX(-48px);
+    visibility: hidden;
+    pointer-events: none;
+    transition:
+        opacity 0.25s ease-out,
+        transform 0.25s ease-out,
+        visibility 0s linear 0.25s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .glg-menu-page:not(.active) {
+        transform: none;
+    }
 }
 
 .glg-back {
@@ -179,9 +215,8 @@ body[data-screen="menu"] .version-date {
     transition: 0.1s;
 }
 
-/* Toggles - the modifiers under the start button and the switches in the
-   settings dialog - are a box that fills in runner red when on (aria-pressed),
-   a name and a hint. */
+/* Toggles - the modifiers and switches on the settings page - are a box that
+   fills in runner red when on (aria-pressed), a name and a hint. */
 .glg-modifiers {
     display: flex;
     flex-direction: column;
@@ -264,47 +299,15 @@ body[data-screen="menu"] .version-date {
     color: rgb(255, 255, 255);
 }
 
-/* Settings dialog - dark glass like the HUD plates. pd_main.css gives every
-   element position: relative, which would knock the modal out of the
-   viewport centre, so it is placed explicitly. */
-.glg-dialog {
-    position: fixed;
-    inset: 0;
-    margin: auto;
-    width: min(480px, calc(100vw - 32px));
-    height: fit-content;
-    padding: 24px 28px;
-    border: none;
-    border-radius: 8px;
-    background: rgba(0, 8, 20, 0.85);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    color: rgb(255, 255, 255);
-    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.4);
+/* The settings page's toggles sit closer to its title than the old
+   modifiers did under the start button, and Back needs room above it. */
+.glg-screen-settings .glg-modifiers {
+    margin-top: 8px;
 }
 
-.glg-dialog::backdrop {
-    background: rgba(0, 8, 20, 0.35);
+.glg-screen-settings .glg-buttons-wrapper {
+    margin-top: 24px;
 }
-
-.glg-dialog-title {
-    font-family: "Europe Ext", "Lato", sans-serif;
-    font-size: 22px;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-}
-
-.glg-dialog .glg-modifiers {
-    margin-top: 14px;
-}
-
-.glg-dialog-actions {
-    display: flex;
-    justify-content: flex-end;
-    margin-top: 22px;
-}
-
 
 .glg-rounds {
     display: grid;
@@ -473,36 +476,6 @@ body[data-screen="menu"] .version-date {
     letter-spacing: 0.18em;
     text-transform: uppercase;
     color: rgba(var(--custom-color), 1);
-}
-
-.controls-row {
-    display: none;
-    align-items: center;
-    justify-content: space-between;
-    gap: 14px;
-}
-
-.controls-keys {
-    display: flex;
-    gap: 3px;
-}
-
-#controls-holder kbd {
-    padding: 3px 5px;
-    min-width: 18px;
-    font-family: inherit;
-    font-size: 10px;
-    font-weight: 700;
-    text-align: center;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: rgb(255, 255, 255);
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.ck-text {
-    color: rgba(255, 255, 255, 0.6);
 }
 
 @media (max-width: 900px) {

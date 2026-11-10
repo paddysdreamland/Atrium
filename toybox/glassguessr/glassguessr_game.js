@@ -29,7 +29,7 @@ try {
     modifiers.countHeight = saved.countHeight === true;
 } catch (err) { /* defaults */ }
 
-/* Settings - player preferences from the menu's settings dialog, applied at
+/* Settings - player preferences from the menu's settings page, applied at
    once and remembered per browser. orbitWithModifier swaps right-drag orbit
    for shift/ctrl + drag, for browsers that keep the right button for mouse
    gestures. */
@@ -115,15 +115,17 @@ const wait = (seconds) => new Promise((resolve) => setTimeout(resolve, seconds *
 const ui = {
     loading: $("loading-holder"),
     loadingLabel: $("loading-label"),
+    menuPages: { main: $("menu-main"), settings: $("menu-settings") },
     menuSubtitle: $("menu-subtitle"),
     start: $("start-button"),
     freeRoam: $("free-roam-button"),
     exit: $("exit-button"),
     countHeight: $("count-height-toggle"),
     settingsButton: $("settings-button"),
-    settingsDialog: $("settings-dialog"),
+    settingsBack: $("settings-back-button"),
     orbitModifier: $("orbit-modifier-toggle"),
-    orbitKeys: $("orbit-keys"),
+    orbitTipShift: $("orbit-tip-shift"),
+    orbitTipMouse: $("orbit-tip-mouse"),
     roundPlate: $("round-plate"),
     roundCount: $("round-count"),
     roundClock: $("round-clock"),
@@ -160,7 +162,10 @@ showModifiers();
 function applySettings() {
     map.setOrbitWithModifier(settings.orbitWithModifier);
     ui.orbitModifier.setAttribute("aria-pressed", String(settings.orbitWithModifier));
-    ui.orbitKeys.textContent = settings.orbitWithModifier ? "Shift Drag" : "Right Drag";
+    /* The Orbit tip: right drag, or Shift + left drag. */
+    ui.orbitTipShift.hidden = !settings.orbitWithModifier;
+    ui.orbitTipMouse.src = settings.orbitWithModifier ? "ui/mouse1.svg" : "ui/mouse2.svg";
+    ui.orbitTipMouse.alt = settings.orbitWithModifier ? "Left drag" : "Right drag";
 }
 
 function toggleOrbitModifier() {
@@ -239,7 +244,20 @@ function setPhotoExpanded(expanded) {
     ui.photoPanel.title = expanded ? "Shrink (Space)" : "Enlarge (Space)";
 }
 
+/* The menu's pages (main, settings) share one spot. Only the class changes
+   here; the slide-and-fade between them is CSS transitions on .active. */
+let menuPage = "main";
+
+function showMenuPage(name) {
+    menuPage = name;
+    for (const [pageName, page] of Object.entries(ui.menuPages)) {
+        page.classList.toggle("active", pageName === name);
+    }
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+}
+
 function showMenu() {
+    showMenuPage("main");
     stopClock();
     map.onPick(null);
     map.clearMarkers();
@@ -368,7 +386,8 @@ ui.start.addEventListener("click", startRun);
 ui.freeRoam.addEventListener("click", startFreeRoam);
 ui.exit.addEventListener("click", showMenu);
 ui.countHeight.addEventListener("click", toggleCountHeight);
-ui.settingsButton.addEventListener("click", () => ui.settingsDialog.showModal());
+ui.settingsButton.addEventListener("click", () => showMenuPage("settings"));
+ui.settingsBack.addEventListener("click", () => showMenuPage("main"));
 ui.orbitModifier.addEventListener("click", toggleOrbitModifier);
 ui.guess.addEventListener("click", submitGuess);
 ui.next.addEventListener("click", nextRound);
@@ -377,10 +396,14 @@ ui.photoPanel.addEventListener("click", () => setPhotoExpanded(!ui.photoPanel.cl
 
 window.addEventListener("keydown", (e) => {
     if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
-    /* A focused button already acts on Space and Enter itself, and the
-       settings dialog handles its own keys (Escape closes it). */
-    if (e.target instanceof HTMLButtonElement || ui.settingsDialog.open) return;
     const screen = document.body.dataset.screen;
+    /* Escape leaves the settings page even with one of its toggles focused. */
+    if (e.code === "Escape" && screen === "menu" && menuPage === "settings") {
+        showMenuPage("main");
+        return;
+    }
+    /* A focused button already acts on Space and Enter itself. */
+    if (e.target instanceof HTMLButtonElement) return;
     const inRun = screen === "round" || screen === "reveal" || screen === "result";
 
     if (e.code === "Space" && inRun) {
@@ -393,7 +416,7 @@ window.addEventListener("keydown", (e) => {
     } else if (e.code === "Enter" || e.code === "NumpadEnter") {
         if (screen === "round") submitGuess();
         else if (screen === "result") nextRound();
-        else if (screen === "menu") startRun();
+        else if (screen === "menu" && menuPage === "main") startRun();
         else if (screen === "summary") showMenu();
     }
 });
