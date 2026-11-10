@@ -70,7 +70,7 @@ const sound = (() => {
         if (!context) {
             context = new AudioContext();
             output = context.createGain();
-            output.gain.value = 0.8;
+            output.gain.value = 0.4;
             output.connect(context.destination);
         }
         if (context.state === "suspended") context.resume();
@@ -117,6 +117,8 @@ const ui = {
     loadingLabel: $("loading-label"),
     menuSubtitle: $("menu-subtitle"),
     start: $("start-button"),
+    freeRoam: $("free-roam-button"),
+    exit: $("exit-button"),
     countHeight: $("count-height-toggle"),
     settingsButton: $("settings-button"),
     settingsDialog: $("settings-dialog"),
@@ -253,9 +255,24 @@ function startRun() {
     startRound();
 }
 
+/* Free roam: the city with the camera handed over and none of the game -
+   no screenshot, clock, marker or score. Clicks place nothing, and Back to
+   Menu (or Escape) is the only way out. */
+function startFreeRoam() {
+    map.clearMarkers();
+    map.onPick(null);
+    map.release();
+    ui.resultPlate.hidden = true;
+    ui.guess.hidden = true;
+    ui.next.hidden = true;
+    ui.exit.hidden = false;
+    setScreen("freeroam");
+}
+
 function startRound() {
     const location = run.rounds[roundIndex];
     guess = null;
+    ui.exit.hidden = true;
 
     ui.photo.src = location.image;
     setPhotoExpanded(false);
@@ -348,6 +365,8 @@ function showSummary() {
 }
 
 ui.start.addEventListener("click", startRun);
+ui.freeRoam.addEventListener("click", startFreeRoam);
+ui.exit.addEventListener("click", showMenu);
 ui.countHeight.addEventListener("click", toggleCountHeight);
 ui.settingsButton.addEventListener("click", () => ui.settingsDialog.showModal());
 ui.orbitModifier.addEventListener("click", toggleOrbitModifier);
@@ -369,6 +388,8 @@ window.addEventListener("keydown", (e) => {
         setPhotoExpanded(!ui.photoPanel.classList.contains("expanded"));
     } else if (e.code === "Escape" && inRun) {
         setPhotoExpanded(false);
+    } else if (e.code === "Escape" && screen === "freeroam") {
+        showMenu();
     } else if (e.code === "Enter" || e.code === "NumpadEnter") {
         if (screen === "round") submitGuess();
         else if (screen === "result") nextRound();

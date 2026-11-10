@@ -56,14 +56,24 @@ body[data-screen="summary"] #summary {
 
 body[data-screen="round"] #hud,
 body[data-screen="reveal"] #hud,
-body[data-screen="result"] #hud {
+body[data-screen="result"] #hud,
+body[data-screen="freeroam"] #hud {
     display: block;
 }
 
 body[data-screen="round"] #controls-holder,
 body[data-screen="reveal"] #controls-holder,
-body[data-screen="result"] #controls-holder {
+body[data-screen="result"] #controls-holder,
+body[data-screen="freeroam"] #controls-holder {
     display: flex;
+}
+
+/* Free roam keeps the HUD for its Back to Menu button, without the run's
+   screenshot, clock, or the tips for them. */
+body[data-screen="freeroam"] #round-plate,
+body[data-screen="freeroam"] #photo-panel,
+body[data-screen="freeroam"] .glg-run-only {
+    display: none;
 }
 
 body[data-screen="loading"] .version-date,
