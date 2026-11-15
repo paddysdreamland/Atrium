@@ -223,7 +223,7 @@ body {
 }
 
 h1, h2, h3, h4, h5, h6,
-ul, li, p, a, i, em {
+ul, li, p, a, i, em, b {
     user-select: text;
 }
 
@@ -942,6 +942,11 @@ button {
     text-align: justify;
     padding: 0 var(--section-paragraph-padding);
 }
+
+/* .section-paragraph, li {
+    text-align-last: left;
+    text-wrap: pretty;
+} */
 
 .section-list,
 .section-list-unspaced,
