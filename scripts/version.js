@@ -101,7 +101,7 @@ if (changelogEl) {
                 </div>`;
             }).join("");
 
-            const moreHtml = `<div class="changelog-more"><a href="${CHANGELOG_MORE_URL}" target="_blank" rel="noopener">See more changes on GitHub</a></div>`;
+            const moreHtml = `<a class="show-more-button" href="${CHANGELOG_MORE_URL}" target="_blank" rel="noopener">See more changes on GitHub</a>`;
 
             changelogEl.innerHTML = entriesHtml + moreHtml;
         })

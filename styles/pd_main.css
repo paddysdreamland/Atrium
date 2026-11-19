@@ -228,8 +228,16 @@ ul, li, p, a, i, em, b {
 }
 
 a {
-    color: rgb(var(--custom-color));
-    text-decoration: none;
+    color: rgb(from rgb(var(--custom-color)) calc(r * 0.75) calc(g * 0.75) calc(b * 0.75));
+} a[target="_blank"]::after { /* Only show the external link icon if the clickable text opens a new window. */
+    content: "";
+    width: 1em;
+    height: 1em;
+    margin-left: 0.08em;
+    vertical-align: -0.16em;
+    background-color: currentColor;
+    mask: url(../images/accessibility/external_link.svg) no-repeat center / contain;
+    display: inline-block;
 }
 
 button {
@@ -890,12 +898,24 @@ button {
     font-weight: 700;
 }
 
-.lore-button,
-.changelog-more {
-    padding: 2px 4px !important;
+.changelog-more,
+.show-more-button {
+    background: linear-gradient(-90deg,
+        rgb(from rgb(var(--custom-color)) calc(r * 0.5) calc(g * 0.5) calc(b * 0.5)),
+        transparent
+    );
 
-    border-top: 1px solid rgb(var(--custom-color));
-    border-image: linear-gradient(-90deg, rgb(var(--custom-color)), transparent) 1;
+    color: rgb(var(--white));
+    font-family: "Europe Ext";
+    font-size: 14px;
+    font-weight: 700;
+    text-transform: uppercase;
+    text-align: right;
+    border-radius: 4px;
+    padding: 2px 4px;
+    text-decoration: none;
+    user-select: none;
+    cursor: pointer;
 }
 
 .lore-left {
@@ -954,7 +974,7 @@ button {
     font-family: "Lato";
     font-size: 16px;
     text-align: justify;
-    padding: 0px 5%;
+    padding: 0 0 0 5%;
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -963,10 +983,6 @@ button {
 .section-list-unspaced,
 .changelog-bullets {
     gap: 0px;
-}
-
-li > a {
-    font-weight: 700;
 }
 
 .section-showcase {
@@ -993,8 +1009,7 @@ li > a {
     transition: 0.1s;
 }
 
-.section-signature,
-.changelog-more {
+.section-signature {
     font-family: "Lato";
     font-weight: 900;
     font-size: 14px;
@@ -1094,7 +1109,7 @@ li > a {
 .card-wrapper {
     background-color: rgba(var(--custom-color), 0.125);
     background-size: cover;
-    aspect-ratio: 1920/1080;
+    aspect-ratio: 16/9;
     width: 50%;
     border-radius: var(--custom-border-radius);
     overflow: hidden;
@@ -1103,7 +1118,7 @@ li > a {
 .card-paddy,
 .card-aria {
     background-size: cover;
-    aspect-ratio: 1920/1080;
+    aspect-ratio: 16/9;
     width: 100%;
     transition: 0.25s;
 }
@@ -1121,9 +1136,9 @@ li > a {
 }
 
 .card-paddy {
-    background-image: url(../images/showcase/character_paddy_draw.png);
+    background-image: url(../images/showcase/character_paddyv.png);
 } .card-paddy:hover {
-    background-image: url(../images/showcase/character_paddy_draw_hover.png);
+    background-image: url(../images/showcase/character_paddyv.png);
 }
 
 .card-buttons {
@@ -1175,14 +1190,20 @@ li > a {
 .card-aria {
     background-image: url(../images/showcase/character_aria_astral.png);
 } .card-aria:hover {
-    background-image: url(../images/showcase/character_aria_astral_hover.png);
+    background-image: url(../images/showcase/character_aria_astral.png);
 }
 
 .card-name {
     color: rgba(var(--custom-color), 0.5);
-    font-family: "Lato";
+    font-family: "Europe Ext";
     font-size: 20px;
     font-weight: 900;
+}
+
+.card-pronouns {
+    color: var(--white);
+    font-size: 14px;
+    opacity: 0.25;
 }
 
 .card-faction {
@@ -1307,12 +1328,6 @@ li > a {
 .app-button-wrapper:hover {
     filter: drop-shadow(0px 0px 8px rgba(255, 255, 255, 0.5));
     transition: 0.125s;
-}
-
-.app-icon-wrapper,
-.app-title-wrapper,
-.app-desc-wrapper {
-    
 }
 
 .app-text-wrapper {
@@ -2083,17 +2098,9 @@ li > a {
     height: 4px;
 }
 
-@keyframes warning-flash {
-    0% {
-        color: rgb(255, 64, 64);
-    } 50% {
-        color: rgba(255, 64, 64, 0.5);
-    } 100% {
-        color: rgb(255, 64, 64);
-    }
-}
 .warning-text {
-    animation: warning-flash 2s linear infinite;
+    color: rgb(255, 128, 128);
+    opacity: 0.6;
 }
 
 /* Image Viewer */

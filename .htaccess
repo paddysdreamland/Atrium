@@ -24,7 +24,7 @@ RewriteCond %{HTTP_HOST} ^staging\. [NC]
 RewriteRule ^([A-Za-z0-9_-]+\.html)$ /php/pd_staging_page.php?f=$1 [L,QSA]
 
 # Tracked social redirects (/discord -> discord.gg, etc). Keep in sync with PD_LINKS in php/pd_go.php.
-RewriteRule ^(discord|twitch|youtube|github|steam|x)/?$ /php/pd_go.php?to=$1 [L,QSA]
+RewriteRule ^(discord|twitch|youtube|tiktok|github|steam|x)/?$ /php/pd_go.php?to=$1 [L,QSA]
 
 # Serve page.html or page.php when /page is requested, without changing the visible URL
 RewriteCond %{REQUEST_FILENAME} !-d

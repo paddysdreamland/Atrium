@@ -1,5 +1,5 @@
 // ─── Config ───────────────────────────────────────────────────────────────
-const CHANNEL = "dougdoug";
+const CHANNEL = "paddysdreamland";
 const FALLBACK_COLOR = "rgb(192, 192, 192)";
 const MAX_MESSAGES = 40;
 

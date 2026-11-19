@@ -92,10 +92,11 @@ document.querySelectorAll('[id$="-button"]').forEach(function (button) {
 /* Navigation - Socials */
 
 var socialLinks = {
-    "discord-button": "https://discord.gg/paddysdreamland",
-    "twitch-button": "https://www.twitch.tv/paddysdreamland/about",
-    "youtube-button": "https://www.youtube.com/@paddysdreamland",
-    "github-button": "https://github.com/paddysdreamland/Website",
+    "discord-button": "https://paddysdreamland.com/discord",
+    "twitch-button": "https://paddysdreamland.com/twitch",
+    "youtube-button": "https://paddysdreamland.com/youtube",
+    "tiktok-button": "https://paddysdreamland.com/tiktok",
+    "github-button": "https://paddysdreamland.com/github",
     "ost-button": "/toybox/catalyst_soundtrack_player/",
     "glg-button": "/toybox/glassguessr/",
     "soundscape-button": "/toybox/source_soundscape_player/",

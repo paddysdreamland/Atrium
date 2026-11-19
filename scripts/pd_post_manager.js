@@ -20,7 +20,7 @@ function renderBlocks(container, blocks) {
             container.appendChild(p);
         } else if (block.type === "bulletList") {
             const ul = document.createElement("ul");
-            ul.className = "section-list";
+            ul.className = "section-list-unspaced";
             block.content.forEach(item => {
                 const li = document.createElement("li");
                 li.innerHTML = item;

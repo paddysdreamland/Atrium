@@ -8,6 +8,7 @@ const PD_LINKS = [
     'discord' => 'https://discord.gg/paddysdreamland',
     'twitch'  => 'https://www.twitch.tv/paddysdreamland',
     'youtube' => 'https://www.youtube.com/@paddysdreamland',
+    'tiktok'  => 'https://www.tiktok.com/@paddysdreamland',
     'github'  => 'https://github.com/paddysdreamland',
     'steam'   => 'https://steamcommunity.com/groups/paddysdreamland',
     'x'       => 'https://x.com/paddysdreamland',
